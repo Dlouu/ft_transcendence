@@ -1,3 +1,23 @@
+volumes:
+    v_database:
+        name: v_database
+        driver: local
+        driver_opts:
+            type: 'none'
+            device: ${VOLUME_PATH}/mariadb
+            o: bind
+
 services:
+  mariadb:
+    container_name: mariadb_container
+    build: ./services/mariadb
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - v_database:/var/lib/mysql
+    networks:
+      - mariadb_network
 
 networks:
+  mariadb_network:
+    driver: bridge

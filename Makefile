@@ -47,7 +47,13 @@ create:
 
 
 	@echo "Adding network $(DOCK)_network to $(COMPOSE_PATH)..."
-	@sed -i "/networks:/a \\  $(DOCK)_network:\n    driver: bridge" $(COMPOSE_PATH)
+	@awk '/networks:/ {\
+		print; \
+		print "  $(DOCK)_network:"; \
+		print "    driver: bridge"; \
+		next \
+	} 1' $(COMPOSE_PATH) > $(COMPOSE_PATH).tmp && mv $(COMPOSE_PATH).tmp $(COMPOSE_PATH)
+
 
 	@echo "Adding service $(DOCK) to $(COMPOSE_PATH)..."
 	@awk '/services:/ {\
@@ -57,8 +63,6 @@ create:
 		print "    build: ./services/$(DOCK)"; \
 		print "    restart: unless-stopped"; \
 		print "    env_file: .env"; \
-		print "    volumes:"; \
-		print "      - $(DOCK)_volume:/app"; \
 		print "    networks:"; \
 		print "      - $(DOCK)_network"; \
 		next \

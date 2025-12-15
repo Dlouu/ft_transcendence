@@ -16,3 +16,4 @@
 ./srcs/volumes
 ***/.venv/
 ***/.env/
+***/volumes/
