@@ -1,11 +1,12 @@
-volumes:
-    v_api:
-        name: v_api
-        driver: local
-        driver_opts:
-            type: 'none'
-            device: ${VOLUME_PATH}/v_api
-            o: bind
-
 services:
-    
+  testservice:
+    container_name: testservice_container
+    build: ./services/testservice
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - testservice_network
+
+networks:
+  testservice_network:
+    driver: bridge

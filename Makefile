@@ -1,11 +1,12 @@
-COMPOSE	:= docker compose -f ./srcs/compose.yml
+COMPOSE_PATH = ./srcs/compose.yml
+COMPOSE	:= docker compose -f $(COMPOSE_PATH)
 
 all: build run
 
-build: create_dir
+build:
 	$(COMPOSE) build $(DOCK)
 
-run: create_dir
+run:
 	$(COMPOSE) up -d $(DOCK)
 
 stop:
@@ -13,11 +14,46 @@ stop:
 
 restart: stop all
 
+create:
+	@if [ -z "$(DOCK)" ]; then \
+		echo "Service name need to be provided with the var name DOCK (ex: make create DOCK=\"ServiceName\")."; \
+		exit 1; \
+	fi
+
+	@if [ -d ./srcs/services/$(DOCK) ]; then \
+		echo "The service '$(DOCK)' already exists."; \
+		exit 1; \
+	fi
+
+	# Crée le dossier du service et copie le template
+	@mkdir -p ./srcs/services/$(DOCK)
+	@cp -r ./srcs/services/template/* ./srcs/services/$(DOCK)/
+
+
+	# Ajouter le réseau (si nécessaire)
+	@echo "Adding network $(DOCK)_network to $(COMPOSE_PATH)..."
+	@sed -i "/networks:/a \\  $(DOCK)_network:\n    driver: bridge" $(COMPOSE_PATH)
+
+	# Ajouter le service au docker-compose.yml
+	@echo "Adding service $(DOCK) to $(COMPOSE_PATH)..."
+	@awk '/services:/ {\
+		print; \
+		print "  $(DOCK):"; \
+		print "    container_name: $(DOCK)_container"; \
+		print "    build: ./services/$(DOCK)"; \
+		print "    restart: unless-stopped"; \
+		print "    env_file: .env"; \
+		print "    volumes:"; \
+		print "      - $(DOCK)_volume:/app"; \
+		print "    networks:"; \
+		print "      - $(DOCK)_network"; \
+		next \
+	} 1' $(COMPOSE_PATH) > $(COMPOSE_PATH).tmp && mv $(COMPOSE_PATH).tmp $(COMPOSE_PATH)
+
+	@echo "Service $(DOCK) and volume added to $(COMPOSE_PATH)."
+
 logs:
 	$(COMPOSE) logs -f $(DOCK)
-
-test:
-	env
 
 clean:
 	@echo "Useless instruction, please refer to stop, restart or fclean."
@@ -28,14 +64,6 @@ fclean: stop
 	@docker system prune -a -f || true
 
 re: fclean all
-
-create_dir:
-	@sh -c 'mkdir -p "$$(grep "^VOLUME_PATH=" srcs/.env | cut -d "=" -f2-)"'
-	@sh -c 'mkdir -p "$$(grep "^VOLUME_PATH=" srcs/.env | cut -d "=" -f2-)/wordpress"'
-	@sh -c 'mkdir -p "$$(grep "^VOLUME_PATH=" srcs/.env | cut -d "=" -f2-)/mariadb"'
-	@sh -c 'mkdir -p "$$(grep "^VOLUME_PATH=" srcs/.env | cut -d "=" -f2-)/website"'
-	@sh -c 'mkdir -p "$$(grep "^VOLUME_PATH=" srcs/.env | cut -d "=" -f2-)/adminer"'
-	@sh -c 'mkdir -p "$$(grep "^VOLUME_PATH=" srcs/.env | cut -d "=" -f2-)/portainer"'
 
 enter:
 	@if [ -n $(DOCK) ]; then \
@@ -48,4 +76,4 @@ ps:
 privileged:
 	@docker run --rm -it --privileged -v /home/tclaereb:/host ubuntu bash
 
-.PHONY: all build run stop restart logs clean fclean re create_dir enter ps privileged
+.PHONY: all build run stop restart logs clean fclean re enter ps privileged
