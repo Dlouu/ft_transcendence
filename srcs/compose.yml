@@ -1,0 +1,11 @@
+volumes:
+    v_api:
+        name: v_api
+        driver: local
+        driver_opts:
+            type: 'none'
+            device: ${VOLUME_PATH}/v_api
+            o: bind
+
+services:
+    
