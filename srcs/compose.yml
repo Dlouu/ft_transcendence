@@ -1,12 +1,4 @@
 services:
-  testservice:
-    container_name: testservice_container
-    build: ./services/testservice
-    restart: unless-stopped
-    env_file: .env
-    networks:
-      - testservice_network
+testservice:
 
 networks:
-  testservice_network:
-    driver: bridge
