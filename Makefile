@@ -1,3 +1,20 @@
+# This Makefile simplifies Docker service management using Docker Compose. Below are the key targets and their usage:
+#
+# 	build: make build DOCK="service_name" - Builds the Docker image for the specified service.
+# 	run: make run DOCK="service_name" - Starts the service in detached mode.
+# 	stop: make stop DOCK="service_name" - Stops the service and removes the container.
+# 	restart: make restart DOCK="service_name" - Stops and restarts the service.
+# 	create: make create DOCK="service_name" - Creates a new service from a template, adding it to docker-compose.yml.
+# 	logs: make logs DOCK="service_name" - Tails the logs of the specified service.
+# 	clean: make clean - Placeholder (no action).
+# 	fclean: make fclean - Removes stopped containers, unused volumes, and prunes the system.
+# 	re: make re - Cleans up resources and rebuilds services.
+# 	enter: make enter DOCK="service_name" - Opens an interactive shell inside the container.
+# 	ps: make ps - Displays the status of all running containers.
+# 	privileged: make privileged - Starts a privileged container for troubleshooting.
+# 	commit: make commit MESSAGE="Commit message" - Add all changes to the staging area and make a snapshot.
+
+
 COMPOSE_PATH = ./srcs/compose.yml
 COMPOSE	:= docker compose -f $(COMPOSE_PATH)
 
@@ -25,16 +42,13 @@ create:
 		exit 1; \
 	fi
 
-	# Crée le dossier du service et copie le template
 	@mkdir -p ./srcs/services/$(DOCK)
 	@cp -r ./srcs/services/template/* ./srcs/services/$(DOCK)/
 
 
-	# Ajouter le réseau (si nécessaire)
 	@echo "Adding network $(DOCK)_network to $(COMPOSE_PATH)..."
 	@sed -i "/networks:/a \\  $(DOCK)_network:\n    driver: bridge" $(COMPOSE_PATH)
 
-	# Ajouter le service au docker-compose.yml
 	@echo "Adding service $(DOCK) to $(COMPOSE_PATH)..."
 	@awk '/services:/ {\
 		print; \
@@ -76,4 +90,8 @@ ps:
 privileged:
 	@docker run --rm -it --privileged -v /home/tclaereb:/host ubuntu bash
 
-.PHONY: all build run stop restart logs clean fclean re enter ps privileged
+commit:
+	@git add .
+	@git commit -m "$(MESSAGE)"
+
+.PHONY: all build run stop restart create logs clean fclean re enter ps privileged
