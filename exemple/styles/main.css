@@ -1,0 +1,34 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #111;
+  color: white;
+}
+
+.screen {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.game-screen {
+  position: relative;
+  height: 100vh;
+}
+
+canvas {
+  display: block;
+}
+
+.ui-overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  cursor: pointer;
+}
