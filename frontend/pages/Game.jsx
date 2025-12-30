@@ -1,9 +1,11 @@
 function Game({ onQuit }) {
 	return (
-		<div>
+		<div className="game">
 			<h2>UNO Game</h2>
 
-			<p>Game canvas here</p>
+			<div id="uno-canvas-container" className="canvas-container">
+				{/* Le canvas de Yohann ici */}
+			</div>
 
 			<button onClick={onQuit}>
 				QUIT

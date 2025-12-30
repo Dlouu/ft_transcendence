@@ -1,6 +1,18 @@
+.game {
+  padding: 20px;
+}
 
+.canvas-container {
+  width: 800px;
+  height: 600px;
+  border: 1px solid black;
+  margin-bottom: 20px;
+}
 
-/* #root {
+/*
+Exemples pour inspi:
+
+#root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
