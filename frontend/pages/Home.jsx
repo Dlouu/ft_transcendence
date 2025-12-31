@@ -1,14 +1,21 @@
 import { useState } from "react";
 
-function Home({ onStart }) {
+function Home({ onStart, playerName, setPlayerName }) {
 	const [isLoggedIn, setIsLoggedIn] = useState(false);
 
 	return (
 		<div>
 			<h2>Home</h2>
 	
-			<button onClick={onStart}>
-				START GAME
+			<input
+				type="text"
+				placeholder="Your name"
+				value={playerName}
+				onChange={(e) => setPlayerName(e.target.value)}
+			/>
+
+			<button onClick={onStart} disabled={!playerName}>
+				LET'S PLAY
 			</button>
 
 			{isLoggedIn ? (

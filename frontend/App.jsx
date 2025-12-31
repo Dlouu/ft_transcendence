@@ -5,22 +5,31 @@ import Game from "./pages/Game";
 
 function App() {
 	const [screen, setSreen] = useState("home");
+	const [playerName, setPlayerName] = useState("");
 
 	return (
 		<div>
 			{screen === "home" && (
-				<Home onStart={() => setSreen("lobby")} />
+				<Home
+					onStart={() => setSreen("lobby")}
+					playerName={playerName}
+					setPlayerName={setPlayerName}
+				/>
 			)}
 
 			{screen === "lobby" && (
 				<Lobby
+					playerName={playerName}
 					onBack={() => setSreen("home")}
 					onStartGame={() => setSreen("game")}
 				/>
 			)}
 
 			{screen === "game" && (
-				<Game onQuit={() => setSreen("home")} />
+				<Game
+					playerName={playerName}
+					onQuit={() => setSreen("home")}
+				/>
 			)}
 		</div>
 	);

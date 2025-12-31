@@ -1,8 +1,9 @@
-function Lobby({ onStartGame, onBack }) {
+function Lobby({ playerName, onStartGame, onBack }) {
 	return (
 		<div>
 			<h2>Lobby</h2>
 
+			<p>Welcome {playerName}</p>
 			<p>Waiting for players...</p>
 
 			<button onClick={onBack}>
