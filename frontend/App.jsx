@@ -2,24 +2,22 @@ import { useState } from "react";
 import Home from "./pages/Home";
 import Lobby from "./pages/Lobby";
 import Game from "./pages/Game";
+import Profile from "./pages/Profile";
 
 function App() {
 	const [screen, setSreen] = useState("home");
-	const [playerName, setPlayerName] = useState("");
 
 	return (
 		<div>
 			{screen === "home" && (
 				<Home
 					onStart={() => setSreen("lobby")}
-					playerName={playerName}
-					setPlayerName={setPlayerName}
 				/>
 			)}
 
 			{screen === "lobby" && (
 				<Lobby
-					playerName={playerName}
+					onProfile={() => setSreen("profile")}
 					onBack={() => setSreen("home")}
 					onStartGame={() => setSreen("game")}
 				/>
@@ -27,8 +25,13 @@ function App() {
 
 			{screen === "game" && (
 				<Game
-					playerName={playerName}
-					onQuit={() => setSreen("home")}
+					onQuit={() => setSreen("lobby")}
+				/>
+			)}
+
+			{screen === "profile" && (
+				<Profile
+					onBack={() => setSreen("lobby")}
 				/>
 			)}
 		</div>
