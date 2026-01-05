@@ -1,39 +1,32 @@
 import { useContext } from "react";
 import { GameContext } from "../context/GameContext";
+import { Card, Page, Button } from "../ui";
 
 function Lobby({ onStartGame, onBack, onProfile }) {
 	const { playerName } = useContext(GameContext);
 	return (
-		<div className="min-h-screen bg-gray-900 text-white p-6">
-			<h2 className="text-2xl font-bold mb-4">Lobby</h2>
+		<Page center>
+			<Card>
+				<h2 className="text-2xl font-bold mb-4">Lobby</h2>
 
-			<p className="mb-6">Welcome {playerName}</p>
-			<p>Waiting for players...</p>
+				<p className="mb-6">Welcome {playerName}</p>
+				<p>Waiting for players...</p>
 
-			<div className="flex flex-col sm:flex-row gap-4">
-				<button
-					onClick={onBack}
-					className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded"
-				>
-					BACK
-				</button>
+				<div className="flex flex-col sm:flex-row gap-4">
+					<Button onClick={onBack} variant="secondary">
+						BACK
+					</Button>
 
-				<button
-					onClick={onStartGame}
-					className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded"
-				>
-					START GAME
-				</button>
+					<Button onClick={onStartGame} variant="success">
+						START GAME
+					</Button>
 
-				<button
-					onClick={(onProfile)}
-					disabled={!playerName}
-					className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
-				>
-					PROFILE
-				</button>
-			</div>
-		</div>
+					<Button onClick={(onProfile)} disabled={!playerName}>
+						PROFILE
+					</Button>
+				</div>
+			</Card>
+		</Page>
 	);
 }
 

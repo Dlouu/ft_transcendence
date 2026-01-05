@@ -1,7 +1,8 @@
 import { useContext, useState } from "react";
 import { GameContext } from "../context/GameContext";
+import { Button, Page, Input, Card } from "../ui";
 
-function Home({ onStart, onProfile }) {
+function Home({ onStart }) {
 	const {playerName, setPlayerName } = useContext(GameContext);
 	const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -24,45 +25,45 @@ function Home({ onStart, onProfile }) {
 	};
 
 	return (
-		<div className="min-h-screen flex flex-col justify-center items-center bg-gray-900 text-white px-4">
-			<h2 className="text-3xl font-bold mb-6">Home</h2>
-			
-			<h1>UNO</h1>
-			<input
-				className="w-full max-w-xs px-4 py-2 mb-4 rounded bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-				type="text"
-				placeholder="Your name"
-				value={playerName}
-				onChange={(e) => setPlayerName(e.target.value)}
-			/>
+		<Page center>
+			<Card>
+				{isLoggedIn ? (
+					<p>
+						<button onClick={() => setIsLoggedIn(false)}>
+							DISCONNECT
+						</button>
+						<b> Connected !</b>
+					</p>
+				) : (
+					<p>
+						<button onClick={() => setIsLoggedIn(true)}>
+							LOG IN
+						</button>
+					</p>
+				)}
+			</Card>
 
-			<button
-				onClick={onStart}
-				className="w-full max-w-xs bg-red-600 hover:bg-red-700 disabled:opacity-50 py-2 rounded font-semibold"
-				disabled={!playerName}
-				>
-				LET'S PLAY
-			</button>
+			<Card>
+				<h2 className="text-2xl font-bold mb-6 text-center">UNO</h2>
+				
+				<Input
+					placeholder="Your name"
+					value={playerName}
+					onChange={(e) => setPlayerName(e.target.value)}
+				/>
 
-			{isLoggedIn ? (
-				<p>
-					<button onClick={() => setIsLoggedIn(false)}>
-						DISCONNECT
-					</button>
-				<b> Connected !</b>
-				</p>
-			) : (
-				<p><button onClick={() => setIsLoggedIn(true)}>
-					LOG IN
-				</button><br />
-				</p>
-			)}
+				<div>
+					<Button onClick={onStart} disabled={!playerName}>
+						LET'S PLAY
+					</Button>
+				</div>
+				
+				<Button variant="secondary" onClick={handleJoin}>
+					TEST pour FETCH plus tard
+				</Button>
 
-			<button onClick={handleJoin}>
-				TEST pour FETCH plus tard
-			</button><br /><br />
-
-		</div>
+			</Card>
+		</Page>
 	);
 }
 
