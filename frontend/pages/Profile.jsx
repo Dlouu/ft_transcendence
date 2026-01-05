@@ -1,12 +1,13 @@
 import { useContext } from "react";
 import { GameContext } from "../context/GameContext";
-import { Button, Card, Page } from "../ui";
+import { Button, Card, Page, Login } from "../ui";
 
 function Profile({ onBack }) {
 	const { profile } = useContext(GameContext);
 
 	return (
 		<Page center>
+			<Login/>
 			<Card>
 				<h2 className="text-2xl font-bold mb-4">
 					{profile.name}'s profile

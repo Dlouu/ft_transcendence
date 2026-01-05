@@ -6,9 +6,10 @@ function Page({
 		<div
 			className={`
 				min-h-screen
-				bg-gray-900 text-white
+				min-w-screen
+				bg-gray-800 text-white
 				px-4
-				${center ? "flex flex-col justify-center items-center" : ""}
+				${center ? "flex flex-col items-center" : ""}
 			`}
 		>
 			{children}

@@ -9,7 +9,7 @@ function Button({
 	
 	const variants = {
 		primary: "bg-purple-600 hover:bg-purple-300 text-white",
-		secondary: "bg-gray-700 hover:bg-gray-600 text-white",
+		secondary: "bg-gray-600 hover:bg-gray-600 text-white",
 		success: "bg-purple-500 hover:bg-yellow-400 text-white",
 	};
 

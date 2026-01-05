@@ -16,7 +16,7 @@ function Game({ onQuit }) {
 
 	return (
 		<Page center>
-			<h2 className="text-3xl font-bold mb-6">UNO Game</h2>
+			<h2 className="text-3xl font-bold mb-6 text-shadow-lg">UNO Game</h2>
 			<p className="mb-4 text-purple-400">Player: {playerName}</p>
 
 			<div className="w-full max-w-4xl aspect-[4/3] border border-gray-700">

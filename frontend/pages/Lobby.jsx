@@ -1,11 +1,13 @@
 import { useContext } from "react";
 import { GameContext } from "../context/GameContext";
-import { Card, Page, Button } from "../ui";
+import { Card, Page, Button, Login } from "../ui";
 
 function Lobby({ onStartGame, onBack, onProfile }) {
 	const { playerName } = useContext(GameContext);
 	return (
+
 		<Page center>
+			<Login/>
 			<Card>
 				<h2 className="text-2xl font-bold mb-4">Lobby</h2>
 

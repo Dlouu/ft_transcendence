@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
 import { GameContext } from "../context/GameContext";
-import { Button, Page, Input, Card } from "../ui";
+import { Button, Page, Input, Card, Login } from "../ui";
 
 function Home({ onStart }) {
 	const {playerName, setPlayerName } = useContext(GameContext);
@@ -25,45 +25,29 @@ function Home({ onStart }) {
 	};
 
 	return (
-		<Page center>
-			<Card>
-				{isLoggedIn ? (
-					<p>
-						<button onClick={() => setIsLoggedIn(false)}>
-							DISCONNECT
-						</button>
-						<b> Connected !</b>
-					</p>
-				) : (
-					<p>
-						<button onClick={() => setIsLoggedIn(true)}>
-							LOG IN
-						</button>
-					</p>
-				)}
-			</Card>
 
-			<Card>
-				<h2 className="text-2xl font-bold mb-6 text-center">UNO</h2>
-				
-				<Input
-					placeholder="Your name"
-					value={playerName}
-					onChange={(e) => setPlayerName(e.target.value)}
-				/>
+	<Page center>
+		<Login/>
+		<Card>
+			<h2 className="text-2xl font-bold mb-6 text-center">UNO</h2>
+			
+			<Input
+				placeholder="Your name"
+				value={playerName}
+				onChange={(e) => setPlayerName(e.target.value)}
+			/>
 
-				<div>
-					<Button onClick={onStart} disabled={!playerName}>
-						LET'S PLAY
-					</Button>
-				</div>
-				
-				<Button variant="secondary" onClick={handleJoin}>
-					TEST pour FETCH plus tard
+			<div>
+				<Button onClick={onStart} disabled={!playerName}>
+					LET'S PLAY
 				</Button>
-
-			</Card>
-		</Page>
+			</div>
+			
+			<Button variant="secondary" onClick={handleJoin}>
+				TEST pour FETCH plus tard
+			</Button>
+		</Card>
+	</Page>
 	);
 }
 
