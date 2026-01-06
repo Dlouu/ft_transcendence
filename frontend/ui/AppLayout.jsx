@@ -2,11 +2,11 @@ import Navbar from "./Navbar";
 
 function AppLayout({ children }) {
 	return (
-		<div className="min-h-screen bg-gray-200 text-white">
+		<div className="bg-gray-900 text-white">
 
 			<Navbar />
 
-			<main>
+			<main className="pt-14 min-h-[calc(100vh-3.5rem)]">
 				{children}
 			</main>
 

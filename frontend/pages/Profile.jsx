@@ -37,3 +37,5 @@ function Profile() {
 }
 
 export default Profile;
+
+//avatars, usernames, friends list

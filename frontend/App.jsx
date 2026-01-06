@@ -12,12 +12,18 @@ function App() {
 	return (
 		<AppLayout>
 			<Routes>
-				<Route path="/" element={<Home />} />
-				<Route path="/lobby" element={<Lobby />} />
-				<Route path="/game" element={<Game />} />
-				<Route path="/profile" element={<Profile />} />
-				<Route path="/gallery" element={<Gallery />} />
-				<Route path="/paint" element={<Paint />} />
+				<Route path="/" 		element={<Home />}		/>
+				<Route path="/lobby"	element={<Lobby />}		/>
+				<Route path="/game"		element={<Game />}		/>
+				<Route path="/profile"	element={<Profile />}	/>
+				<Route path="/gallery"	element={<Gallery />}	/>
+				<Route path="/paint"	element={<Paint />}		/>
+				//auth
+				//friendlist
+				//achievement
+				//settings (avatar)
+				//erreurs 404 etc
+				//lobby quand connected, login si deco
 			</Routes>
 		</AppLayout>
 	);

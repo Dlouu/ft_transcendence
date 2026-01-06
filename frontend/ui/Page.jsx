@@ -2,7 +2,7 @@ function Page({	children, center = false }) {
 	return (
 		<div
 			className={`
-				min-h-screen
+				min-h-[calc(100vh-3.5rem)]
 				min-w-screen
 				bg-gray-800 text-white
 				px-4
