@@ -83,15 +83,15 @@ function Navbar() {
 
 					<div className="flex-1 flex flex-col items-center justify-center gap-8">
 
-						<Link to="/lobby" onClick={() => setOpen(false)}>
+						<Link className="py-2 px-5 rounded bg-gray-700" to="/lobby" onClick={() => setOpen(false)}>
 							PLAY
 						</Link>
 
-						<Link to="/gallery" onClick={() => setOpen(false)}>
+						<Link className="py-2 px-5 rounded bg-gray-700" to="/gallery" onClick={() => setOpen(false)}>
 							CUSTOMIZE
 						</Link>
 
-						<Link to="/profile" onClick={() => setOpen(false)}>
+						<Link className="py-2 px-5 rounded bg-gray-700" to="/profile" onClick={() => setOpen(false)}>
 							PROFILE
 						</Link>
 
