@@ -1,7 +1,4 @@
-function Card({ 
-	children,
-	center = false,
-}) {
+function Card({ children, center = false }) {
 	return (
 		<div
 			className={`

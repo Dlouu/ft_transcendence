@@ -1,14 +1,16 @@
 import { useContext } from "react";
 import { GameContext } from "../context/GameContext";
-import { Button, Card, Page, Login } from "../ui";
+import { Button, Card, Page } from "../ui";
+import { useNavigate } from "react-router-dom";
 
-function Profile({ onBack }) {
+function Profile() {
 	const { profile } = useContext(GameContext);
+	const navigate = useNavigate();
 
 	return (
 		<Page center>
-			<Login/>
 			<Card>
+
 				<h2 className="text-2xl font-bold mb-4">
 					{profile.name}'s profile
 				</h2>
@@ -19,9 +21,16 @@ function Profile({ onBack }) {
 					<li>Win rate: {profile.stats.winRate}%</li>
 				</ul>
 
-				<Button onClick={onBack}>
-					BACK
-				</Button>
+				<div className="flex flex-col sm:flex-row gap-4">
+					<Button onClick={() => navigate("/")}>
+						HOME
+					</Button>
+
+					<Button onClick={() => navigate("/lobby")}>
+						LOBBY
+					</Button>
+				</div>
+
 			</Card>
 		</Page>
 	);

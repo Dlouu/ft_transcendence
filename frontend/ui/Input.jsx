@@ -1,8 +1,4 @@
-function Input({
-	value,
-	onChange,
-	placeholder,
-}) {
+function Input({ value, onChange, placeholder }) {
 	return (
 		<input
 			value={value}

@@ -1,10 +1,11 @@
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { GameContext } from "../context/GameContext";
-import { Button, Page, Input, Card, Login } from "../ui";
+import { useNavigate } from "react-router-dom";
+import { Button, Page, Input, Card } from "../ui";
 
-function Home({ onStart }) {
+function Home() {
 	const {playerName, setPlayerName } = useContext(GameContext);
-	const [isLoggedIn, setIsLoggedIn] = useState(false);
+	const navigate = useNavigate();
 
 	const handleJoin = async () => {
 		const response = await fetch("http://localhost:5173/", {
@@ -26,28 +27,30 @@ function Home({ onStart }) {
 
 	return (
 
-	<Page center>
-		<Login/>
-		<Card>
-			<h2 className="text-2xl font-bold mb-6 text-center">UNO</h2>
-			
-			<Input
-				placeholder="Your name"
-				value={playerName}
-				onChange={(e) => setPlayerName(e.target.value)}
-			/>
+		<Page center>
+			<Card>
+				<h2 className="text-2xl font-bold mb-6 text-center">UNO</h2>
+				
+				{/* faire une autre page quand on est log */}
 
-			<div>
-				<Button onClick={onStart} disabled={!playerName}>
-					LET'S PLAY
+				<Input
+					placeholder="Your name"
+					value={playerName}
+					onChange={(e) => setPlayerName(e.target.value)}
+				/>
+
+				<div>
+					<Button onClick={() => navigate("/lobby")} disabled={!playerName}>
+						LET'S PLAY
+					</Button>
+				</div>
+				
+				<Button variant="secondary" onClick={handleJoin}>
+					TEST pour FETCH plus tard
 				</Button>
-			</div>
-			
-			<Button variant="secondary" onClick={handleJoin}>
-				TEST pour FETCH plus tard
-			</Button>
-		</Card>
-	</Page>
+
+			</Card>
+		</Page>
 	);
 }
 

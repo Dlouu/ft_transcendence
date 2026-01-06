@@ -1,7 +1,4 @@
-function Page({
-	children,
-	center = false,
-}) {
+function Page({	children, center = false }) {
 	return (
 		<div
 			className={`

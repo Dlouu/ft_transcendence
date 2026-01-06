@@ -1,32 +1,34 @@
 import { useContext } from "react";
 import { GameContext } from "../context/GameContext";
-import { Card, Page, Button, Login } from "../ui";
+import { useNavigate } from "react-router-dom";
+import { Card, Page, Button } from "../ui";
 
-function Lobby({ onStartGame, onBack, onProfile }) {
+function Lobby() {
 	const { playerName } = useContext(GameContext);
+	const navigate = useNavigate();
 	return (
-
 		<Page center>
-			<Login/>
 			<Card>
+
 				<h2 className="text-2xl font-bold mb-4">Lobby</h2>
 
-				<p className="mb-6">Welcome {playerName}</p>
+				<p className="mb-3">Welcome {playerName}</p>
 				<p>Waiting for players...</p>
 
 				<div className="flex flex-col sm:flex-row gap-4">
-					<Button onClick={onBack} variant="secondary">
+					<Button onClick={() => navigate("/")} variant="secondary">
 						BACK
 					</Button>
 
-					<Button onClick={onStartGame} variant="success">
+					<Button onClick={() => navigate("/game")} variant="success">
 						START GAME
 					</Button>
 
-					<Button onClick={(onProfile)} disabled={!playerName}>
-						PROFILE
+					<Button onClick={() => navigate("/gallery")} variant="primary">
+						CUSTOMIZE
 					</Button>
 				</div>
+
 			</Card>
 		</Page>
 	);
