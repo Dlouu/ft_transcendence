@@ -25,7 +25,7 @@ function Game() {
 
 			{/* <pre>{JSON.stringify(gameState, null, 2)}</pre> */}
 
-			<Button variant="secondary" onClick={() => navigate("/lobby")}>
+			<Button variant="secondary" onClick={() => navigate("/")}>
 				QUIT
 			</Button>
 

@@ -23,11 +23,7 @@ function Profile() {
 
 				<div className="flex flex-col sm:flex-row gap-4">
 					<Button onClick={() => navigate("/")}>
-						HOME
-					</Button>
-
-					<Button onClick={() => navigate("/lobby")}>
-						LOBBY
+						BACK
 					</Button>
 				</div>
 

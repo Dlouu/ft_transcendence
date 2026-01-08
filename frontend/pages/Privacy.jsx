@@ -1,50 +1,64 @@
 import LegalPage from "../ui/LegalPage";
+import { Button } from "../ui";
+import { useNavigate } from "react-router-dom";
 
 function Privacy() {
+	const navigate = useNavigate();
+
 	return (
-		<LegalPage title="Politique de confidentialité">
-			<p>Votre vie privée est importante pour nous (promis).</p>
+		<LegalPage title="Privacy Policy">
+			<p>Your privacy matters to us (we promise).</p>
 
-			<h2 className="text-xl font-semibold mt-6">1. Données collectées</h2>
+			<h2 className="text-xl font-semibold mt-6">1. Data Collected</h2>
 			<p>
-				Nous collectons uniquement des informations nécessaires au
-				fonctionnement du site :
-				<li>pseudo</li>
-				<li>statistiques de jeu</li>
-				<li>les dessins créés via l'outil de personnalisation</li>
+				We only collect information necessary for the proper functioning of the website:
 			</p>
-			<p>
-				Les utilisateurs sont invités à ne pas inclure de données personnelles 
-				ou sensibles dans leurs dessins.
-				UwUNO n’est pas responsable des données intégrées volontairement par l’utilisateur.
-			</p>
+			<ul className="list-disc list-inside mt-2">
+				<li>username</li>
+				<li>game statistics</li>
+				<li>drawings created using the customization tool</li>
+			</ul>
 
-			<h2 className="text-xl font-semibold mt-6">2. Utilisation</h2>
 			<p>
-				Ces données servent à afficher votre profil et améliorer
-				l’expérience utilisateur.
-			</p>
-			<p>Les dessins sont conservés sur le site mais peuvent être supprimés à tout moment
-				par l’utilisateur ou par UwUNO.
+				Users are encouraged not to include personal or sensitive data
+				in their drawings.
+				UwUNO is not responsible for any data voluntarily included by users.
 			</p>
 
-			<h2 className="text-xl font-semibold mt-6">3. Partage</h2>
+			<h2 className="text-xl font-semibold mt-6">2. Usage</h2>
 			<p>
-				Les données sont stockées de manière sécurisée et ne sont
-				jamais vendues ni partagées avec des tiers.
+				This data is used to display your profile and improve
+				the user experience.
+			</p>
+			<p>
+				Drawings are stored on the website but may be deleted at any time
+				by the user or by UwUNO.
+			</p>
+
+			<h2 className="text-xl font-semibold mt-6">3. Data Sharing</h2>
+			<p>
+				Data is stored securely and is never sold
+				or shared with third parties.
 			</p>
 
 			<h2 className="text-xl font-semibold mt-6">4. Cookies</h2>
 			<p>
-				Des cookies techniques peuvent être utilisés pour assurer
-				le bon fonctionnement du site.
+				Technical cookies may be used to ensure
+				the proper functioning of the website.
 			</p>
 
-			<h2 className="text-xl font-semibold mt-6">5. Vos droits</h2>
+			<h2 className="text-xl font-semibold mt-6">5. Your Rights</h2>
 			<p>
-				Vous pouvez demander la modification ou la suppression de vos données.
+				You may request the modification or deletion of your data.
 			</p>
+			
+			<Button variant="secondary" onClick={() => navigate("/")}>
+				BACK
+			</Button>
+
 		</LegalPage>
+
+
 	);
 }
 

@@ -1,13 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import { useContext, useState, useEffect } from "react";
-import { GameContext } from "../context/GameContext";
-import Login from "./Login";
+import { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+import Button from "./Button";
 
 function Navbar() {
-	const { playerName } = useContext(GameContext);
 	//mettre le playerName quand on est co je sais pas, a revoir
 	const [open, setOpen] = useState(false);
 	const location = useLocation();
+	const { user, logout } = useContext(AuthContext);
 
 	useEffect(() => {
 		setOpen(false);
@@ -32,40 +32,48 @@ function Navbar() {
 		>
 
 			<Link to="/" className="text-lg font-bold text-purple-500">
-				UNO
+				UwUNO
 			</Link>
 
 		{/* Burger */}
-			<button
-				className="sm:hidden ml-auto p-2 rounded"
-				onClick={() => setOpen(!open)}
-				aria-label="Menu"
-			>
-				☰
-			</button>
+			{user && (
+				<button
+					className="sm:hidden ml-auto p-2 rounded"
+					onClick={() => setOpen(!open)}
+					aria-label="Menu"
+				>
+					☰
+				</button>
+			)}
 
 		{/* Desktop */}
-			<div className="hidden sm:flex ml-auto items-center gap-4 font-bold">
+			{user && (
+				<div className="hidden sm:flex ml-auto items-center gap-4 font-bold">
 
-				<Link to="/lobby" className={linkClass("/lobby")}>
-					PLAY
-				</Link>
+					<Link to="/" className={linkClass("/")}>
+						PLAY
+					</Link>
 
-				<Link to="/gallery" className={linkClass("/gallery")}>
-					CUSTOMIZE
-				</Link>
+					<Link to="/gallery" className={linkClass("/gallery")}>
+						CUSTOMIZE
+					</Link>
 
-				<Link to="/profile" className={linkClass("/profile")}>
-					PROFILE
-				</Link>
+					<Link to="/profile" className={linkClass("/profile")}>
+						PROFILE
+					</Link>
 
-				<Login />
+					{user ? (
+						<Button variant="login" onClick={logout}>
+							LOG OUT
+						</Button>
+					) : null}
 
-			</div>
+				</div>
+			)}
 
 		{/* Mobile menu */}
-			{open && (
-				<div className="fixed inset-0 z-50 bg-gray-800 flex flex-col">
+			{user && open && (
+				<div className="sm:hidden fixed inset-0 z-50 bg-gray-800 flex flex-col">
 					<div className="flex items-center justify-between p-4 border-b border-gray-700">
 
 						<span className="text-lg font-bold text-purple-500">
@@ -83,7 +91,7 @@ function Navbar() {
 
 					<div className="flex-1 flex flex-col items-center justify-center gap-8">
 
-						<Link className="py-2 px-5 rounded bg-gray-700" to="/lobby" onClick={() => setOpen(false)}>
+						<Link className="py-2 px-5 rounded bg-gray-700" to="/" onClick={() => setOpen(false)}>
 							PLAY
 						</Link>
 
@@ -95,7 +103,11 @@ function Navbar() {
 							PROFILE
 						</Link>
 
-						<Login />
+						{user ? (
+							<Button variant="login" onClick={logout}>
+								LOG OUT
+							</Button>
+						) : null}
 
 					</div>
 				</div>

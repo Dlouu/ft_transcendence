@@ -1,58 +1,67 @@
+import { useNavigate } from "react-router-dom";
+import { Button } from "../ui";
 import LegalPage from "../ui/LegalPage";
 
 function Terms() {
+	const navigate = useNavigate();
+
 	return (
-		<LegalPage title="Conditions d'utilisation">
-			<p>Bienvenue sur <strong>UwUNO</strong></p>
+		<LegalPage title="Terms of Service">
+			<p>Welcome to <strong>UwUNO</strong></p>
 
-			<h2 className="text-xl font-semibold mt-6">1. Objet</h2>
+			<h2 className="text-xl font-semibold mt-6">1. Purpose</h2>
 			<p>
-				Ce site permet aux utilisateurs de jouer à UwUNO en ligne, de dessiner,
-				de consulter leur profil et leurs statistiques de jeu.
+				This website allows users to play UwUNO online, draw,
+				and view their profile and game statistics.
 			</p>
 
-			<h2 className="text-xl font-semibold mt-6">2. Utilisation</h2>
+			<h2 className="text-xl font-semibold mt-6">2. Usage</h2>
 			<p>
-				L’accès au site est gratuit mais nécessite la création d'un compte utilisateur.
-				Vous vous engagez à utiliser le site de manière raisonnable,
-				légale et respectueuse des autres joueurs.
+				Access to the website is free but requires the creation of a user account.
+				You agree to use the service in a reasonable, lawful,
+				and respectful manner toward other players.
 			</p>
 
-			<h2 className="text-xl font-semibold mt-6">3. Disponibilité</h2>
+			<h2 className="text-xl font-semibold mt-6">3. Availability</h2>
 			<p>
-				Le service est fourni “tel quel”. Des interruptions peuvent survenir,
-				parfois au pire moment.
+				The service is provided “as is”.
+				Interruptions may occur, sometimes at the worst possible moment.
 			</p>
 			<p>
-				UwUNO se réserve le droit de supprimer tout dessin ou de suspendre un compte
-				en cas de non-respect des présentes conditions ou d’obligation légale.
-			</p>
-
-			<h2 className="text-xl font-semibold mt-6">4. Responsabilité</h2>
-			<p>
-				Nous ne sommes pas responsables des parties perdues
-				et frustrations liées à une carte +4 ou carte revendication inattendue.
+				UwUNO reserves the right to remove any drawing or suspend an account
+				in case of violation of these terms or legal obligations.
 			</p>
 
+			<h2 className="text-xl font-semibold mt-6">4. Liability</h2>
 			<p>
-				Les utilisateurs sont seuls responsables des dessins et contenus qu’ils créent 
-				via le service de personnalisation des cartes.
+				We are not responsible for lost games
+				or frustration caused by an unexpected +4 card or "revendication!" card.
 			</p>
 
 			<p>
-				UwUNO n’exerce aucun contrôle préalable sur ces contenus et ne saurait être tenu
-				responsable de leur caractère.
+				Users are solely responsible for the drawings and content they create
+				through the card customization feature.
 			</p>
 
 			<p>
-				Il est interdit de créer ou de stocker des contenus illégaux ou portant atteinte
-				aux droits de tiers.
+				UwUNO does not perform prior moderation of such content
+				and cannot be held responsible for its nature.
 			</p>
 
-			<h2 className="text-xl font-semibold mt-6">5. Modifications</h2>
 			<p>
-				Ces conditions peuvent être mises à jour à tout moment.
+				It is strictly forbidden to create or store illegal content
+				or content that infringes on the rights of third parties.
 			</p>
+
+			<h2 className="text-xl font-semibold mt-6">5. Changes</h2>
+			<p>
+				These terms may be updated at any time.
+			</p>
+
+			<Button variant="secondary" onClick={() => navigate("/")}>
+				BACK
+			</Button>
+
 		</LegalPage>
 	);
 }

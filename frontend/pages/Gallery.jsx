@@ -16,8 +16,8 @@ function Gallery() {
 						CREATE
 					</Button>
 
-					<Button variant="secondary" onClick={() => navigate("/lobby")}>
-						GO TO LOBBY
+					<Button variant="secondary" onClick={() => navigate("/")}>
+						BACK
 					</Button>
 				</div>
 			</Card>
