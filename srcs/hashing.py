@@ -4,16 +4,16 @@ import os
 import hashlib
 
 
-hasing = Blueprint("hasing", __name__)
+hashing = Blueprint("hashing", __name__)
 load_dotenv()
 PEPPER = os.getenv("SALT")
 
-@hasing.route("/")
+@hashing.route("/")
 def home():
     return render_template("home.html")
 
 
-@hasing.route("/connect", methods=["POST"])
+@hashing.route("/connect", methods=["POST"])
 def connect():
     public_key = request.form.get("password")
     public_key = public_key.encode().hex()
