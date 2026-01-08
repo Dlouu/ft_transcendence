@@ -1,38 +1,9 @@
-from flask import Flask
-from flask import request
+from flask import Flask, request, jsonify
+from hasing import hasing
 
 app = Flask(__name__)
-
-varDict = {
-    'code' : 0,
-    'message': 'ok',
-    'data'; [];
-}
-
-// ca a fonctionne
-varDict['data'] = {}
-
-print( varDict["test"])
-
-@app.route("/", methods=['GET', 'POST'])
-def hello_world():
-    login()
-    return "<p>Hello, World!</p>"
-
-def do_login():
-    print("do_login")
-
-def show_login():
-    print("show_login")
-
-def login():
-    if request.method == 'POST':
-        return do_login()
-    else:
-        return show_login()
-
-print("python.py")
+app.register_blueprint(hasing, url_prefix='/') #registering
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True, port=5000, use_reloader=True)
 

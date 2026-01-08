@@ -1,4 +1,7 @@
-test:
+faire page web simple:
+flask
 
+input box (qui prend la string)
+bouton pour emvoyer au serveur
 
-curl -X POST http://localhost:5000 
+string -->sha256 --> salt
