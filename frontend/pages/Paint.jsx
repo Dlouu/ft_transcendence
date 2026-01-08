@@ -21,6 +21,10 @@ function Paint() {
 				</Button>
 			</div>
 
+			<p className="m-4">
+				Les dessins sont créés sous la responsabilité de l’utilisateur et sont associés à son compte.
+			</p>
+
 		</Page>
 	);
 }

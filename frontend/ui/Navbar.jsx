@@ -24,8 +24,8 @@ function Navbar() {
 	return (
 		<nav
 			className="
-				fixed top-0 left-0 z-50 w-full
-				bg-gray-800 px-4 py-3
+				fixed h-14 top-0 left-0 z-50 w-full
+				bg-gray-800 px-4
 				flex items-center
 				border-b border-gray-700
 			"
