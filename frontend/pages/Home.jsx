@@ -1,35 +1,23 @@
-import { useContext } from "react";
-import { GameContext } from "../context/GameContext";
-import { useNavigate } from "react-router-dom";
-import { Card, Page, Button } from "../ui";
+import { Card, Page } from "../ui";
+import GameSetup from "../components/GameSetup";
 
 function Home() {
-	const { playerName } = useContext(GameContext);
-	const navigate = useNavigate();
+	const handleStart = (setup) => {
+		console.log("START GAME", setup);
+
+		// plus tard :
+		// socket.emit("create_game", setup)
+		// navigate(`/game/${gameId}`)
+	};
 
 	return (
 		<Page center>
 			<Card>
+				<h2 className="text-center text-xl font-bold mb-4">
+					LOBBY
+				</h2>
 
-				<h2 className="text-2xl font-bold mb-4">Lobby</h2>
-
-				<p className="mb-3">Welcome {playerName}</p>
-				
-				<p className="mb-3">select number of players here</p>
-
-				<p className="mb-3">select theme here</p>
-
-				<p className="mb-3">select deck here</p>
-
-				<div className="flex flex-col sm:flex-row gap-4">
-					<Button onClick={() => navigate("/game")} variant="success">
-						START GAME
-					</Button>
-
-					<Button onClick={() => navigate("/gallery")} variant="primary">
-						CUSTOMIZE
-					</Button>
-				</div>
+				<GameSetup onStart={handleStart} />
 
 			</Card>
 		</Page>

@@ -9,13 +9,13 @@ import { AuthProvider } from "./context/AuthContext";
 const root = document.getElementById("root");
 
 ReactDOM.createRoot(root).render(
-	<BrowserRouter>
-		<AuthProvider>
+	<AuthProvider>
+		<BrowserRouter>
 			{/* <GalleryProvider> */}
 				<GameProvider>
 					<App />
 				</GameProvider>
 			{/* </GalleryProvider> */}
-		</AuthProvider>
-	</BrowserRouter>
+		</BrowserRouter>
+	</AuthProvider>
 );

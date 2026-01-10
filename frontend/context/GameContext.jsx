@@ -19,7 +19,7 @@ export function GameProvider({ children }) {
 	useEffect(() => {
 		setProfile({
 			id: "local",
-			name: "Caca",
+			name: "Username",
 			stats: {
 				gamesPlayed: 10,
 				gamesWon: 5,

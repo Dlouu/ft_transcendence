@@ -19,7 +19,7 @@ function Game() {
 	return (
 		<Page center>
 
-			<div className="w-full max-w-4xl aspect-[4/3] border border-gray-700">
+			<div className="w-full max-w-4xl aspect-video border border-gray-700">
 				{/* Le canvas de Yohann ici */}
 			</div>
 

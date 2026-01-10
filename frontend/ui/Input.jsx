@@ -1,8 +1,9 @@
-function Input({ value, onChange, placeholder, type, onKeyDown }) {
+function Input({ value, onChange, maxLength, placeholder, type, onKeyDown }) {
 	return (
 		<input
 			value={value}
 			onChange={onChange}
+			maxLength={maxLength}
 			placeholder={placeholder}
 			type={type}
 			onKeyDown={onKeyDown}
