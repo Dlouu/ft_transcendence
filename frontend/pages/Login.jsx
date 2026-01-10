@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState, useRef } from "react";
 import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
 import { Button, Page, Input, Card } from "../ui";
@@ -6,10 +6,17 @@ import { Button, Page, Input, Card } from "../ui";
 function Login() {
 	const { login } = useContext(AuthContext);
 	const { playerName, setPlayerName } = useContext(GameContext);
+	const [password, setPassword] = useState("");
+	const passwordRef = useRef(null);
 
 	const handleLogin = () => {
 		login(playerName);
 	};
+
+	const handleSubmit = async (e) => {
+    e.preventDefault();
+    await login(playerName, password); //plus tard password
+  };
 
 	// const handleJoin = async () => {
 	// 	const response = await fetch("http://localhost:5173/", {
@@ -30,22 +37,35 @@ function Login() {
 	// };
 
 	return (
-
 		<Page center>
 			<Card center>
 				<h2 className="text-2xl font-bold mb-6 text-center">
 					LOGIN
 				</h2>
+				<form className="w-full text-center" onSubmit={handleSubmit}>
+					<Input
+						placeholder="Username"
+						value={playerName}
+						onChange={(e) => setPlayerName(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") {
+								e.preventDefault();
+								passwordRef.current?.focus();
+							}
+						}}
+					/>
 
-				<Input
-					placeholder="Your name"
-					value={playerName}
-					onChange={(e) => setPlayerName(e.target.value)}
-				/>
+					<Input
+						placeholder="Password"
+						value={password}
+						type="password"
+						onChange={(e) => setPassword(e.target.value)}
+					/>
 
-					<Button onClick={handleLogin} disabled={!playerName}>
+					<Button onClick={handleLogin} disabled={!playerName || !password}>
 						LET'S PLAY
 					</Button>
+				</form>
 			</Card>
 
 			{/* <Button variant="secondary" onClick={handleJoin}>

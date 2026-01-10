@@ -1,4 +1,4 @@
-function Button({ children, onClick, disabled = false, variant = "primary" }) {
+function Button({ children, onClick, type, disabled = false, variant = "primary" }) {
 	const base =
 		"pxpx-4 py-2 px-5 rounded font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed";
 	
@@ -13,6 +13,7 @@ function Button({ children, onClick, disabled = false, variant = "primary" }) {
 		<button
 			onClick={onClick}
 			disabled={disabled}
+			type={type}
 			className={`${base} ${variants[variant]}`}
 		>
 			{children}

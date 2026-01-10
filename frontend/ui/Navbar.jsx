@@ -14,6 +14,11 @@ function Navbar() {
 	}, [location.pathname]);
 	//ferme le menu quand on change de page
 
+	const handleLogout = () => {
+		logout();
+		setOpen(false);
+	};
+
 	const linkClass = (path) =>
 		`block px-3 py-2 rounded ${
       location.pathname === path
@@ -63,7 +68,7 @@ function Navbar() {
 					</Link>
 
 					{user ? (
-						<Button variant="login" onClick={logout}>
+						<Button variant="login" onClick={handleLogout}>
 							LOG OUT
 						</Button>
 					) : null}
@@ -104,7 +109,7 @@ function Navbar() {
 						</Link>
 
 						{user ? (
-							<Button variant="login" onClick={logout}>
+							<Button variant="login" onClick={handleLogout}>
 								LOG OUT
 							</Button>
 						) : null}

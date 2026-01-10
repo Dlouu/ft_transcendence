@@ -4,6 +4,7 @@ import AppLayout from "./ui/AppLayout";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
+import GameSetup from "./pages/GameSetup";
 import Profile from "./pages/Profile";
 import Gallery from "./pages/Gallery";
 import GalleryImage from "./pages/GalleryImage";
@@ -21,7 +22,7 @@ function App() {
 	return (
 		<AppLayout>
 			<Routes>
-				<Route path="/" element={user ? <Home /> : <Login />}/>
+				<Route path="/" element={user ? <GameSetup /> : <Login />}/>
 				<Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>}/>
 				<Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>}/>
 				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>}/>

@@ -22,7 +22,7 @@ function Paint() {
 			</div>
 
 			<p className="m-4">
-				Les dessins sont créés sous la responsabilité de l’utilisateur et sont associés à son compte.
+				Users are solely responsible for the drawings and content they create.
 			</p>
 
 		</Page>
