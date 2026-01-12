@@ -13,7 +13,7 @@ function Gallery() {
 					Gallery
 				</h2>
 
-				<div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+				<div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
 					{images.map((img) => (
 						<Link key={img.id} to={`/gallery/${img.id}`}>
 							<img

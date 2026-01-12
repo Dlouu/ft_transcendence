@@ -42,6 +42,7 @@ function GameSetup() {
 					deck={deck}
 					setDeck={setDeck}
 					isHost={isHost}
+					onBack={() => setMode("lobby")}
 				/>
 			)}
 		</>

@@ -3,7 +3,7 @@ import { Button } from "../ui";
 import DeckSelector from "./DeckSelector";
 import PlayerList from "./PlayerList";
 
-function Room({ room, players, setPlayers, deck, setDeck, isHost }) {
+function Room({ room, players, setPlayers, deck, setDeck, isHost, onBack }) {
 	const navigate = useNavigate();
 	
 	const MAX_PLAYERS = 4;
@@ -66,7 +66,7 @@ function Room({ room, players, setPlayers, deck, setDeck, isHost }) {
 				</Button>
 			)}
 
-				<Button variant="secondary" onClick={() => navigate(-1)}>
+				<Button variant="secondary" onClick={onBack}>
 					BACK
 				</Button>
 		</div>

@@ -22,7 +22,7 @@ function Profile() {
 				</ul>
 
 				<div className="flex flex-col sm:flex-row gap-4">
-					<Button onClick={() => navigate("/")}>
+					<Button onClick={() => navigate(-1)}>
 						BACK
 					</Button>
 				</div>

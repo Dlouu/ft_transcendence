@@ -2,6 +2,7 @@ import { useContext, useState, useRef } from "react";
 import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
 import { Button, Page, Input, Card } from "../ui";
+import image from "../gallery/UwU-back.png"
 
 function Login() {
 	const { login } = useContext(AuthContext);
@@ -65,6 +66,12 @@ function Login() {
 					<Button onClick={handleLogin} disabled={!playerName || !password}>
 						LET'S PLAY
 					</Button>
+								<div className="flex flex-col justify-center items-center">
+			<img
+					src={image}
+					className=" rounded w-10 hover:scale-105 mt-5 transition"
+				/>
+			</div>
 				</form>
 			</Card>
 

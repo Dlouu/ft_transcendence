@@ -52,7 +52,7 @@ function Privacy() {
 				You may request the modification or deletion of your data.
 			</p>
 			
-			<Button variant="secondary" onClick={() => navigate("/")}>
+			<Button variant="secondary" onClick={() => navigate(-1)}>
 				BACK
 			</Button>
 

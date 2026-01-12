@@ -58,7 +58,7 @@ function Terms() {
 				These terms may be updated at any time.
 			</p>
 
-			<Button variant="secondary" onClick={() => navigate("/")}>
+			<Button variant="secondary" onClick={() => navigate(-1)}>
 				BACK
 			</Button>
 
