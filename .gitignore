@@ -1,0 +1,19 @@
+# Ignore python environment files
+***/__pycache__/
+***/.pyc
+***/.pyo
+***/.pyd
+***/.db
+***/.sqlite3
+***/venv
+
+# Ignore temporary files
+***/.tmp
+***/.bak
+***/.swp
+
+# Ignore custom files
+./srcs/volumes
+***/.venv/
+***/.env/
+***/volumes/
