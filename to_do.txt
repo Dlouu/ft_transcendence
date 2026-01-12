@@ -5,3 +5,8 @@ input box (qui prend la string)
 bouton pour emvoyer au serveur
 
 string -->sha256 --> salt
+
+GOOD
+
+mettre le hash dans la base de donnees
+faire 2FA
