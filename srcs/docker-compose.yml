@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ${VOLUME_PATH}/nginx:/var/www/nginx
+      - nginx_data:/var/www/nginx
     depends_on:
       - website
     networks:
@@ -18,7 +18,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ${VOLUME_PATH}/website:/var/www/website
+      - website_data:/var/www/website
     depends_on:
       - api
     networks:
@@ -31,7 +31,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ${VOLUME_PATH}/api:/var/www/api
+      - api_data:/var/www/api
     networks:
       - api_network
       - website_network
@@ -67,7 +67,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ${VOLUME_PATH}/auth_db:/var/lib/mysql
+      - auth_db_data:/var/lib/mysql
     networks:
       - auth_db_network
   game_db:
@@ -77,7 +77,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ${VOLUME_PATH}/game_db:/var/lib/mysql
+      - game_db_data:/var/lib/mysql
     networks:
       - game_db_network
   user_db:
@@ -87,9 +87,17 @@ services:
     env_file:
       - .env
     volumes:
-      - ${VOLUME_PATH}/user_db:/var/lib/mysql
+      - user_db_data:/var/lib/mysql
     networks:
       - user_db_network
+
+volumes:
+  nginx_data:
+  website_data:
+  api_data:
+  auth_db_data:
+  game_db_data:
+  user_db_data:
 
 networks:
   mariadb_network:

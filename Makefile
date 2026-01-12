@@ -14,7 +14,7 @@
 # 	commit: make commit MESSAGE="Commit message" - Add all changes to the staging area and make a snapshot.
 
 
-COMPOSE_PATH = ./srcs/compose.yml
+COMPOSE_PATH = ./srcs/docker-compose.yml
 COMPOSE	:= docker compose -f $(COMPOSE_PATH)
 
 all: build run
