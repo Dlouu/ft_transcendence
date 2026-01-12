@@ -1,6 +1,6 @@
-FROM debian:trixie
+FROM alpine:3.19
 
-RUN apt-get update -y && apt-get upgrade -y && apt-get install mariadb-server -y
+RUN apk add --no-cache mariadb mariadb-client bash
 
 COPY 50-server.cnf /etc/mysql/mariadb.conf.d/50-server.cnf
 COPY ./tools/script.sh /

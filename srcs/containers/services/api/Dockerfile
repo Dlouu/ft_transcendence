@@ -1,6 +1,6 @@
-FROM debian:trixie
+FROM alpine:3.19
 
-RUN apt-get update -y && apt-get upgrade -y
+RUN apk add --no-cache bash
 
 COPY ./tools/script.sh /
 

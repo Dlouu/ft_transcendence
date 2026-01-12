@@ -4,7 +4,6 @@
 # 	run: make run DOCK="service_name" - Starts the service in detached mode.
 # 	stop: make stop DOCK="service_name" - Stops the service and removes the container.
 # 	restart: make restart DOCK="service_name" - Stops and restarts the service.
-# 	create: make create DOCK="service_name" - Creates a new service from a template, adding it to docker-compose.yml.
 # 	logs: make logs DOCK="service_name" - Tails the logs of the specified service.
 # 	clean: make clean - Placeholder (no action).
 # 	fclean: make fclean - Removes stopped containers, unused volumes, and prunes the system.
@@ -30,45 +29,6 @@ stop:
 	$(COMPOSE) down $(DOCK)
 
 restart: stop all
-
-create:
-	@if [ -z "$(DOCK)" ]; then \
-		echo "Service name need to be provided with the var name DOCK (ex: make create DOCK=\"ServiceName\")."; \
-		exit 1; \
-	fi
-
-	@if [ -d ./srcs/services/$(DOCK) ]; then \
-		echo "The service '$(DOCK)' already exists."; \
-		exit 1; \
-	fi
-
-	@mkdir -p ./srcs/services/$(DOCK)
-	@cp -r ./srcs/services/template/* ./srcs/services/$(DOCK)/
-
-
-	@echo "Adding network $(DOCK)_network to $(COMPOSE_PATH)..."
-	@awk '/networks:/ {\
-		print; \
-		print "  $(DOCK)_network:"; \
-		print "    driver: bridge"; \
-		next \
-	} 1' $(COMPOSE_PATH) > $(COMPOSE_PATH).tmp && mv $(COMPOSE_PATH).tmp $(COMPOSE_PATH)
-
-
-	@echo "Adding service $(DOCK) to $(COMPOSE_PATH)..."
-	@awk '/services:/ {\
-		print; \
-		print "  $(DOCK):"; \
-		print "    container_name: $(DOCK)_container"; \
-		print "    build: ./services/$(DOCK)"; \
-		print "    restart: unless-stopped"; \
-		print "    env_file: .env"; \
-		print "    networks:"; \
-		print "      - $(DOCK)_network"; \
-		next \
-	} 1' $(COMPOSE_PATH) > $(COMPOSE_PATH).tmp && mv $(COMPOSE_PATH).tmp $(COMPOSE_PATH)
-
-	@echo "Service $(DOCK) and volume added to $(COMPOSE_PATH)."
 
 logs:
 	$(COMPOSE) logs -f $(DOCK)

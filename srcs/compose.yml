@@ -1,23 +1,110 @@
-volumes:
-    v_database:
-        name: v_database
-        driver: local
-        driver_opts:
-            type: 'none'
-            device: ${VOLUME_PATH}/mariadb
-            o: bind
-
 services:
-  mariadb:
-    container_name: mariadb_container
-    build: ./services/mariadb
-    restart: unless-stopped
-    env_file: .env
+  nginx:
+    container_name: service_nginx
+    build: ./containers/services/nginx
+    restart: on-failure
+    env_file:
+      - .env
     volumes:
-      - v_database:/var/lib/mysql
+      - ${VOLUME_PATH}/nginx:/var/www/nginx
+    depends_on:
+      - website
     networks:
-      - mariadb_network
+      - website_network
+  website:
+    container_name: service_website
+    build: ./containers/services/website
+    restart: on-failure
+    env_file:
+      - .env
+    volumes:
+      - ${VOLUME_PATH}/website:/var/www/website
+    depends_on:
+      - api
+    networks:
+      - website_network
+      - api_network
+  api:
+    container_name: service_api
+    build: ./containers/services/api
+    restart: on-failure
+    env_file:
+      - .env
+    volumes:
+      - ${VOLUME_PATH}/api:/var/www/api
+    networks:
+      - api_network
+      - website_network
+      - auth_network
+      - game_network
+      - user_db_network
+  auth:
+    container_name: service_auth
+    build: ./containers/services/auth
+    restart: on-failure
+    env_file:
+      - .env
+    depends_on:
+      - auth_db
+    networks:
+      - auth_network
+      - auth_db_network
+  game:
+    container_name: service_game
+    build: ./containers/services/game
+    restart: on-failure
+    env_file:
+      - .env
+    depends_on:
+      - game_db
+    networks:
+      - game_network
+      - game_db_network
+  auth_db:
+    container_name: auth_db
+    build: ./containers/databases/auth_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ${VOLUME_PATH}/auth_db:/var/lib/mysql
+    networks:
+      - auth_db_network
+  game_db:
+    container_name: game_db
+    build: ./containers/databases/game_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ${VOLUME_PATH}/game_db:/var/lib/mysql
+    networks:
+      - game_db_network
+  user_db:
+    container_name: user_db
+    build: ./containers/databases/user_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ${VOLUME_PATH}/user_db:/var/lib/mysql
+    networks:
+      - user_db_network
 
 networks:
   mariadb_network:
+    driver: bridge
+  api_network:
+    driver: bridge
+  auth_network:
+    driver: bridge
+  game_network:
+    driver: bridge
+  website_network:
+    driver: bridge
+  auth_db_network:
+    driver: bridge
+  game_db_network:
+    driver: bridge
+  user_db_network:
     driver: bridge
