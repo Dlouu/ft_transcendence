@@ -19,8 +19,10 @@ services:
       - .env
     volumes:
       - website_data:/var/www/website
-    depends_on:
-      - api
+    # depends_on:
+    #   - api
+    ports:
+      - 5173:5173
     networks:
       - website_network
       - api_network

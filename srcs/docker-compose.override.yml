@@ -2,19 +2,20 @@ services:
   auth:
     volumes:
       - ./containers/services/auth/app:/app/app
-    command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
+    # command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
 
   api:
     volumes:
       - ./containers/services/api/app:/app/app
-    command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
+    # command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
 
   game:
     volumes:
       - ./containers/services/game/app:/app/app
-    command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
+    # command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
 
   website:
     volumes:
-      - ./containers/services/website/app:/app/app
-    command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
+      - ./containers/services/website/app:/app
+      - /app/node_modules
+    command: npm run dev
