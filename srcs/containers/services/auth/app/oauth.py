@@ -10,7 +10,6 @@ oauth = Blueprint("oauth", __name__)
 def home():
     return render_template("home.html")
 
-
 @oauth.route("/oauth/42", methods=["GET"])
 def oauth42():
 	client_id = os.getenv("TRANSCENDANCE_ID")

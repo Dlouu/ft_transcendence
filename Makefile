@@ -15,7 +15,8 @@
 
 
 COMPOSE_PATH = ./srcs/docker-compose.yml
-COMPOSE	:= docker compose -f $(COMPOSE_PATH)
+COMPOSE_PATH_OVERRIDE = ./srcs/docker-compose.override.yml
+COMPOSE	:= docker compose -f $(COMPOSE_PATH) -f $(COMPOSE_PATH_OVERRIDE)
 
 all: build run
 
