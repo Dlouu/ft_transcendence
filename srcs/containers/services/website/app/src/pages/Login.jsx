@@ -41,7 +41,7 @@ function Login() {
 		<Page center>
 			<Card center>
 				<h2 className="text-2xl font-bold mb-6 text-center">
-					LOGINCcahtht
+					LOGIN
 				</h2>
 				<form className="w-full text-center" onSubmit={handleSubmit}>
 					<Input

@@ -1,15 +1,33 @@
+import { useState } from "react";
 import { Button, Page } from "../ui";
 import { useNavigate } from "react-router-dom";
+import PaintCanvas from "../components/paint/PaintCanvas";
+import PaintToolbar from "../components/paint/PaintToolbar";
 
 function Paint() {
 	const navigate = useNavigate();
 
+	const [tool, setTool] = useState("brush");
+	const [color, setColor] = useState("#000000");
+	const [brushSize, setBrushSize] = useState(1);
+
 	return (
 		<Page center>
 
-			<div className="w-full max-w-2xl aspect-square border border-gray-700">
-				{/* Le canvas de Paint ici*/}
-			</div>
+			<PaintCanvas
+				tool={tool}
+				color={color}
+				brushSize={brushSize}
+			/>
+
+			<PaintToolbar
+				tool={tool}
+				setTool={setTool}
+				color={color}
+				setColor={setColor}
+				brushSize={brushSize}
+				setBrushSize={setBrushSize}
+			/>
 
 			<div className="flex flex-col sm:flex-row gap-4">
 				<Button variant="secondary">
@@ -21,7 +39,7 @@ function Paint() {
 				</Button>
 			</div>
 
-			<p className="m-4">
+			<p className="m-4 text-xs text-gray-500 text-center">
 				Users are solely responsible for the drawings and content they create.
 			</p>
 
