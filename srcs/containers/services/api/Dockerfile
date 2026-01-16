@@ -1,9 +1,5 @@
-FROM alpine:3.19
+FROM python:3.13-alpine
 
-RUN apk add --no-cache bash
+RUN apk add --no-cache bash libmariadb-dev build-essential
 
-COPY ./tools/script.sh /
-
-RUN chmod +x /script.sh
-
-CMD [ "/script.sh" ]
+COPY app/ .
