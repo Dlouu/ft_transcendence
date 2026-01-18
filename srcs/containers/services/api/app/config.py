@@ -7,8 +7,11 @@ class Config:
 	DB_USER = os.getenv("USER_DB_NAME", "user")
 	DB_PASSWORD = os.getenv("DB_USER_PWD", "password")
 
+	# SQLALCHEMY_DATABASE_URI = (
+	# 	f"mysql+mysqldb://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+	# )
 	SQLALCHEMY_DATABASE_URI = (
-		f"mysql+mysqldb://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+		f"mysql+mysqldb://usr875fdg:test@user_db:3306/user_db"
 	)
 	SQLALCHEMY_TRACK_MODIFICATION = False
 
