@@ -1,6 +1,6 @@
 FROM python:3.13-alpine
 
-RUN apk add --no-cache bash mariadb-connector-c-dev gcc musl-dev python3-dev
+RUN apk add --no-cache bash mariadb-connector-c-dev gcc musl-dev python3-dev mariadb-client
 
 COPY app/ .
 

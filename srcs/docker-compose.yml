@@ -30,6 +30,8 @@ services:
     restart: on-failure
     env_file:
       - .env
+    ports:
+      - 5000:5000
     volumes:
       - api_data:/var/www/api
     networks:
@@ -98,6 +100,11 @@ volumes:
   auth_db_data:
   game_db_data:
   user_db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${VOLUME_PATH}/user_db_volume
 
 networks:
   mariadb_network:

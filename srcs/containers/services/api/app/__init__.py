@@ -7,8 +7,9 @@ def	create_app():
 	app = Flask(__name__)
 	app.config.from_object(Config)
 
-	db.init_app()
-	ma.init_app()
+	db.init_app(app)
+	ma.init_app(app)
+	api.init_app(app)
 
 	return app
 

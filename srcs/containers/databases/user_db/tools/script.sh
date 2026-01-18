@@ -21,28 +21,58 @@ until mariadb -u root -e "SELECT 1" &>/dev/null; do
     sleep 1
 done
 
-ROOT_AUTH_ARGS=( -u root )
+ROOT_AUTH_ARGS=( -u root -p${USER_DB_ROOT_PWD} )
 
-if [ "$FRESH_INSTALL" -eq 1 ] && [ -n "$DB_ROOT_PWD" ]; then
+if [ "$FRESH_INSTALL" -eq 1 ] && [ -n "$USER_DB_ROOT_PWD" ]; then
     echo "Setting root password..."
     mariadb -u root -e "
-        ALTER USER 'root'@'localhost' IDENTIFIED BY '${DB_ROOT_PWD}';
+        ALTER USER 'root'@'localhost' IDENTIFIED BY '${USER_DB_ROOT_PWD}';
         FLUSH PRIVILEGES;
     "
-    ROOT_AUTH_ARGS+=( "-p${DB_ROOT_PWD}" )
+    # ROOT_AUTH_ARGS+=( "-p${USER_DB_ROOT_PWD}" )
 fi
 
-if [ -n "$DB_USER_NAME" ] && [ -n "$DB_USER_PWD" ] && [ -n "$DB_NAME" ]; then
+if [ -n "$USER_DB_USER_NAME" ] && [ -n "$USER_DB_USER_PWD" ] && [ -n "$USER_DB_NAME" ]; then
     echo "Creating database and user..."
     mariadb "${ROOT_AUTH_ARGS[@]}" -e "
-        CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`;
-        CREATE USER IF NOT EXISTS '${DB_USER_NAME}'@'%' IDENTIFIED BY '${DB_USER_PWD}';
-        GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER_NAME}'@'%';
+        CREATE DATABASE IF NOT EXISTS \`${USER_DB_NAME}\`;
+        CREATE USER IF NOT EXISTS '${USER_DB_USER_NAME}'@'%' IDENTIFIED BY '${USER_DB_USER_PWD}';
+        GRANT ALL PRIVILEGES ON \`${USER_DB_NAME}\`.* TO '${USER_DB_USER_NAME}'@'%';
         FLUSH PRIVILEGES;
     "
+fi
+
+# --- Run initialization scripts ---
+if [ -d "/docker-entrypoint-initdb.d" ]; then
+    echo "Running init scripts from /docker-entrypoint-initdb.d..."
+    for f in /docker-entrypoint-initdb.d/*; do
+        case "$f" in
+            *.sh)
+                echo "Running $f"
+                . "$f"
+                ;;
+            *.sql)
+                echo "Running $f"
+                mariadb "${ROOT_AUTH_ARGS[@]}" "$USER_DB_NAME" < "$f"
+                ;;
+            *.sql.gz)
+                echo "Running $f"
+                gunzip -c "$f" | mariadb "${ROOT_AUTH_ARGS[@]}" "$USER_DB_USER_NAME"
+                ;;
+            *)
+                echo "Ignoring $f"
+                ;;
+        esac
+    done
 fi
 
 mysqladmin "${ROOT_AUTH_ARGS[@]}" shutdown
 
 echo "Starting MariaDB in foreground..."
-exec mysqld --user=mysql
+exec mysqld \
+  --user=mysql \
+  --bind-address=0.0.0.0 \
+  --port=3306 \
+  --skip-networking=0
+
+
