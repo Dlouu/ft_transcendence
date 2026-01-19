@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, useContext } from "react";
 import { Button, Page } from "../ui";
 import { useNavigate } from "react-router-dom";
 import PaintCanvas from "../components/paint/PaintCanvas";
@@ -6,15 +6,27 @@ import PaintToolbar from "../components/paint/PaintToolbar";
 
 function Paint() {
 	const navigate = useNavigate();
+	const canvasRef = useRef(null);
 
 	const [tool, setTool] = useState("brush");
 	const [color, setColor] = useState("#000000");
 	const [brushSize, setBrushSize] = useState(1);
 
+	function savePNG() {
+		const canvas = canvasRef.current;
+		const dataURL = canvas.toDataURL("gallery");
+
+		const link = document.createElement("a");
+		link.href = dataURL;
+		link.download = "UwUNO-drawing.png";
+		link.click();
+	}
+
 	return (
 		<Page center>
 
 			<PaintCanvas
+				canvasRef={canvasRef}
 				tool={tool}
 				color={color}
 				brushSize={brushSize}
@@ -30,7 +42,7 @@ function Paint() {
 			/>
 
 			<div className="flex flex-col sm:flex-row gap-4">
-				<Button variant="secondary">
+				<Button variant="secondary" onClick={savePNG}>
 					SAVE
 				</Button>
 

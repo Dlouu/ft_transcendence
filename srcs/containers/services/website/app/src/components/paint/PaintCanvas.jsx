@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Button } from "../../ui";
 
 const WIDTH = 88;
 const HEIGHT = 136;
@@ -35,11 +36,12 @@ function drawCheckerBoard(ctx, width, height) {
 	}
 }
 
-function PaintCanvas({ tool, color, brushSize }) {
+function PaintCanvas({ canvasRef, tool, color, brushSize }) {
 	const ctxRef = useRef(null);
-	const canvasRef = useRef(null);
 	const isDrawingRef = useRef(false);
 	const lastPosRef = useRef(null);
+	const undoStack = useRef([]);
+	const redoStack = useRef([]);
 
 	const scale = Math.floor(
 		Math.min(
@@ -122,12 +124,52 @@ function PaintCanvas({ tool, color, brushSize }) {
 		lastPosRef.current = { x, y };
 	}
 
+	function saveSnapshot() {
+		const ctx = ctxRef.current;
+		if (!ctx)
+			return;
+
+		const imageData = ctx.getImageData(0, 0, WIDTH, HEIGHT);
+		undoStack.current.push(imageData);
+		redoStack.current = [];
+		console.log("UNDO stack:", undoStack.current.length);
+	}
+
+	function undo() {
+		const ctx = ctxRef.current;
+		if (undoStack.current.length === 0) return;
+		if (!ctx) return;
+
+		redoStack.current.push(
+			ctx.getImageData(0, 0, WIDTH, HEIGHT)
+		);
+		
+		const last = undoStack.current.pop();
+
+		ctx.putImageData(last, 0, 0);
+	}
+
+	function redo() {
+		if (redoStack.current.length === 0)
+			return;
+
+		const ctx = ctxRef.current;
+		const next = redoStack.current.pop();
+
+		undoStack.current.push(
+			ctx.getImageData(0, 0, WIDTH, HEIGHT)
+		);
+
+		ctx.putImageData(next, 0, 0);
+	}
+
 	return (
 		<div className="w-full max-w-md aspect-88-136 border border-gray-700">
 			<div className="flex justify-center border border-gray-500">
 				<canvas
 					ref={canvasRef}
 					onMouseDown={(e) => {
+						saveSnapshot();
 						isDrawingRef.current = true;
 						drawAtEvent(e);
 					}}
@@ -165,6 +207,16 @@ function PaintCanvas({ tool, color, brushSize }) {
 						touchAction: "none"
 					}}
 				/>
+			</div>
+
+			<div>
+				<Button onClick={undo}>
+					UNDO
+				</Button>
+
+				<Button onClick={redo}>
+					REDO
+				</Button>
 			</div>
 		</div>
 	);
