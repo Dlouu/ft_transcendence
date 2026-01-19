@@ -1,25 +1,34 @@
-import {
-  WebSocketGateway,
-  SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
-} from "@nestjs/websockets";
+import { WebSocketGateway, OnGatewayConnection } from "@nestjs/websockets";
 import { GameService } from "./game.service";
-import { CreateGameDto } from "./dto/create-game.dto";
-import { UsePipes, ValidationPipe } from "@nestjs/common";
 import { Socket } from "socket.io";
 
 @WebSocketGateway({ cors: { origin: "*" } })
-export class GameGateway {
+export class GameGateway implements OnGatewayConnection {
   constructor(private readonly gameService: GameService) {}
 
-  @UsePipes(new ValidationPipe())
-  @SubscribeMessage("joinGame")
-  join(
-    @MessageBody() createGameDto: CreateGameDto,
-    @ConnectedSocket() client: Socket
-  ) {
-    const roomName = this.gameService.join(createGameDto)?.roomName;
-    client.emit("gameJoined", { roomName });
+  handleConnection(client: Socket): void {
+    const playerName = client.handshake.query.playerName as string;
+
+    console.log("Client " + playerName + " tried connection");
+
+    const test = this.gameService.join(playerName);
+    if (test) {
+      console.log("Client id : " + playerName);
+
+      void client.join(test.roomName);
+
+      client.emit("TestJoin", {
+        test: {
+          ...test,
+          connectedPlayers: [...test.connectedPlayers],
+        },
+      });
+
+      client.to(test.roomName).emit("playerJoined", { playerName });
+    }
+  }
+
+  handleDisconnect(client: Socket): void {
+    console.log("Client " + client.id + " disconnect");
   }
 }

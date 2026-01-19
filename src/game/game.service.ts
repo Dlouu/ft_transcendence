@@ -1,73 +1,71 @@
 import { Injectable } from "@nestjs/common";
 import { CreateGameDto } from "./dto/create-game.dto";
 import { game } from "./domain/game";
-import { card, CardColor, CardKind } from "./domain/card";
-import { player } from "./domain/player";
+import { card, CardFamily, CardKind } from "./domain/card";
 
 @Injectable()
 export class GameService {
   private games: game[] = [];
 
-  join(createGameDto: CreateGameDto) {
-    const { roomName, players } = createGameDto;
-
-    let existingGame = this.getGameByName(roomName);
-
-    if (!existingGame) {
-      this.create(createGameDto);
-      existingGame = this.getGameByName(roomName);
-    } else {
-      for (const playerInfo of players) {
-        const alreadyJoined = existingGame.players.some(
-          (p) => p._name === playerInfo.name
-        );
-        if (!alreadyJoined) {
-          existingGame.players.push(
-            new player(playerInfo.name, playerInfo.isAi)
-          );
-        }
-      }
+  join(playerName: string): game | null {
+    const game = this.findGameByPlayer(playerName);
+    if (!game) {
+      return null;
     }
 
-    return existingGame;
+    game.connectedPlayers.add(playerName);
+
+    return game;
   }
 
-  create(createGameDto: CreateGameDto) {
-    const { roomName, players } = createGameDto;
-    let playerNbr: number = 0;
+  private findGameByPlayer(playerName: string): game | undefined {
+    return this.games.find((g) =>
+      g.players.some((p) => p._name === playerName),
+    );
+  }
 
-    for (let i = 0; i < players.length; i++) {
-      if (players.at(i)?.isAi === true) playerNbr++;
-    }
+  create(createGameDto: CreateGameDto): game {
+    const { roomName, players, botNbr } = createGameDto;
 
-    const newGame = new game(roomName, players, playerNbr);
+    const newGame = new game(roomName, players, players.length, botNbr);
 
     newGame.deck = this.shuffleDeck(this.createDeck());
+    this.startDeal(newGame);
 
     this.games.push(newGame);
+
+    console.log("Game " + newGame.roomName + " has been created !");
+
     return newGame;
   }
 
-  getGameByName(name: string) {
+  getGameByName(name: string): game | undefined {
     return this.games.find((g) => g.roomName === name);
+  }
+
+  randomizePlayerOrder(game: game): void {
+    for (let i = game.players.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [game.players[i], game.players[j]] = [game.players[j], game.players[i]];
+    }
   }
 
   createDeck(): card[] {
     const deck: card[] = [];
 
-    const pushCard = (kind: CardKind, color: CardColor, value?: number) => {
+    const pushCard = (kind: CardKind, family: CardFamily, value?: number) => {
       const c = new card();
       c.kind = kind;
-      c.color = color;
+      c.family = family;
       if (value !== undefined) c.value = value;
       deck.push(c);
     };
 
-    const colors: CardColor[] = [
-      CardColor.RED,
-      CardColor.BLUE,
-      CardColor.GREEN,
-      CardColor.YELLOW,
+    const colors: CardFamily[] = [
+      CardFamily.ONE,
+      CardFamily.TWO,
+      CardFamily.THREE,
+      CardFamily.FOUR,
     ];
 
     for (const color of colors) {
@@ -85,8 +83,8 @@ export class GameService {
     }
 
     for (let i = 0; i < 4; i++) {
-      pushCard(CardKind.Wild, CardColor.BLACK);
-      pushCard(CardKind.WildDrawFour, CardColor.BLACK);
+      pushCard(CardKind.Wild, CardFamily.WILD);
+      pushCard(CardKind.WildDrawFour, CardFamily.WILD);
     }
 
     return deck;
@@ -100,37 +98,37 @@ export class GameService {
     return deck;
   }
 
-  discardToDeck(game: game) {
+  discardToDeck(game: game): void {
     if (game.discard.length <= 1) return;
 
     const topCard = game.discard.pop();
-    
+
     game.deck = this.shuffleDeck([...game.deck, ...game.discard]);
-    
+
     game.discard = [];
     if (topCard) {
       game.discard.push(topCard);
     }
   }
 
-  printDeck(game: game) {
+  printDeck(game: game): void {
     console.log("Deck:");
     game.deck.forEach((c, i) => {
-      console.log(`${i}: ${c.color} ${c.kind} ${c.value ?? ""}`);
+      console.log(`${i}: ${c.family} ${c.kind} ${c.value ?? ""}`);
     });
   }
 
-  printHands(game: game) {
+  printHands(game: game): void {
     console.log("Players' Hands:");
     for (const p of game.players) {
       console.log(`${p._name}:`);
       p._hand.forEach((c, i) => {
-        console.log(`  ${i}: ${c.color} ${c.kind} ${c.value ?? ""}`);
+        console.log(`  ${i}: ${c.family} ${c.kind} ${c.value ?? ""}`);
       });
     }
   }
 
-  startDeal(game: game) {
+  startDeal(game: game): void {
     const cardsPerPlayer = 7;
 
     for (const p of game.players) {
@@ -142,7 +140,6 @@ export class GameService {
       }
     }
 
-    // Place first card on discard pile (skip action cards)
     let firstCard = game.deck.pop();
     while (firstCard && firstCard.kind !== CardKind.Number) {
       game.deck.unshift(firstCard);
@@ -152,7 +149,7 @@ export class GameService {
 
     if (firstCard) {
       game.discard.push(firstCard);
-      game.currentColor = firstCard.color;
+      game.currentFamily = firstCard.family;
     }
   }
 }

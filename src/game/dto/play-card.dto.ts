@@ -1,5 +1,34 @@
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { CardFamily, CardKind } from "../domain/card";
+
+export class CardDto {
+  @IsEnum(CardKind)
+  cardKind: CardKind;
+
+  @IsEnum(CardFamily)
+  cardFamily: CardFamily;
+
+  @IsOptional()
+  @IsNumber()
+  value?: number;
+}
+
 export class PlayCardDto {
+  @IsString()
   gameId: string;
-  cardId: string; // Or specific composite { color: 'RED', value: '5' }
-  chosenColor?: string; // Required if the card is a Wild
+
+  @ValidateNested()
+  @Type(() => CardDto)
+  card: CardDto;
+
+  @IsOptional()
+  @IsString()
+  chosenFamily?: string;
 }

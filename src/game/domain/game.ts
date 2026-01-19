@@ -1,27 +1,33 @@
-import { playerInfo } from './../dto/create-game.dto';
 import { player } from "./player";
-import { card, CardColor } from "./card";
+import { card, CardFamily } from "./card";
 
-export enum GameState
-{
-    WAITING_FOR_PLAYERS,
-    DEALING,
-    PLAYING,
-    AWAITING_COLOR_CHOICE,
-    GAME_OVER,
+export enum GameState {
+  WAITING_FOR_PLAYERS,
+  DEALING,
+  PLAYING,
+  AWAITING_COLOR_CHOICE,
+  GAME_OVER,
 }
 
 export class game {
-  constructor(name: string, players: playerInfo[], playerNbr: number) {
+  constructor(
+    name: string,
+    players: string[], // To replace by uids
+    playerNbr: number,
+    botNbr: number,
+  ) {
     this.roomName = name;
     this.players = [];
 
     for (let i = 0; i < playerNbr; i++) {
-      const p = new player(players.at(i)?.name || "pName_" + i, players.at(i)?.isAi || true);
+      const p = new player(players[i], false);
       this.players.push(p);
     }
 
-    this.realPlayersNbr = playerNbr;
+    for (let i = 0; i < botNbr; i++) {
+      const p = new player("bot_" + i, true);
+      this.players.push(p);
+    }
 
     this.currentPlayerIndex = 0;
     this.currentDirection = "CLOCKWISE";
@@ -29,6 +35,24 @@ export class game {
     this.discard = [];
 
     this.createdAt = Date.now();
+
+    this.connectedPlayers = new Set<string>();
+  }
+
+  toJson() {
+    return {
+      roomName: this.roomName,
+      players: this.players,
+      connectedPlayers: Array.from(this.connectedPlayers),
+      deck: this.deck,
+      discard: this.discard,
+      currentFamily: this.currentFamily,
+      currentDirection: this.currentDirection,
+      currentPlayerIndex: this.currentPlayerIndex,
+      createdAt: this.createdAt,
+      turnStartTime: this.turnStartTime,
+      state: this.state,
+    };
   }
 
   roomName: string;
@@ -39,7 +63,7 @@ export class game {
 
   deck: card[];
   discard: card[];
-  currentColor: CardColor;
+  currentFamily: CardFamily;
   currentDirection: "CLOCKWISE" | "COUNTER-CLOCKWISE";
   currentPlayerIndex: number;
 
