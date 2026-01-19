@@ -30,6 +30,8 @@ services:
     restart: on-failure
     env_file:
       - .env
+    environment:
+      AUTH_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/user_auth
     ports:
       - 5000:5000
     volumes:
@@ -68,6 +70,11 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpwd
+      MYSQL_DATABASE: auth_db
+      MYSQL_USER: auth_user
+      MYSQL_PASSWORD: auth_pwd
     volumes:
       - auth_db_data:/var/lib/mysql
     networks:
@@ -98,6 +105,12 @@ volumes:
   website_data:
   api_data:
   auth_db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${VOLUME_PATH}/auth_db_volume
+
   game_db_data:
   user_db_data:
     driver: local

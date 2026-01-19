@@ -3,27 +3,29 @@ from flask import request
 from app.models.user import User
 from app.extensions import db
 from app.schemas.user import user_schema, users_schema
+from marshmallow import ValidationError
 
 ns = Namespace("users", description="User operations")
 
 user_model = ns.model("User", {
-	"id": fields.Integer(readOnly=True),
-	"email": fields.String(required=True)
+	"email": fields.String(required=True),
+	"username": fields.String(required=False)
 })
 
 @ns.route("/")
 class UserList(Resource):
 	@ns.marshal_list_with(user_model)
 	def	get(self):
-		"""List all users"""
-		return User.query.all()
+		return User.query.all(), 200
 
 	@ns.expect(user_model)
 	@ns.marshal_with(user_model, code=201)
 	def	post(self):
-		"""Create a user"""
-		data = request.json
-		user = User(email=data["email"])
+		user = None
+		try:
+			user = user_schema.load(request.json)
+		except ValidationError as err:
+			return {"message": err.messages}, 400
 		db.session.add(user)
 		db.session.commit()
 		return user, 201

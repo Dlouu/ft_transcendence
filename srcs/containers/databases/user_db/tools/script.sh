@@ -16,12 +16,13 @@ echo "Starting MariaDB for initialization..."
 mysqld --user=mysql --skip-networking &
 pid="$!"
 
+ROOT_AUTH_ARGS=( -u root -p${USER_DB_ROOT_PWD} )
+
 # Attente readiness
-until mariadb -u root -e "SELECT 1" &>/dev/null; do
+until mariadb "${ROOT_AUTH_ARGS[@]}" -e "SELECT 1" &>/dev/null; do
+	echo "still waiting"
     sleep 1
 done
-
-ROOT_AUTH_ARGS=( -u root -p${USER_DB_ROOT_PWD} )
 
 if [ "$FRESH_INSTALL" -eq 1 ] && [ -n "$USER_DB_ROOT_PWD" ]; then
     echo "Setting root password..."

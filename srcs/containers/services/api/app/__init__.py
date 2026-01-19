@@ -1,7 +1,6 @@
 from flask import Flask
 from .config import Config
 from .extensions import db, ma
-from .api import api
 
 def	create_app():
 	app = Flask(__name__)
@@ -9,6 +8,9 @@ def	create_app():
 
 	db.init_app(app)
 	ma.init_app(app)
+
+	from .api import api
+
 	api.init_app(app)
 
 	return app
