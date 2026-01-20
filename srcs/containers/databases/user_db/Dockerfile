@@ -1,11 +1,7 @@
-FROM alpine:3.19
-
-RUN apk add --no-cache mariadb mariadb-client mariadb-server-utils bash
+FROM mariadb:11.8
 
 COPY 50-server.cnf /etc/mysql/mariadb.conf.d/50-server.cnf
-COPY ./tools/script.sh /
 COPY ./tools/sql/* /docker-entrypoint-initdb.d/
+COPY ./tools/script.sh /docker-entrypoint-initdb.d/01-init-auth.sh
 
-RUN chmod +x /script.sh
-
-CMD [ "/script.sh" ]
+RUN chmod +x /docker-entrypoint-initdb.d/01-init-auth.sh

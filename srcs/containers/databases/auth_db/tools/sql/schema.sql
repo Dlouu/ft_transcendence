@@ -1,8 +1,8 @@
-CREATE DATABASE IF NOT EXISTS user_auth
+CREATE DATABASE IF NOT EXISTS auth_data
 	CHARACTER SET utf8mb4
 	COLLATE utf8mb4_unicode_ci;
 
-use user_auth;
+use auth_data;
 
 CREATE TABLE IF NOT EXISTS credentials (
 	ID BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
