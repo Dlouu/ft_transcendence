@@ -11,9 +11,9 @@ services:
   game:
     volumes:
       - ./containers/services/game/app:/app/app
-    command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
+    # command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
 
   website:
     volumes:
       - ./containers/services/website/app:/app/app
-    command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
+    # command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
