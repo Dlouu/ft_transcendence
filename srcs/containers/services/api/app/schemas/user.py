@@ -15,6 +15,6 @@ users_schema = UserSchema(many=True)
 
 class UserLoginSchema(ma.SQLAlchemyAutoSchema):
 	email = fields.Email(required=True)
-	password = fields.Email(required=True, load_only=True)
+	password = fields.String(required=True, load_only=True)
 
 user_login_schema = UserLoginSchema()
