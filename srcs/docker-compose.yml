@@ -48,7 +48,7 @@ services:
     build: ./containers/services/auth
     restart: on-failure
     ports:
-      - "5000:5000"
+      - "5001:5001"
     env_file:
       - .env
     depends_on:
