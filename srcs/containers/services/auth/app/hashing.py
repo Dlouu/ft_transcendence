@@ -17,9 +17,9 @@ def home():
 def connect():
     public_key = request.form.get("password")
     public_key = public_key.encode().hex()
-    #print("publiccccc", public_key)
+    print("publiccccc", public_key)
     new_key = public_key + PEPPER
-    #print(f"PUBLIC: {new_key}")
+    print(f"PUBLIC: {new_key}")
     hashed = hashlib.sha256(new_key.encode())
-    print(hashed.hexdigest())
+    print("finaaaaaaaaaaal", hashed.hexdigest())
     return "Keys received"

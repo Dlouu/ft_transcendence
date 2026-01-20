@@ -92,19 +92,6 @@ services:
       - user_db_data:/var/lib/mysql
     networks:
       - user_db_network
-  vault:
-    container_name: service_vault
-    build: ./containers/services/vault
-    restart: on-failure
-    ports:
-      - "8200:8200"
-    volumes:
-      - vault_data:/vault/data
-      - vault_logs:/vault/logs
-      - vault_tls:/vault/tls
-      - vault_env:/vault/env
-    networks:
-      - vault_network
 
 volumes:
   nginx_data:
@@ -134,6 +121,4 @@ networks:
   game_db_network:
     driver: bridge
   user_db_network:
-    driver: bridge
-  vault_network:
     driver: bridge
