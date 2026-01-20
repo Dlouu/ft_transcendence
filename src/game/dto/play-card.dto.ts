@@ -28,7 +28,7 @@ export class PlayCardDto {
   @Type(() => CardDto)
   card: CardDto;
 
-  @IsOptional()
-  @IsString()
-  chosenFamily?: string;
+  // @IsOptional()
+  // @IsString()
+  // chosenFamily?: string;
 }

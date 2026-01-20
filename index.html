@@ -3,119 +3,365 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Test</title>
+    <title>Uno Backend Test</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        
-        #log { 
-            background: #f4f4f4; 
-            padding: 10px; 
-            border-radius: 5px; 
-            margin-top: 10px;
-            max-height: 400px;
-            overflow-y: auto;
+        :root 
+        {
+            --primary-color: #d32f2f; /* Uno Red */
+            --secondary-color: #1976d2; /* Uno Blue */
+            --warning-color: #ffa000; /* Reset Orange */
+            --bg-color: #1b5e20; /* Card Table Green */
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --border-radius: 12px;
         }
 
-        .message { margin: 5px 0; border-bottom: 1px solid #eee; padding-bottom: 2px; font-size: 0.9em; }
-        .controls { margin-bottom: 20px; }
-        input { padding: 5px; margin-right: 10px; }
-
-        /* Room Info Panel Styling */
-        #roomInfoPanel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 320px;
-            background-color: #ffffff;
-            border: 1px solid #ccc;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            padding: 15px;
-            border-radius: 8px;
-            z-index: 1000;
+        body 
+        { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
         }
 
-        #roomInfoPanel h3 { margin-top: 0; border-bottom: 2px solid #007bff; padding-bottom: 10px; font-size: 1.2em; }
-        .info-row { margin-bottom: 8px; font-size: 14px; }
-        .info-label { font-weight: bold; color: #555; display: block; margin-bottom: 2px; }
-        .info-value-inline { float: right; color: #000; font-family: monospace; }
-        .clear { clear: both; }
+        h1, h2, h3 { margin-top: 0; }
+
+        /* Utility Class to Hide Elements */
+        .hidden 
+        {
+            display: none !important;
+        }
+
+        /* Main Layout */
+        .container 
+        {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            height: calc(100vh - 40px);
+        }
+
+        .left-panel 
+        {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel 
+        {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Generic Card Styling */
+        .card 
+        {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Controls Section */
+        .controls-card 
+        {
+            flex-shrink: 0;
+        }
+
+        .input-group 
+        { 
+            display: flex; 
+            gap: 10px; 
+            align-items: center; 
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] 
+        { 
+            padding: 10px 15px; 
+            border: 2px solid #ddd; 
+            border-radius: 6px; 
+            flex-grow: 1;
+            font-size: 16px; 
+            transition: border-color 0.3s;
+            min-width: 150px;
+        }
         
-        /* Box for lists to support one-per-line and scrolling */
-        .info-list-box {
-            background: #f9f9f9; 
-            padding: 8px; 
+        input[type="text"]:focus 
+        { 
+            outline: none; 
+            border-color: var(--secondary-color); 
+        }
+
+        button 
+        { 
+            padding: 10px 20px; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button#connect 
+        { 
+            background-color: var(--secondary-color); 
+        }
+        
+        button#connect:hover:not(:disabled) 
+        { 
+            background-color: #1565c0; 
+        }
+
+        button#disconnect 
+        { 
+            background-color: var(--primary-color); 
+        }
+
+        button#disconnect:hover:not(:disabled) 
+        { 
+            background-color: #b71c1c; 
+        }
+
+        button#reset 
+        { 
+            background-color: var(--warning-color); 
+            color: #333;
+        }
+        
+        button#reset:hover:not(:disabled) 
+        { 
+            background-color: #ff8f00; 
+        }
+
+        button:disabled 
+        { 
+            background-color: #ccc; 
+            cursor: not-allowed; 
+            color: #666;
+            transform: none;
+        }
+        
+        button:active:not(:disabled) 
+        {
+            transform: scale(0.98);
+        }
+
+        /* Log Section */
+        .log-card 
+        {
+            flex-grow: 1;
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        #log 
+        { 
+            background: #f5f5f5; 
+            padding: 15px; 
+            border-radius: 8px; 
             border: 1px solid #eee;
-            border-radius: 4px;
+            flex-grow: 1;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
             font-size: 13px;
-            max-height: 150px;
+        }
+
+        .message 
+        { 
+            margin-bottom: 6px; 
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e0e0e0;
+            line-height: 1.4;
+        }
+        
+        .message .timestamp 
+        {
+            color: #888;
+            font-size: 0.85em;
+            margin-right: 8px;
+        }
+
+        /* Room Info Panel */
+        .room-card 
+        {
+            height: 100%;
+        }
+
+        .room-title 
+        { 
+            color: var(--text-color); 
+            border-bottom: 3px solid var(--secondary-color); 
+            padding-bottom: 10px; 
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .info-row 
+        { 
+            margin-bottom: 12px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        
+        .info-label 
+        { 
+            font-weight: 600; 
+            color: #555; 
+        }
+        
+        .info-value 
+        { 
+            color: #000; 
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace; 
+        }
+
+        .info-section-label
+        {
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: 700;
+            color: #444;
+            font-size: 0.95em;
+            text-transform: uppercase;
+        }
+
+        /* List Boxes */
+        .info-list-box 
+        {
+            background: #fafafa; 
+            padding: 0; 
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            flex-grow: 1;
+            min-height: 80px;
+            max-height: 200px;
             overflow-y: auto;
         }
 
-        .list-item {
-            padding: 2px 0;
-            border-bottom: 1px dashed #e0e0e0;
+        .list-item 
+        {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            display: flow-root;
         }
-        .list-item:last-child {
+        
+        .list-item:last-child 
+        {
             border-bottom: none;
+        }
+        
+        .list-item:nth-child(even)
+        {
+            background-color: #fcfcfc;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #999; }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; overflow-y: auto; height: auto; }
+            .left-panel, .right-panel { width: 100%; flex: none; }
+            #log { max-height: 300px; }
         }
     </style>
 </head>
 <body>
-    <h1>WebSocket Test</h1>
-    
-    <div class="controls">
-        <label for="playerName">Player Name:</label>
-        <input type="text" id="playerName" placeholder="Enter your name" value="test">
-        <button id="connect">Connect</button>
-        <button id="disconnect" disabled>Disconnect</button>
+
+    <div class="container">
+        <!-- Left Column: Controls & Log -->
+        <div class="left-panel">
+            
+            <!-- Logic/Connect Card -->
+            <div class="card controls-card">
+                <h2>Uno Client Interface</h2>
+                <div class="input-group">
+                    <label for="playerName" style="font-weight:bold;">Player Name:</label>
+                    <input type="text" id="playerName" placeholder="Enter your name..." value="test">
+                    
+                    <!-- Connect Button -->
+                    <button id="connect">Connect</button>
+                    <!-- Disconnect Button (Hidden by default) -->
+                    <button id="disconnect" class="hidden">Disconnect</button>
+                    
+                    <button id="reset" title="Disconnect and clear log">Reset</button>
+                </div>
+            </div>
+
+            <!-- Log Card -->
+            <div class="card log-card">
+                <h3>Event Log</h3>
+                <div id="log"></div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Room Statistics -->
+        <div class="right-panel">
+            <div class="card room-card">
+                <div class="room-title">Room Infos</div>
+                
+                <div class="info-row">
+                    <span class="info-label">Room Name:</span>
+                    <span class="info-value" id="ui-roomName">-</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">Deck Cards:</span>
+                    <span class="info-value" id="ui-deckCount">-</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">Created At:</span>
+                    <span class="info-value" id="ui-creationTime">-</span>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+
+                <div class="info-section-label">Game Participants</div>
+                <div id="ui-players" class="info-list-box">
+                    <div style="padding:10px; color:#999; font-style:italic;">No data</div>
+                </div>
+
+                <div class="info-section-label">Connected Clients</div>
+                <div id="ui-connected" class="info-list-box">
+                    <div style="padding:10px; color:#999; font-style:italic;">No data</div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <!-- Right Top Room Info Panel -->
-    <div id="roomInfoPanel">
-        <h3>Room Infos</h3>
-        
-        <!-- Single values -->
-        <div class="info-row">
-            <span class="info-label" style="display:inline;">Room Name:</span>
-            <span class="info-value-inline" id="ui-roomName">-</span>
-            <div class="clear"></div>
-        </div>
-        
-        <div class="info-row">
-            <span class="info-label" style="display:inline;">Deck Cards:</span>
-            <span class="info-value-inline" id="ui-deckCount">-</span>
-            <div class="clear"></div>
-        </div>
-        
-        <div class="info-row">
-            <span class="info-label" style="display:inline;">Created At:</span>
-            <span class="info-value-inline" id="ui-creationTime">-</span>
-            <div class="clear"></div>
-        </div>
-
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
-
-        <!-- Lists -->
-        <div class="info-row">
-            <div class="info-label">Game Players (Hand Info):</div>
-            <div id="ui-players" class="info-list-box">-</div>
-        </div>
-
-        <div class="info-row">
-            <div class="info-label">Connected Clients:</div>
-            <div id="ui-connected" class="info-list-box">-</div>
-        </div>
-    </div>
-
-    <h2>Log:</h2>
-    <div id="log"></div>
 
     <script>
         // UI Elements
         const logDiv = document.getElementById('log');
         const connectBtn = document.getElementById('connect');
         const disconnectBtn = document.getElementById('disconnect');
+        const resetBtn = document.getElementById('reset');
         const nameInput = document.getElementById('playerName');
 
         // Room Info Elements
@@ -131,22 +377,51 @@
         {
             const div = document.createElement('div');
             div.className = 'message';
-            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            const spanTime = document.createElement('span');
+            spanTime.className = 'timestamp';
+            spanTime.textContent = `[${new Date().toLocaleTimeString()}]`;
+            
+            const spanMsg = document.createElement('span');
+            spanMsg.textContent = message;
+
+            div.appendChild(spanTime);
+            div.appendChild(spanMsg);
+            
             logDiv.appendChild(div);
             logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Helper: Resets the Right Panel and Buttons to initial state
+        function resetInterface()
+        {
+            // Toggle Buttons: Show Connect, Hide Disconnect
+            connectBtn.classList.remove('hidden');
+            connectBtn.disabled = false;
+            disconnectBtn.classList.add('hidden');
+            
+            nameInput.disabled = false;
+            
+            uiRoomName.textContent = '-';
+            uiDeckCount.textContent = '-';
+            uiCreationTime.textContent = '-';
+            
+            uiPlayers.innerHTML = '<div style="padding:10px; color:#999; font-style:italic;">No data</div>';
+            uiConnected.innerHTML = '<div style="padding:10px; color:#999; font-style:italic;">No data</div>';
         }
 
         // Helper to fill a list container with divs
         function updateListContainer(container, items)
         {
-            container.innerHTML = ''; // Clear previous content
+            container.innerHTML = '';
             
             if (!items || items.length === 0)
             {
                 const div = document.createElement('div');
-                div.textContent = 'None';
+                div.style.padding = '10px';
                 div.style.color = '#999';
                 div.style.fontStyle = 'italic';
+                div.textContent = 'None';
                 container.appendChild(div);
                 return;
             }
@@ -160,14 +435,15 @@
             });
         }
 
-        // Helper to append a single item without clearing everything
         function appendToListContainer(container, itemText)
         {
-            // If the current content is just "None" or "-", clear it first
+            // If the current content is placeholders
             if (container.children.length > 0)
             {
                 const firstChild = container.children[0];
-                if (firstChild.textContent === 'None' || container.textContent === '-')
+                if (firstChild.textContent === 'None' || 
+                    firstChild.textContent === 'No data' || 
+                    container.textContent === '-')
                 {
                     container.innerHTML = '';
                 }
@@ -177,6 +453,26 @@
             div.className = 'list-item';
             div.textContent = itemText;
             container.appendChild(div);
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function removeFromListContainer(container, itemText)
+        {
+            const children = Array.from(container.children);
+            for(const child of children)
+            {
+                if(child.textContent === itemText)
+                {
+                    container.removeChild(child);
+                    break;
+                }
+            }
+
+            if(container.children.length === 0)
+            {
+                container.innerHTML = '<div style="padding:10px; color:#999; font-style:italic;">No data</div>';
+            }
         }
 
         function updateRoomInfo(wrapperData)
@@ -187,10 +483,8 @@
             if (keys.length === 0) return;
             const data = wrapperData[keys[0]];
 
-            // 1. Room Name
             uiRoomName.textContent = data.roomName || 'Unknown';
 
-            // 2. Deck Count
             if (data.deck && Array.isArray(data.deck))
             {
                 uiDeckCount.textContent = data.deck.length;
@@ -200,7 +494,6 @@
                 uiDeckCount.textContent = '0';
             }
             
-            // 3. Creation Time
             if (data.createdAt)
             {
                 const date = new Date(data.createdAt);
@@ -211,7 +504,6 @@
                 uiCreationTime.textContent = '-';
             }
 
-            // 4. Game Players list (Full refresh)
             let playerList = [];
             if (data.players && Array.isArray(data.players))
             {
@@ -219,13 +511,12 @@
                 {
                     let handSize = p._hand ? p._hand.length : 0;
                     let nameStr = `${p._name} [${handSize} cards]`;
-                    if(p._isBot) nameStr += " (Bot)";
+                    if(p._isBot) nameStr += " 🤖";
                     return nameStr;
                 });
             }
             updateListContainer(uiPlayers, playerList);
 
-            // 5. Connected Clients list (Full refresh)
             let connectedList = [];
             if (data.connectedPlayers)
             {
@@ -257,60 +548,62 @@
                 alert("Please enter a name first.");
                 return;
             }
+            
+            // Visual feedback: disable Connect while attempting
+            connectBtn.disabled = true;
 
             socket = io('http://localhost:3000',
             {
                 query:
                 {
-                    playerName: playerName
+                    playerId: playerName
                 }
             });
 
             socket.on('connect', () => 
             {
-                log(`Connected as "${playerName}" with id: ${socket.id}`);
-                connectBtn.disabled = true;
+                log(`Connected as "${playerName}" (ID: ${socket.id})`);
+                
+                // Swap Buttons
+                connectBtn.classList.add('hidden');
+                disconnectBtn.classList.remove('hidden');
+                
                 nameInput.disabled = true;
-                disconnectBtn.disabled = false;
             });
 
-            // Standard complete update
             socket.on('TestJoin', (data) => 
             {
                 updateRoomInfo(data);
             });
 
-            // Specific event when a new player joins
             socket.on('playerJoined', (data) => 
             {
                 log(`Event: playerJoined -> ${data.playerName}`);
-                // Add this player to the connected list in the UI
                 if (data && data.playerName)
                 {
                     appendToListContainer(uiConnected, data.playerName);
                 }
             });
 
+            socket.on('playerLeft', (data) => 
+            {
+                log(`Event: playerLeft -> ${data.playerName}`);
+                if (data && data.playerName)
+                {
+                    removeFromListContainer(uiConnected, data.playerName);
+                }
+            });
+
             socket.on('disconnect', () => 
             {
-                log('Disconnected');
-                connectBtn.disabled = false;
-                nameInput.disabled = false;
-                disconnectBtn.disabled = true;
-                
-                uiRoomName.textContent = '-';
-                uiDeckCount.textContent = '-';
-                uiCreationTime.textContent = '-';
-                uiPlayers.innerHTML = '-';
-                uiConnected.innerHTML = '-';
+                log('Disconnected from server.');
+                resetInterface();
             });
 
             socket.on('connect_error', (err) => 
             {
                 log('Connection Error: ' + err.message);
-                connectBtn.disabled = false;
-                nameInput.disabled = false;
-                disconnectBtn.disabled = true;
+                resetInterface();
             });
         });
 
@@ -320,6 +613,16 @@
             {
                 socket.disconnect();
             }
+        });
+
+        resetBtn.addEventListener('click', () => 
+        {
+            if (socket) 
+            {
+                socket.disconnect();
+            }
+            logDiv.innerHTML = '';
+            resetInterface();
         });
     </script>
 </body>

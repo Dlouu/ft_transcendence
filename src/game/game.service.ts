@@ -1,6 +1,8 @@
+import { PlayCardDto, CardDto } from './dto/play-card.dto';
 import { Injectable } from "@nestjs/common";
 import { CreateGameDto } from "./dto/create-game.dto";
 import { game } from "./domain/game";
+import { player } from "./domain/player";
 import { card, CardFamily, CardKind } from "./domain/card";
 
 @Injectable()
@@ -16,6 +18,15 @@ export class GameService {
     game.connectedPlayers.add(playerName);
 
     return game;
+  }
+
+  leave(playerName: string): game | null {
+    const game = this.findGameByPlayer(playerName);
+    if (game) {
+      game.connectedPlayers.delete(playerName);
+      return game;
+    }
+    return null;
   }
 
   private findGameByPlayer(playerName: string): game | undefined {
@@ -151,5 +162,38 @@ export class GameService {
       game.discard.push(firstCard);
       game.currentFamily = firstCard.family;
     }
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                                 Validation                                 */
+  /* -------------------------------------------------------------------------- */
+
+  shoutUno() { // Card count <= 2? Timer valid?
+
+  }
+
+  passTurn() { // Did they just draw? Is passing allowed?
+
+  }
+
+  drawCard() { // Turn?, Deck empty? (handle reshuffle)
+
+  }
+
+  playCard(playCardDto: PlayCardDto) { // Turn?, In Hand?, Matches Pile?, Valid Color?
+
+  }
+
+  private validatePlayCard() {
+
+  }
+
+  private doesPlayerHaveCard(cardDto: CardDto, player: player): boolean {
+    return player._hand.some(
+      (c) =>
+        c.kind === cardDto.cardKind &&
+        c.family === cardDto.cardFamily &&
+        c.value === cardDto.value,
+    );
   }
 }
