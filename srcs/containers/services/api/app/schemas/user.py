@@ -2,7 +2,7 @@ from app.extensions import ma, db
 from app.models.user import User
 from marshmallow import fields
 
-class	UserSchema(ma.SQLAlchemyAutoSchema):
+class UserSchema(ma.SQLAlchemyAutoSchema):
 	email = fields.Email(required=True)
 	class Meta:
 		model = User
@@ -12,3 +12,9 @@ class	UserSchema(ma.SQLAlchemyAutoSchema):
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
+
+class UserLoginSchema(ma.SQLAlchemyAutoSchema):
+	email = fields.Email(required=True)
+	password = fields.Email(required=True, load_only=True)
+
+user_login_schema = UserLoginSchema()

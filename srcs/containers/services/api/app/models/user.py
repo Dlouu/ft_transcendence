@@ -17,3 +17,4 @@ class User(db.Model):
 		server_default=None,
 		onupdate=func.now()
 	)
+
