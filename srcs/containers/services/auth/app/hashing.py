@@ -12,7 +12,6 @@ PEPPER = os.getenv("SALT")
 def home():
     return render_template("home.html")
 
-print("Hashing blueprint registered dfsxfcgvhbjkjikhgfcxfgvh.", flush=True)
 @hashing.route("/connect", methods=["POST"])
 def connect():
     public_key = request.form.get("password")
