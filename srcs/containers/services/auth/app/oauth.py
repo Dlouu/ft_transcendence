@@ -1,14 +1,13 @@
 from flask import Blueprint, render_template, request, redirect, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import requests
 import os
 import json
+from user import db, User, email_exists, load_user_payload
 
 load_dotenv()
 
 oauth = Blueprint("oauth", __name__)
-db = SQLAlchemy()
 
 @oauth.route("/")
 def home():
@@ -67,18 +66,7 @@ def oauth42_callback():
 	user = success_user.json()
 	return jsonify(user)
 
-class Credentials(db.Model):
-    __tablename__ = "credentials"
-
-    id = db.Column(db.BigInteger, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-
-def email_exists(email: str) -> bool:
-    return db.session.query(Credentials.id)\
-        .filter(Credentials.email == email)\
-        .first() is not None
-
+#
 
 @oauth.route("/registration", methods=["POST"])
 def registration():
@@ -87,26 +75,20 @@ def registration():
 	if data is None:
 		with open("test_registration.json", "r") as f:
 			data = json.load(f)
-	check_email = data.get("email")
-	if check_email:
-		check_email = check_email.strip().lower()
-	else:
-		return "blank", 430
-
-	if " " in check_email:
-		return "not one single string", 431
-	if check_email.count("@") != 1 or check_email.count(".") != 1 or check_email.count("@.") == 1:
-		return "not a valid email", 432
-	len_before = check_email.split("@")[0]
-	if len(len_before) < 3 or len(len_before) > 64 :
-		return "length not valid", 433
-	len_after = check_email.split(".")[1]
-	if len(len_after) < 2:
-		return "not a valid domain", 434
-	print("cheeeeeeck", check_email, flush=True)
-	if email_exists(check_email):
+	try:
+		user = load_user_payload(data)
+	except ValueError as exc:
+		return jsonify({"error": str(exc)}), 400
+	print("cheeeeeeck", user.email, flush=True)
+	if email_exists(user.email):
 		return "email already exists", 435
-	return {}, 200
+	try:
+		db.session.add(user)
+		db.session.commit()
+	except Exception as exc:
+		db.session.rollback()
+		return jsonify({"error": str(exc)}), 500
+	return {}, 201
 
 
 @oauth.route("/login", methods=["POST"])
@@ -114,3 +96,8 @@ def login():
 	# 2 infos du json
 	print("loginnnnn:",request.json, flush=True)
 	return {}, 200
+
+# definir table, class user qui herite de db.model
+# chercher ce quil y a dans credentials
+#definir shema pour parser ma requete -->faire une classe meta pour le link a mon modele (^^)
+# try catch et verifier si les valeurs sont valides (ex: email)
