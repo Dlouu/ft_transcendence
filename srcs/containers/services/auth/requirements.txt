@@ -4,4 +4,5 @@ marshmallow-sqlalchemy == 1.4.2
 python-dotenv == 1.2.1
 requests == 2.32.3
 mysqlclient == 2.2.7
+bcrypt == 5.0.0
 watchdog

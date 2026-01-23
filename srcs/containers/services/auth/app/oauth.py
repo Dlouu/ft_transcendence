@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 import requests
 import os
 import json
+import bcrypt
+from sqlalchemy.exc import IntegrityError
 from user import db, User, email_exists, load_user_payload
 
 load_dotenv()
@@ -64,36 +66,81 @@ def oauth42_callback():
 		return "User fetch failed", 502
 
 	user = success_user.json()
+	print(user["owner"]["login"], flush=True)
 	return jsonify(user)
 
-#
+def check_valid_email(data):
+	if data is None: data = json.load(f)
+	check_email = data.get("email")
+	if not check_email:
+		return "blank", 430
+	check_email = check_email.strip().lower()
+	if " " in check_email:
+		return "not one single string", 431
+	if check_email.count("@") != 1:
+		return "not a valid email", 432
+	left, right = check_email.split("@")
+	if right.count(".") != 1:
+		return "not a valid email", 432
+	domain, country = right.rsplit(".", 1)
+	if len(left) < 3 or len(left) > 64:
+		return "length not valid", 433
+	for c in left:
+		if not c.isalpha():
+			return "Unexpected character in email", 436
+	if len(domain) < 1:
+		return "not a valid domain", 434
+	for c in domain:
+		if not c.isalpha():
+			return "Unexpected character in domain", 436
+	if len(country) < 2:
+		return "not a valid country", 435
+	for c in country:
+		if not c.isalpha():
+			return "Unexpected character in country", 436
+	return None
+
+# politique de mot de passe fort?
 
 @oauth.route("/registration", methods=["POST"])
 def registration():
-	# 3 infos du json
 	data = request.get_json(silent=True)
 	if data is None:
 		with open("test_registration.json", "r") as f:
 			data = json.load(f)
+	error = check_valid_email(data)
+	if error is not None:
+		msg, code = error
+		return jsonify({"error": msg}), code
 	try:
 		user = load_user_payload(data)
 	except ValueError as exc:
 		return jsonify({"error": str(exc)}), 400
-	print("cheeeeeeck", user.email, flush=True)
 	if email_exists(user.email):
-		return "email already exists", 435
+		return jsonify({"error": "email already exists"}), 409
+	password = data.get("password")
+	if not password:
+		return jsonify({"error": "missing password"}), 400
 	try:
+		password_bytes = password.encode("utf-8")
+		password_hash = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
+		user.password = password_hash.decode("utf-8")
 		db.session.add(user)
 		db.session.commit()
+	except IntegrityError:
+		db.session.rollback()
+		return jsonify({"error": "email already exists"}), 409
 	except Exception as exc:
 		db.session.rollback()
 		return jsonify({"error": str(exc)}), 500
-	return {}, 201
-
+	return jsonify({"status": "success"}), 201
 
 @oauth.route("/login", methods=["POST"])
 def login():
-	# 2 infos du json
+	data = request.get_json(silent=True)
+	if data is None:
+		with open("test_registration.json", "r") as f:
+			data = json.load(f)
 	print("loginnnnn:",request.json, flush=True)
 	return {}, 200
 
