@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom"
 import AppLayout from "./ui/AppLayout";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
 import Profile from "./pages/Profile";
@@ -22,6 +23,7 @@ function App() {
 			<Routes>
 				<Route path="/" element={user ? <Home /> : <Login />}/>
 				<Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>}/>
+				<Route path="/register" element={<Register />}/>
 				<Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>}/>
 				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>}/>
 				<Route path="/gallery/:id" element={<ProtectedRoute><GalleryImage /></ProtectedRoute>}/>

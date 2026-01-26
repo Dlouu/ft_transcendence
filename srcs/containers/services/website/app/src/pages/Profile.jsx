@@ -11,15 +11,20 @@ function Profile() {
 		<Page center>
 			<Card>
 
-				<h2 className="text-2xl font-bold mb-4">
-					{profile.name}'s profile
+				<h2 className="text-2xl font-bold mb-2">
+					My profile
 				</h2>
 
-				<ul className="space-y-2">
+				<div className="h-30 w-30  bg-white"></div>
+
+				<h1 className="font-bold text-xl">Statistics</h1>
+				<ul className="space-y-1">
 					<li>Games played: {profile.stats.gamesPlayed}</li>
 					<li>Games won: {profile.stats.gamesWon}</li>
 					<li>Win rate: {profile.stats.winRate}%</li>
 				</ul>
+
+				<p className="font-bold text-purple-300">Gallery a ajouter</p>
 
 				<div className="flex flex-col sm:flex-row gap-4">
 					<Button onClick={() => navigate(-1)}>

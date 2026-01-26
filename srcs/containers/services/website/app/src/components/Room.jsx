@@ -54,14 +54,14 @@ function Room({ room, players, setPlayers, deck, setDeck, isHost, onBack }) {
 
 					<DeckSelector deck={deck} setDeck={setDeck} />
 				
-					<Button disabled={!canStart}>
+					<Button disabled={!canStart} onClick={() => navigate("/game")}>
 						START
 					</Button>
 				</>
 			)}
 
 			{!isHost && (
-				<Button>
+				<Button onClick={() => navigate("/game")}>
 					READY
 				</Button>
 			)}

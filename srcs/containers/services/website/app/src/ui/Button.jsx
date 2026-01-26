@@ -7,6 +7,7 @@ function Button({ children, onClick, type, disabled = false, variant = "primary"
 		secondary: "mt-5 bg-gray-600 hover:bg-gray-600 text-white",
 		success: "mt-5 bg-purple-500 hover:bg-yellow-400 text-white",
 		login: "bg-gray-500 hover:bg-yellow-400 text-white",
+		fullscreen: "mt-2 bg-gray-700 hover:bg-pink-400"
 	};
 
 	return (

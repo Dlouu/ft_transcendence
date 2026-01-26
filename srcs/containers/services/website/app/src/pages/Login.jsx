@@ -1,8 +1,9 @@
 import { useContext, useState, useRef } from "react";
 import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 import { Button, Page, Input, Card } from "../ui";
-import image from "../gallery/UwU-back.png"
+import imageLog42 from "../assets/42login.svg"
 
 function Login() {
 	const { login } = useContext(AuthContext);
@@ -16,7 +17,7 @@ function Login() {
 
 	const handleSubmit = async (e) => {
     e.preventDefault();
-    await login(playerName, password); //plus tard password
+    await login(playerName, password);
   };
 
 	// const handleJoin = async () => {
@@ -43,9 +44,10 @@ function Login() {
 				<h2 className="text-2xl font-bold mb-6 text-center">
 					LOGIN
 				</h2>
+
 				<form className="w-full text-center" onSubmit={handleSubmit}>
 					<Input
-						placeholder="Username"
+						placeholder="username or email"
 						value={playerName}
 						onChange={(e) => setPlayerName(e.target.value)}
 						onKeyDown={(e) => {
@@ -57,7 +59,7 @@ function Login() {
 					/>
 
 					<Input
-						placeholder="Password"
+						placeholder="password"
 						value={password}
 						type="password"
 						onChange={(e) => setPassword(e.target.value)}
@@ -66,12 +68,18 @@ function Login() {
 					<Button onClick={handleLogin} disabled={!playerName || !password}>
 						LET'S PLAY
 					</Button>
-								<div className="flex flex-col justify-center items-center">
-			<img
-					src={image}
-					className=" rounded w-10 hover:scale-105 mt-5 transition"
-				/>
-			</div>
+					<div className="flex flex-col justify-center items-center">
+						<Link className="flex flex-row gap-2 py-5" to="/register">
+							sign in with <img src={imageLog42} className="h-6"/>
+						</Link>
+						<p>
+							no account ?
+							<Link className="text-purple-300 font-bold p-2" to="/register">
+								register
+							</Link>
+						</p>
+
+					</div>
 				</form>
 			</Card>
 
