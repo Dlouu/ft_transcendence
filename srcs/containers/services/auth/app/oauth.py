@@ -78,13 +78,10 @@ def oauth42_callback():
 		"email": email,
 		"password": "",
 	}
-	'''
-	    # OPTION A (recommandé): get-or-create -> pas de doublons si callback appelé 2x
-    existing = User.query.filter(or_(User.email == email, User.username == username)).first()
-    if existing:
-        print(existing.email, existing.username, flush=True)
-        return "Successful 42api login", 200
-	'''
+	existing = User.query.filter(User.email == email).first()
+	if existing is not None:
+		print(existing.email, existing.username, flush=True)
+		return "Successful 42api login (already logged once previously)", 200
 	try:
 		user_payload = load_user_payload(data)
 		db.session.add(user_payload)
@@ -92,7 +89,7 @@ def oauth42_callback():
 	except Exception as exc:
 		db.session.rollback()
 		return str(exc), 500
-	return "Successful 42api login"
+	return "Successful 42api login (first time login)"
 
 def check_valid_email(data):
 	if data is None: data = json.load(f)
