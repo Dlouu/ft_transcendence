@@ -5,6 +5,7 @@ import os
 import json
 import bcrypt
 import string
+import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
 from user import db, User, email_exists, username_exists, load_user_payload
@@ -80,7 +81,6 @@ def oauth42_callback():
 	}
 	existing = User.query.filter(User.email == email).first()
 	if existing is not None:
-		print(existing.email, existing.username, flush=True)
 		return "Successful 42api login (already logged once previously)", 200
 	try:
 		user_payload = load_user_payload(data)
@@ -90,37 +90,6 @@ def oauth42_callback():
 		db.session.rollback()
 		return str(exc), 500
 	return "Successful 42api login (first time login)"
-
-def check_valid_email(data):
-	if data is None: data = json.load(f)
-	check_email = data.get("email")
-	if not check_email:
-		return "blank", 430
-	check_email = check_email.strip().lower()
-	if " " in check_email:
-		return "not one single string", 431
-	if check_email.count("@") != 1:
-		return "not a valid email", 432
-	left, right = check_email.split("@")
-	if right.count(".") != 1:
-		return "not a valid email", 432
-	domain, country = right.rsplit(".", 1)
-	if len(left) < 3 or len(left) > 64:
-		return "length not valid", 433
-	for c in left:
-		if not c.isalpha():
-			return "Unexpected character in email", 436
-	if len(domain) < 1:
-		return "not a valid domain", 434
-	for c in domain:
-		if not c.isalpha():
-			return "Unexpected character in domain", 436
-	if len(country) < 2:
-		return "not a valid country", 435
-	for c in country:
-		if not c.isalpha():
-			return "Unexpected character in country", 436
-	return None
 
 def check_valid_username(data):
 	check_username = data.get("username")
@@ -175,9 +144,10 @@ def registration():
 	if data is None:
 		with open("test_registration.json", "r") as f:
 			data = json.load(f)
-	error = check_valid_email(data)
-	if error is None:
-		error = check_valid_username(data)
+	regex = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}"
+	if not re.fullmatch(regex, data.get("email")):
+		return jsonify({"error": "invalid email"}), 409
+	error = check_valid_username(data)
 	if error is not None:
 		msg, code = error
 		return jsonify({"error": msg}), code
