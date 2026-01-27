@@ -13,6 +13,12 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
+class UserUpdateSchema(Schema):
+	is_active = fields.Boolean(required=True)
+	updated_at = fields.DateTime(required=True)
+
+user_update_schema = UserUpdateSchema()
+
 class UserLoginSchema(Schema):
 	email = fields.Email(required=True)
 	username = fields.String(required=True)

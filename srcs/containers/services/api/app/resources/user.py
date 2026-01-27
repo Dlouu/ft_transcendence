@@ -1,9 +1,10 @@
 from flask_restx import Namespace, Resource, fields
 from flask import request
-# from app.models.user import User
+from app.models.user import User
 from app.extensions import db
-from app.schemas.user import user_login_schema, user_schema
+from app.schemas.user import user_login_schema, user_schema, user_update_schema
 from marshmallow import ValidationError
+from datetime import datetime, timezone
 import requests
 
 ns = Namespace("users", description="User operations")
@@ -64,10 +65,11 @@ class UserRegistration(Resource):
 @ns.route("/login")
 class UserLogin(Resource):
 	@ns.expect(user_login_model)
-	@ns.marshal_list_with(user_login_model, code=201)
-	def post(self):
+	def patch(self):
+		print("???", flush=True)
+		auth_data = None
 		try:
-			user_login_schema.load(request.json)
+			auth_data = user_login_schema.load(request.json)
 		except ValidationError as err:
 			return {"message": err.messages}, 400
 
@@ -76,4 +78,20 @@ class UserLogin(Resource):
 			json=request.json,
 			timeout=5
 		)
-		return response.json, response.status_code
+
+		if response.status_code == 201:
+			user = User.query.filter_by(username=auth_data["username"]).first()
+
+			if not user:
+				return {"message": "User data not found"}, 404
+
+			update_payload = {"is_active": True, "updated_at": datetime.now(timezone.utc)}
+			update_data = user_update_schema.load(update_payload)
+
+			for k, v in update_data.items():
+				setattr(user, k, v)
+
+			db.session.commit()
+
+
+		return response.json(), response.status_code
