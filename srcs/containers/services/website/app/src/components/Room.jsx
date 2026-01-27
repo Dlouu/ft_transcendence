@@ -28,7 +28,7 @@ function Room({ room, players, setPlayers, deck, setDeck, isHost, onBack }) {
 
 	return (
 		<div className="flex flex-col gap-4">
-			<h2 className="text-2xl text-center font-bold">
+			<h2 className="text-2xl font-pixel text-center font-bold">
 				ROOM {room.code}
 			</h2>
 

@@ -24,7 +24,7 @@ function Register() {
 	return (
 		<Page center>
 			<Card>
-				<h2 className="text-center text-xl font-bold mb-4">
+				<h2 className="text-center font-pixel text-xl font-bold mb-4">
 					NEW ACCOUNT
 				</h2>
 

@@ -13,7 +13,7 @@ function Home() {
 	return (
 		<Page center>
 			<Card>
-				<h2 className="text-center text-xl font-bold mb-4">
+				<h2 className="text-center text-xl font-pixel font-bold mb-4">
 					LOBBY
 				</h2>
 

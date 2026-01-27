@@ -9,7 +9,7 @@ function Gallery() {
 	return (
 		<Page center>
 			<Card big>
-				<h2 className="text-3xl font-bold mb-6 text-shadow-lg">
+				<h2 className="text-3xl font-pixel font-bold mb-6 text-shadow-lg">
 					Gallery
 				</h2>
 

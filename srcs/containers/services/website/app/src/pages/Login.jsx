@@ -41,7 +41,7 @@ function Login() {
 	return (
 		<Page center>
 			<Card center>
-				<h2 className="text-2xl font-bold mb-6 text-center">
+				<h2 className="text-2xl font-pixel font-bold mb-6 text-center">
 					LOGIN
 				</h2>
 
