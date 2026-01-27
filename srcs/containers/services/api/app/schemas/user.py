@@ -1,20 +1,21 @@
 from app.extensions import ma, db
 from app.models.user import User
-from marshmallow import fields
+from marshmallow import fields, Schema
 
-class UserSchema(ma.SQLAlchemyAutoSchema):
+# class UserSchema(ma.SQLAlchemyAutoSchema):
+# 	email = fields.Email(required=True)
+# 	class Meta:
+# 		model = User
+# 		load_instance = True
+# 		sqla_session = db.session
+# 		load_only = ("id")
+
+# user_schema = UserSchema()
+# users_schema = UserSchema(many=True)
+
+class UserLoginSchema(Schema):
 	email = fields.Email(required=True)
-	class Meta:
-		model = User
-		load_instance = True
-		sqla_session = db.session
-		load_only = ("id")
-
-user_schema = UserSchema()
-users_schema = UserSchema(many=True)
-
-class UserLoginSchema(ma.SQLAlchemyAutoSchema):
-	email = fields.Email(required=True)
+	username = fields.String(required=True)
 	password = fields.String(required=True, load_only=True)
 
 user_login_schema = UserLoginSchema()

@@ -28,7 +28,7 @@ def oauth42():
 
 	auth_url = (
 		"https://api.intra.42.fr/oauth/authorize"
-		f"?client_id={client_id}"	
+		f"?client_id={client_id}"
 		"&response_type=code"
 		f"&redirect_uri={redirect_uri}"
 	)
@@ -56,7 +56,7 @@ def oauth42_callback():
 
 	token_data = request_access_token.json()
 	access_token = token_data.get("access_token")
-	
+
 	if not access_token:
 		return "No token", 401 #?
 
@@ -73,7 +73,7 @@ def oauth42_callback():
 	email = user.get("email")
 	if not username or not email:
 		return "missing email or login from 42"
-	
+
 	data = {
 		"username": username,
 		"email": email,
@@ -111,7 +111,7 @@ At least one uppercase and one lowercase letter. At least one symbol and one dig
 '''
 
 def check_strong_password(str):
-	if len(str) < 8 or len(str) > 64:
+	if len(str) < os.getenv("AUTH_MIN_PASS_LENGTH") or len(str) > os.getenv("AUTH_MAX_PASS_LENGTH"):
 		return "not a valid length", 440
 	has_upper = False
 	has_lower = False
@@ -127,7 +127,7 @@ def check_strong_password(str):
 			has_digit = True
 		elif c in string.punctuation:
 			has_symbol = True
-	
+
 	if not has_upper:
 		return "missing one uppercase character", 1
 	if not has_lower:
@@ -188,7 +188,7 @@ def login():
 	if data is None:
 		with open("test_login.json", "r") as f:
 			data = json.load(f)
-	username_or_login = data.get("login_email")
+	username_or_login = data.get("email") or data.get("username")
 	password = data.get("password")
 	if not username_or_login and password:
 		return "infobulle: nothing given", 438
