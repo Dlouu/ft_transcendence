@@ -111,7 +111,7 @@ At least one uppercase and one lowercase letter. At least one symbol and one dig
 '''
 
 def check_strong_password(str):
-	if len(str) < os.getenv("AUTH_MIN_PASS_LENGTH") or len(str) > os.getenv("AUTH_MAX_PASS_LENGTH"):
+	if len(str) < int(os.getenv("AUTH_MIN_PASS_LENGTH")) or len(str) > int(os.getenv("AUTH_MAX_PASS_LENGTH")):
 		return "not a valid length", 440
 	has_upper = False
 	has_lower = False

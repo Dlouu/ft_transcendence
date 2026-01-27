@@ -2,16 +2,11 @@ from flask_restx import Namespace, Resource, fields
 from flask import request
 # from app.models.user import User
 from app.extensions import db
-from app.schemas.user import user_login_schema
+from app.schemas.user import user_login_schema, user_schema
 from marshmallow import ValidationError
 import requests
 
 ns = Namespace("users", description="User operations")
-
-# user_model = ns.model("User", {
-# 	"email": fields.String(required=True),
-# 	"username": fields.String(required=False)
-# })
 
 # @ns.route("/")
 # class UserList(Resource):
@@ -31,6 +26,9 @@ ns = Namespace("users", description="User operations")
 # 		db.session.commit()
 # 		return user, 201
 
+user_model = ns.model("User", {
+	"username": fields.String(required=False)
+})
 
 user_login_model = ns.model("UserLogin", {
 	"email": fields.String(required=True),
@@ -43,8 +41,9 @@ class UserRegistration(Resource):
 	@ns.expect(user_login_model)
 	@ns.marshal_with(user_login_model, code=201)
 	def post(self):
+		auth_data = None
 		try:
-			user_login_schema.load(request.json)
+			auth_data = user_login_schema.load(request.json)
 		except ValidationError as err:
 			return {"message": err.messages}, 400
 
@@ -53,8 +52,13 @@ class UserRegistration(Resource):
 			json=request.json,
 			timeout=5
 		)
-		rep = response.json
-		print(response.text, flush=True)
+
+		if (response.status_code == 201):
+			user_payload = {"username": auth_data["username"]}
+			user = user_schema.load(user_payload)
+			db.session.add(user)
+			db.session.commit()
+
 		return response.json, response.status_code
 
 @ns.route("/login")

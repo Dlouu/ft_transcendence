@@ -7,7 +7,6 @@ USE users_data;
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-    email VARCHAR(255) NOT NULL,
     username VARCHAR(100) NULL,
 
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -15,5 +14,5 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
 
-    UNIQUE KEY uq_users_email (email)
+    UNIQUE KEY uq_users_username (username)
 ) ENGINE=InnoDB;
