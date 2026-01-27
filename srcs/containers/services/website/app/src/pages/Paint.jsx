@@ -1,5 +1,5 @@
 import { useRef, useState, useContext } from "react";
-import { Button, Page } from "../ui";
+import { Button, Page, Card } from "../ui";
 import { useNavigate } from "react-router-dom";
 import PaintCanvas from "../components/paint/PaintCanvas";
 import PaintToolbar from "../components/paint/PaintToolbar";
@@ -24,37 +24,36 @@ function Paint() {
 
 	return (
 		<Page center>
+			<Card big>
+				<PaintCanvas
+					canvasRef={canvasRef}
+					tool={tool}
+					color={color}
+					brushSize={brushSize}
+				/>
 
-			<PaintCanvas
-				canvasRef={canvasRef}
-				tool={tool}
-				color={color}
-				brushSize={brushSize}
-			/>
+				<PaintToolbar
+					tool={tool}
+					setTool={setTool}
+					color={color}
+					setColor={setColor}
+					brushSize={brushSize}
+					setBrushSize={setBrushSize}
+				/>
 
-			<PaintToolbar
-				tool={tool}
-				setTool={setTool}
-				color={color}
-				setColor={setColor}
-				brushSize={brushSize}
-				setBrushSize={setBrushSize}
-			/>
+				<div className="flex flex-col sm:flex-row gap-4">
+					<Button variant="secondary" onClick={savePNG}>
+						SAVE
+					</Button>
 
-			<div className="flex flex-col sm:flex-row gap-4">
-				<Button variant="secondary" onClick={savePNG}>
-					SAVE
-				</Button>
-
-				<Button variant="secondary" onClick={() => navigate("/gallery")}>
-					BACK
-				</Button>
-			</div>
-
-			<p className="m-4 text-xs text-gray-500 text-center">
-				Users are solely responsible for the drawings and content they create.
-			</p>
-
+					<Button variant="secondary" onClick={() => navigate("/gallery")}>
+						BACK
+					</Button>
+				</div>
+			</Card>
+				<p className="m-4 text-xs text-gray-400 text-center">
+					Users are solely responsible for the drawings and content they create.
+				</p>
 		</Page>
 	);
 }

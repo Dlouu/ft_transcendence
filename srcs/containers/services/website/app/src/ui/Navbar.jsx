@@ -78,7 +78,7 @@ function Navbar() {
 
 		{/* Mobile menu */}
 			{user && open && (
-				<div className="sm:hidden fixed inset-0 z-50 bg-gray-800 flex flex-col">
+				<div className="sm:hidden fixed inset-0 z-50 bg-gray-800/90 flex flex-col">
 					<div className="flex items-center justify-between p-4 border-b border-gray-700">
 
 						<span className="text-lg font-bold text-purple-500">
