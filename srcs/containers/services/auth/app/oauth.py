@@ -180,7 +180,7 @@ def registration():
 	except Exception as exc:
 		db.session.rollback()
 		return jsonify({"error": str(exc)}), 500
-	return jsonify({"status": "success"}), 201
+	return jsonify({"status": "success", "id": user.id}), 201
 
 @oauth.route("/login", methods=["POST"])
 def login():
@@ -202,4 +202,4 @@ def login():
 			return "login/user and password mismatch", 439
 	except ValueError as exc:
 		return jsonify({"error": str(exc)}), 400
-	return jsonify({"status": "success"}), 201
+	return jsonify({"status": "success", "id": user.id}), 201
