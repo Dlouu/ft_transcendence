@@ -40,7 +40,6 @@ user_login_model = ns.model("UserLogin", {
 @ns.route("/registration")
 class UserRegistration(Resource):
 	@ns.expect(user_login_model)
-	@ns.marshal_with(user_login_model, code=201)
 	def post(self):
 		auth_data = None
 		try:
@@ -60,7 +59,7 @@ class UserRegistration(Resource):
 			db.session.add(user)
 			db.session.commit()
 
-		return response.json, response.status_code
+		return response.json(), response.status_code
 
 @ns.route("/login")
 class UserLogin(Resource):
