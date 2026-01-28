@@ -5,6 +5,7 @@ from hashing import hashing
 from oauth import oauth, db
 
 load_dotenv()
+import session_token_handler
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
