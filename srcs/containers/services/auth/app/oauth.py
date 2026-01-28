@@ -194,12 +194,12 @@ def login():
 		return "infobulle: nothing given", 438
 	user = User.query.filter(or_(User.email == username_or_login, User.username == username_or_login)).first()
 	if user is None:
-		return "login/user and password mismatch", 439
+		return {"error": "login/user and password mismatch"}, 439
 	try:
 		password_bytes = password.encode("utf-8")
 		password_hash = user.password.encode("utf-8")
 		if not bcrypt.checkpw(password_bytes, password_hash):
-			return "login/user and password mismatch", 439
+			return {"error": "login/user and password mismatch"}, 439
 	except ValueError as exc:
 		return jsonify({"error": str(exc)}), 400
 	return jsonify({"status": "success", "id": user.id}), 201

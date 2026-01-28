@@ -53,22 +53,22 @@ class UserRegistration(Resource):
 			timeout=5
 		)
 
+		json_response = response.json()
+		print(json_response, json_response["id"], flush=True)
 		if (response.status_code == 201):
-			user_payload = {"username": auth_data["username"]}
+			user_payload = {"username": auth_data["username"], "user_id": json_response["id"]}
 			user = user_schema.load(user_payload)
 			db.session.add(user)
 			db.session.commit()
 
-		return response.json(), response.status_code
+		return json_response, response.status_code
 
 @ns.route("/login")
 class UserLogin(Resource):
 	@ns.expect(user_login_model)
 	def patch(self):
-		print("???", flush=True)
-		auth_data = None
 		try:
-			auth_data = user_login_schema.load(request.json)
+			user_login_schema.load(request.json)
 		except ValidationError as err:
 			return {"message": err.messages}, 400
 
@@ -78,8 +78,9 @@ class UserLogin(Resource):
 			timeout=5
 		)
 
+		json_response = response.json()
 		if response.status_code == 201:
-			user = User.query.filter_by(username=auth_data["username"]).first()
+			user = User.query.filter_by(user_id=json_response["id"]).first()
 
 			if not user:
 				return {"message": "User data not found"}, 404
@@ -92,5 +93,4 @@ class UserLogin(Resource):
 
 			db.session.commit()
 
-
-		return response.json(), response.status_code
+		return json_response, response.status_code
