@@ -52,13 +52,13 @@ def oauth42_callback():
 		timeout=10,
 	)
 	if request_access_token.status_code != 200:
-		return "Token request failed", 502
+		return {"message": "Token request failed"}, 502
 
 	token_data = request_access_token.json()
 	access_token = token_data.get("access_token")
 
 	if not access_token:
-		return "No token", 401 #?
+		return {"message": "No token"}, 401 #?
 
 	success_user = requests.get(
 		"https://api.intra.42.fr/v2/me",
@@ -66,13 +66,13 @@ def oauth42_callback():
 		timeout=10,
 	)
 	if success_user.status_code != 200:
-		return "User fetch failed", 502
+		return {"message": "User fetch failed"}, 502
 
 	user = success_user.json()
 	username = "~" + user.get("login")
 	email = user.get("email")
 	if not username or not email:
-		return "missing email or login from 42"
+		return {"message": "missing email or login from 42"} # Ajoute un code d'erreur
 
 	data = {
 		"username": username,
@@ -81,7 +81,7 @@ def oauth42_callback():
 	}
 	existing = User.query.filter(User.email == email).first()
 	if existing is not None:
-		return "Successful 42api login (already logged once previously)", 200
+		return {"message": "Successful 42api login (already logged once previously)"}, 200
 	try:
 		user_payload = load_user_payload(data)
 		db.session.add(user_payload)
@@ -89,7 +89,7 @@ def oauth42_callback():
 	except Exception as exc:
 		db.session.rollback()
 		return str(exc), 500
-	return "Successful 42api login (first time login)"
+	return {"message": "Successful 42api login (first time login)"}
 
 def check_valid_username(data):
 	check_username = data.get("username")
@@ -146,26 +146,26 @@ def registration():
 			data = json.load(f)
 	regex = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}"
 	if not re.fullmatch(regex, data.get("email")):
-		return jsonify({"error": "invalid email"}), 409
+		return {"message": "invalid email"}, 409
 	error = check_valid_username(data)
 	if error is not None:
 		msg, code = error
-		return jsonify({"error": msg}), code
+		return {"message": msg}, code
 	try:
 		user = load_user_payload(data)
 	except ValueError as exc:
-		return jsonify({"error": str(exc)}), 400
+		return {"message": str(exc)}, 400
 	if email_exists(user.email):
-		return jsonify({"error": "email already exists"}), 409
+		return {"message": "email already exists"}, 409
 	if username_exists(user.username):
-		return jsonify({"error": "username already exists"}), 410
+		return {"message": "username already exists"}, 410
 	password = data.get("password")
 	if not password:
-		return jsonify({"error": "missing password"}), 400
+		return {"message": "missing password"}, 400
 	error = check_strong_password(password)
 	if error:
 		msg, code = error
-		return jsonify({"error": msg}), 400
+		return {"message": msg}, 400
 	#if password != data.get("second_password"): # double password verification
 		#return "both passwords mismatch", 411
 	try:
@@ -176,11 +176,11 @@ def registration():
 		db.session.commit()
 	except IntegrityError:
 		db.session.rollback()
-		return jsonify({"error": "email already exists"}), 409
+		return {"message": "email already exists"}, 409
 	except Exception as exc:
 		db.session.rollback()
-		return jsonify({"error": str(exc)}), 500
-	return jsonify({"status": "success", "id": user.id}), 201
+		return {"message": str(exc)}, 500
+	return {"message": "success", "id": user.id}, 201
 
 @oauth.route("/login", methods=["POST"])
 def login():
@@ -191,15 +191,15 @@ def login():
 	username_or_login = data.get("email") or data.get("username")
 	password = data.get("password")
 	if not username_or_login and password:
-		return "infobulle: nothing given", 438
+		return {"message": "infobulle: nothing given"}, 438
 	user = User.query.filter(or_(User.email == username_or_login, User.username == username_or_login)).first()
 	if user is None:
-		return {"error": "login/user and password mismatch"}, 439
+		return {"message": "login/user and password mismatch"}, 439
 	try:
 		password_bytes = password.encode("utf-8")
 		password_hash = user.password.encode("utf-8")
 		if not bcrypt.checkpw(password_bytes, password_hash):
-			return {"error": "login/user and password mismatch"}, 439
+			return {"message": "login/user and password mismatch"}, 439
 	except ValueError as exc:
-		return jsonify({"error": str(exc)}), 400
-	return jsonify({"status": "success", "id": user.id}), 201
+		return {"message": str(exc)}, 400
+	return {"message": "success", "id": user.id}, 201
