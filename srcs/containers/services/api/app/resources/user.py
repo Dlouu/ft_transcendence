@@ -94,3 +94,19 @@ class UserLogin(Resource):
 			db.session.commit()
 
 		return json_response, response.status_code
+
+test_model = ns.model("Test", {
+	"haha": fields.String()
+})
+
+@ns.route("/test")
+class Test(Resource):
+	@ns.expect(test_model)
+	def post(self):
+		dct = dict(request.headers)
+		# print(dct, flush=True)
+		for k, v in dct.items():
+			print(k, " --- ", v, flush=True)
+		print(request.remote_addr, flush=True)
+		print(request.remote_user, flush=True)
+		return {}, 200
