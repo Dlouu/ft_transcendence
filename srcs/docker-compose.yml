@@ -67,6 +67,19 @@ services:
     networks:
       - game_network
       - game_db_network
+  lobby:
+    container_name: lobby_game
+    build: ./containers/services/lobby
+    restart: on-failure
+    ports:
+      - "5002:5002"
+    env_file:
+      - .env
+    depends_on:
+      - lobby_db
+    networks:
+      - lobby_network
+      - lobby_db_network
   auth_db:
     container_name: auth_db
     build: ./containers/databases/auth_db
@@ -92,6 +105,21 @@ services:
       - game_db_data:/var/lib/mysql
     networks:
       - game_db_network
+  lobby_db:
+    container_name: lobby_db
+    build: ./containers/databases/lobby_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpwd
+      MYSQL_DATABASE: lobby_data
+      MYSQL_USER: lobby_user
+      MYSQL_PASSWORD: lobby_pwd
+    volumes:
+      - lobby_db_data:/var/lib/mysql
+    networks:
+      - lobby_db_network
   user_db:
     container_name: user_db
     build: ./containers/databases/user_db
@@ -118,14 +146,20 @@ volumes:
       type: none
       o: bind
       device: ${VOLUME_PATH}/auth_db_volume
-
   game_db_data:
+  lobby_db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${VOLUME_PATH}/lobby_db_volume
   user_db_data:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: ${VOLUME_PATH}/user_db_volume
+
 
 networks:
   mariadb_network:
@@ -136,11 +170,15 @@ networks:
     driver: bridge
   game_network:
     driver: bridge
+  lobby_network:
+    driver: bridge
   website_network:
     driver: bridge
   auth_db_network:
     driver: bridge
   game_db_network:
+    driver: bridge
+  lobby_db_network:
     driver: bridge
   user_db_network:
     driver: bridge

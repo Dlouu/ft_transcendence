@@ -6,22 +6,14 @@
     <title>Login API</title>
   </head>
   <body>
-    <div class="api-connexion">
-      <form method="POST" action="/connect">
-        <div class="text-box">
-          <span>Public key:</span>
-          <input type="text" name="password" required />
-        </div>
-        <button type="submit">Connect</button>
+    <div class="lobby">
+      <form method="POST" action="/join_lobby">
+        <label for="code">Join lobby:</label>
+        <input type="text" id="code" name="code" required maxlength="4" size="10" />
+        <button type="submit">Join</button>
       </form>
-      <form method="GET" action="/oauth/42">
-        <button type="submit">api42</button>
-      </form>
-      <form method="POST" action="/registration">
-        <button type="submit">Register</button>
-      </form>
-      <form method="POST" action="/login">
-        <button type="submit">Login</button>
+      <form method="POST" action="/create_lobby">
+        <button type="submit">Create</button>
       </form>
     </div>
   </body>
