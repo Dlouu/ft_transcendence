@@ -8,7 +8,8 @@ import string
 import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
-from user import db, User, email_exists, username_exists, load_user_payload
+from .user import User, email_exists, username_exists, load_user_payload
+from .extensions import db
 
 load_dotenv()
 

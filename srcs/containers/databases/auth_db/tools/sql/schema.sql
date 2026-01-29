@@ -13,3 +13,13 @@ CREATE TABLE IF NOT EXISTS credentials (
 
 	UNIQUE KEY uq_users_email (email)
 ) ENGINE=InnoDB
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+	ID BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+	user_id BIGINT UNSIGNED NOT NULL UNIQUE,
+	last_token VARCHAR(255) NULL UNIQUE,
+	active_token VARCHAR(255) NOT NULL UNIQUE,
+
+	UNIQUE KEY uq_active_token (active_token)
+) ENGINE=InnoDB

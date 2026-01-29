@@ -1,8 +1,8 @@
 services:
   auth:
     volumes:
-      - ./containers/services/auth/app:/app/
-    command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m main
+      - ./containers/services/auth/app:/app/app
+    command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
   api:
     volumes:
       - ./containers/services/api/app:/app/app

@@ -20,7 +20,10 @@ print(decoded_jwt, flush=True)
 # time.sleep(5)
 # decoded_jwt = jwt.decode(encoded_jwt, public_key2, algorithms="RS256")
 print(decoded_jwt, flush=True)
-tkn = Blueprint("token", __name__)
+# tkn = Blueprint("token", __name__)
 
 # tkn.route("/session_token", methods=["POST"])
 # def session_token():
+
+
+# def handle_tokens(headers, remote_addr):
