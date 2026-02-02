@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 	user_id BIGINT UNSIGNED NOT NULL UNIQUE,
 	last_token VARCHAR(255) NULL UNIQUE,
 	active_token VARCHAR(255) NOT NULL UNIQUE,
+	expire_date TIMESTAMP NOT NULL,
 
 	UNIQUE KEY uq_active_token (active_token)
 ) ENGINE=InnoDB

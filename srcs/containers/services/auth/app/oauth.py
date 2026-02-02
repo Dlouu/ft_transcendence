@@ -8,8 +8,10 @@ import string
 import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
+import datetime
 from .user import User, email_exists, username_exists, load_user_payload
 from .extensions import db
+from .resources.session_token_handler import generate_refresh_token, store_refresh_token
 
 load_dotenv()
 
@@ -174,13 +176,20 @@ def registration():
 		password_hash = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
 		user.password = password_hash.decode("utf-8")
 		db.session.add(user)
-		db.session.commit()
 	except IntegrityError:
 		db.session.rollback()
 		return {"message": "email already exists"}, 409
 	except Exception as exc:
 		db.session.rollback()
 		return {"message": str(exc)}, 500
+
+	refresh_token = generate_refresh_token(request.headers, request.remote_addr)
+	print(user.id, flush=True)
+	if not store_refresh_token(user.id, refresh_token, datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=int(os.getenv("REFRESH_TOKEN_EXPIRATION")))):
+		db.session.rollback()
+		return {"message": "failure when storing refresh token"}, 500
+
+	db.session.commit()
 	return {"message": "success", "id": user.id}, 201
 
 @oauth.route("/login", methods=["POST"])
@@ -203,4 +212,5 @@ def login():
 			return {"message": "login/user and password mismatch"}, 439
 	except ValueError as exc:
 		return {"message": str(exc)}, 400
+
 	return {"message": "success", "id": user.id}, 201
