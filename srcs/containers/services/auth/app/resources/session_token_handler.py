@@ -1,45 +1,18 @@
-from flask import Blueprint
 import jwt
 from datetime import datetime, timedelta, timezone
 from cryptography.hazmat.primitives.asymmetric import rsa
-import hmac
+from cryptography.hazmat.primitives import serialization
 import hashlib
 from app.extensions import db
 from app.models.refresh_tokens import RefreshToken
 from app.schemas.refresh_tokens import refresh_token_schema
-from marshmallow.exceptions import ValidationError
 from werkzeug.datastructures.headers import EnvironHeaders
 
-private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-public_key = private_key.public_key()
-
-encoded_jwt = jwt.encode({"some": "payload", "exp": datetime.now(tz=timezone.utc) + timedelta(seconds=5)}, private_key, algorithm="RS256")
-print(encoded_jwt, flush=True)
-
-decoded_jwt = jwt.decode(encoded_jwt, public_key, algorithms="RS256")
-print(decoded_jwt, flush=True)
-
-# private_key2 = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-# public_key2 = private_key2.public_key()
-
-# import time
-# time.sleep(5)
-# decoded_jwt = jwt.decode(encoded_jwt, public_key2, algorithms="RS256")
-print(decoded_jwt, flush=True)
-# tkn = Blueprint("token", __name__)
-
-# tkn.route("/session_token", methods=["POST"])
-# def session_token():
-
-
-# def handle_tokens(headers, remote_addr):
-
-def generate_refresh_token(headers, remote_addr):
-	print(not isinstance(headers, EnvironHeaders),  "User-Agent" not in headers, flush=True)
+def generate_refresh_token(user_id, headers, remote_addr):
 	if not isinstance(headers, EnvironHeaders) or "User-Agent" not in headers:
 		return None
 
-	raw_data = headers["User-Agent"] + remote_addr + "wegoweg4384"
+	raw_data = headers["User-Agent"] + remote_addr + "wegoweg4384" + str(user_id)
 	hash_data = hashlib.sha256(raw_data.encode())
 	return hash_data.hexdigest()
 
@@ -51,20 +24,42 @@ def store_refresh_token(user_id, refresh_token, expire_date):
 		token_load = refresh_token_schema.load(token_payload)
 		db.session.add(token_load)
 		db.session.commit()
-	except ValidationError as e:
+	except Exception as e:
+		db.session.rollback()
 		print(e, flush=True)
 		return False
 
-	return False
+	return True
 
-
-def generate_session_token(payload):
+def generate_session_token(user_id, headers, remote_addr):
 	private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-	return private_key, private_key.public_key()
+	public_key = private_key.public_key()
+
+	private_pem = private_key.private_bytes(
+		encoding=serialization.Encoding.PEM,
+		format=serialization.PrivateFormat.PKCS8,
+		encryption_algorithm=serialization.NoEncryption()
+	).decode("utf-8")
+
+	public_pem = public_key.public_bytes(
+		encoding=serialization.Encoding.PEM,
+		format=serialization.PublicFormat.SubjectPublicKeyInfo
+	).decode("utf-8")
+
+	payload = {
+		"user_id": user_id,
+		"agent": headers["User-Agent"],
+		"remote_addr": remote_addr,
+		"exp": datetime.now(tz=timezone.utc) + timedelta(seconds=2)
+	}
+
+	encoded_jwt = jwt.encode(payload, private_pem, algorithm="RS256")
+
+	return encoded_jwt, public_pem, private_pem
 
 cache_token = {}
-def add_token_keys_to_cache(k, public, private):
-	cache_token[k] = [public, private]
+def store_session_token(encoded, public, private, user_id):
+	cache_token[encoded] = [public, private, user_id]
 
 def is_refresh_token_valid(user_id, headers, remote_addr):
 	data = RefreshToken.query.filter_by(user_id=user_id)
@@ -72,7 +67,32 @@ def is_refresh_token_valid(user_id, headers, remote_addr):
 	if not data:
 		return False
 
-	print(type(data))
+	print(type(data), flush=True)
+
+from flask import Blueprint, request
+
+token_handler = Blueprint("token_handler", __name__)
+
+@token_handler.route("/update", methods=["GET"])
+def update_token():
+	print(request.headers, flush=True)
+	print(request.json, flush=True)
+	auth_header = request.headers.get("Authorization")
+
+	if not auth_header or not auth_header.startswith("Bearer "):
+		return {"message": "Missing or invalid token"}, 401
+
+	token = auth_header.split(" ", 1)[1]
+
+	if token not in cache_token:
+		return {"message": "Invalid token."}, 401
+
+	if not is_refresh_token_valid(cache_token[token][2], request.headers, request.remote_addr):
+		return {"message": "Refresh token expired."}, 401
+
+	print(cache_token[token], flush=True)
+	return {}, 200
+
 
 
 '''

@@ -9,9 +9,10 @@ import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
 import datetime
+import jwt
 from .user import User, email_exists, username_exists, load_user_payload
 from .extensions import db
-from .resources.session_token_handler import generate_refresh_token, store_refresh_token
+from .resources.session_token_handler import generate_refresh_token, store_refresh_token, generate_session_token, store_session_token
 
 load_dotenv()
 
@@ -169,13 +170,12 @@ def registration():
 	if error:
 		msg, code = error
 		return {"message": msg}, 400
-	#if password != data.get("second_password"): # double password verification
-		#return "both passwords mismatch", 411
 	try:
 		password_bytes = password.encode("utf-8")
 		password_hash = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
 		user.password = password_hash.decode("utf-8")
 		db.session.add(user)
+		db.session.commit()
 	except IntegrityError:
 		db.session.rollback()
 		return {"message": "email already exists"}, 409
@@ -183,14 +183,16 @@ def registration():
 		db.session.rollback()
 		return {"message": str(exc)}, 500
 
-	refresh_token = generate_refresh_token(request.headers, request.remote_addr)
-	print(user.id, flush=True)
+	refresh_token = generate_refresh_token(user.id, request.headers, request.remote_addr)
 	if not store_refresh_token(user.id, refresh_token, datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=int(os.getenv("REFRESH_TOKEN_EXPIRATION")))):
-		db.session.rollback()
+		db.session.delete(user)
+		db.session.commit()
 		return {"message": "failure when storing refresh token"}, 500
 
-	db.session.commit()
-	return {"message": "success", "id": user.id}, 201
+	encoded, public, private = generate_session_token(user.id, request.headers, request.remote_addr)
+	store_session_token(encoded, public, private, user.id)
+
+	return {"message": "success", "id": user.id, "encoded_payload": encoded, "jwt": public}, 201
 
 @oauth.route("/login", methods=["POST"])
 def login():

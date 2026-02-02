@@ -4,6 +4,7 @@ import os
 
 from .hashing import hashing
 from .oauth import oauth
+from .resources.session_token_handler import token_handler
 
 def create_app():
 	app = Flask(__name__)
@@ -17,5 +18,6 @@ def create_app():
 
 	app.register_blueprint(hashing, url_prefix='/test') #registering
 	app.register_blueprint(oauth, url_prefix='/') #registering
+	app.register_blueprint(token_handler, url_prefix="/token_handler")
 
 	return app
