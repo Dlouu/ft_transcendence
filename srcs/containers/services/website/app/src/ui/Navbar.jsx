@@ -36,7 +36,7 @@ function Navbar() {
 			"
 		>
 
-			<Link to="/" className="text-lg font-pixel font-bold text-purple-500">
+			<Link to="/" className="text-lg font-pixelm font-bold text-purple-500">
 				UwUNO
 			</Link>
 
@@ -53,7 +53,7 @@ function Navbar() {
 
 		{/* Desktop */}
 			{user && (
-				<div className="hidden sm:flex  font-pixel ml-auto items-center gap-4 font-bold">
+				<div className="hidden sm:flex  font-pixelhb ml-auto items-center gap-4 font-bold">
 
 					<Link to="/" className={linkClass("/")}>
 						PLAY
@@ -78,11 +78,11 @@ function Navbar() {
 
 		{/* Mobile menu */}
 			{user && open && (
-				<div className="sm:hidden font-pixel fixed inset-0 z-50 bg-gray-800/90 flex flex-col">
+				<div className="sm:hidden font-pixelhb fixed inset-0 z-50 bg-gray-800/90 flex flex-col">
 					<div className="flex items-center justify-between p-4 border-b border-gray-700">
 
-						<span className="text-lg font-bold text-purple-500">
-							Menu
+						<span className="text-lg font-pixelm text-purple-500">
+							MENU
 						</span>
 
 						<button

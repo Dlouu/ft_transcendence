@@ -1,17 +1,45 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: "Pixel";
+  font-family: "PixelMono";
   src: url("../assets/PixelOperatorMono8-Bold.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
-@theme {
-  --font-pixel: "Pixel", monospace;
+@font-face {
+  font-family: "Pixel";
+  src: url("../assets/PixelOperator.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
 
-.font-pixel {
-  font-family: var(--font-pixel);
+@font-face {
+  font-family: "PixelHB";
+  src: url("../assets/PixelOperatorHB.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-pixelmono: "PixelMono", monospace;
+  --font-pixel: "Pixel", normal;
+  --font-pixelhb: "PixelHB", normal;
+}
+
+.font-pixelm {
+  font-family: var(--font-pixelmono);
+}
+
+.font-pixelhb {
+  font-family: var(--font-pixelhb);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-pixel);
+  }
 }

@@ -9,8 +9,8 @@ function Gallery() {
 	return (
 		<Page center>
 			<Card big>
-				<h2 className="text-3xl font-pixel font-bold mb-6 text-shadow-lg">
-					Gallery
+				<h2 className="text-2xl font-pixelm font-bold mb-6 text-shadow-lg">
+					GALLERY
 				</h2>
 
 				<div className="grid grid-cols-3 sm:grid-cols-6 gap-4">

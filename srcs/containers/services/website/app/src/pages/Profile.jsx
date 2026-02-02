@@ -11,8 +11,8 @@ function Profile() {
 		<Page center>
 			<Card>
 
-				<h2 className="text-2xl font-pixel font-bold mb-2">
-					My profile
+				<h2 className="text-2xl font-pixelm font-bold mb-2">
+					PROFILE
 				</h2>
 
 				<div className="h-30 w-30  bg-white"></div>

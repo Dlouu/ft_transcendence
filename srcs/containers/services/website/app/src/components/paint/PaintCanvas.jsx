@@ -40,6 +40,7 @@ function PaintCanvas({ canvasRef, tool, color, brushSize }) {
 	const ctxRef = useRef(null);
 	const isDrawingRef = useRef(false);
 	const lastPosRef = useRef(null);
+	const pointerIdRef = useRef(null);
 	const undoStack = useRef([]);
 	const redoStack = useRef([]);
 
@@ -163,43 +164,43 @@ function PaintCanvas({ canvasRef, tool, color, brushSize }) {
 		ctx.putImageData(next, 0, 0);
 	}
 
+	function handlePointerDown(e) {
+		e.preventDefault();
+		saveSnapshot();
+		isDrawingRef.current = true;
+		pointerIdRef.current = e.pointerId;
+		canvasRef.current.setPointerCapture(e.pointerId);
+		drawAtEvent(e);
+	}
+
+	function handlePointerMove(e) {
+		if (!isDrawingRef.current)
+			return;
+		drawAtEvent(e);
+	}
+
+	function handlePointerUp(e) {
+		if (pointerIdRef.current !== null) {
+			canvasRef.current.releasePointerCapture(pointerIdRef.current);
+		}
+		isDrawingRef.current = false;
+		lastPosRef.current = null;
+		pointerIdRef.current = null;
+	}
+
+	function handlePointerCancel(e) {
+		handlePointerUp(e);
+	}
+
 	return (
 		<div className="w-full max-w-md aspect-88-136 border border-gray-700">
 			<div className="flex justify-center border border-gray-500">
 				<canvas
 					ref={canvasRef}
-					onMouseDown={(e) => {
-						saveSnapshot();
-						isDrawingRef.current = true;
-						drawAtEvent(e);
-					}}
-					onMouseMove={(e) => {
-						if (!isDrawingRef.current)
-							return;
-						drawAtEvent(e);
-					}}
-					onMouseUp={() => {
-						isDrawingRef.current = false;
-						lastPosRef.current = null;
-					}}
-					onMouseLeave={() => {
-						isDrawingRef.current = false;
-					}}
-					onTouchStart={(e) => {
-						e.preventDefault();
-						isDrawingRef.current = true;
-						drawAtEvent(e);
-					}}
-					onTouchMove={(e) => {
-						e.preventDefault();
-						if (!isDrawingRef.current)
-							return;
-						drawAtEvent(e);
-					}}
-					onTouchEnd={() => {
-						isDrawingRef.current = false;
-						lastPosRef.current = null;
-					}}
+					onPointerDown={handlePointerDown}
+					onPointerMove={handlePointerMove}
+					onPointerUp={handlePointerUp}
+					onPointerCancel={handlePointerCancel}
 					style={{
 						width: WIDTH * scale,
 						height: HEIGHT * scale,
