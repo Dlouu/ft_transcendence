@@ -1,24 +1,33 @@
 import { useEffect, useContext, useRef, useState } from "react";
 import { GameContext } from "../context/GameContext";
 import { Page, Button } from "../ui";
+import { gameService } from "../services/gameService";
 
 function Game() {
-	const { playerName, gameState, socket } = useContext(GameContext);
+	const { playerName } = useContext(GameContext);
 
 	const canvasRef = useRef(null);
 	const containerRef = useRef(null);
 
 	const [portrait, setPortrait] = useState(false);
 
+	useEffect(() => {
+		if (!canvasRef.current) return;
+
+		gameService.init({ canvas: canvasRef.current });
+		console.log("Game mounted for", playerName);
+		gameService.start();
+
+		return () => gameService.destroy();
+	}, []);
+
 	const enterFullscreen = () => {
+		console.log("Game unmounted");
 		const el = containerRef.current;
 		if (!el) return;
 
 		if (el.requestFullscreen) el.requestFullscreen();
 	};
-
-	const isMobile = () =>
-		window.matchMedia("(pointer: coarse)").matches;
 
 	useEffect(() => {
 		const check = () => {
@@ -48,8 +57,9 @@ function Game() {
 
 			canvas.width = width * dpr;
 			canvas.height = height * dpr;
-
 			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+			gameService.onResize?.(canvas.width, canvas.height);
 		};
 
 		resize();
@@ -57,23 +67,13 @@ function Game() {
 		return () => window.removeEventListener("resize", resize);
 	}, []);
 
-
-	useEffect(() => {
-		console.log("Game mounted for", playerName);
-		//init canvas ici
-
-		return () => {
-			console.log("Game unmounted");
-		};
-	}, [playerName]);
-
 	return (
 
 		<Page className="h-screen overflow-hidden">
 			<div className="w-full h-full flex items-center justify-center">
 				<div
 					ref={containerRef}
-					className="w-full h-full max-w-none aspect-video"
+					className="w-full h-full max-w-7xl aspect-video"
 				>
 					<canvas
 						ref={canvasRef}
@@ -86,8 +86,6 @@ function Game() {
 						⌞ ⌝
 					</Button>
 				</div>
-
-				{/* <pre>{JSON.stringify(gameState, null, 2)}</pre> */}
 			</div>
 
 			{portrait && (

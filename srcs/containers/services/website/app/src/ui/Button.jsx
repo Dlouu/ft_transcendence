@@ -1,13 +1,16 @@
-function Button({ children, onClick, type, disabled = false, variant = "primary" }) {
-	const base =
-		"pxpx-4 py-2 px-5 rounded font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed";
+function Button({ children, onClick, type, disabled = false, variant = "primary", isActive = false }) {
 	
 	const variants = {
-		primary: "mt-5 bg-purple-600 hover:bg-purple-300 text-white",
-		secondary: "mt-5 bg-gray-600 hover:bg-gray-600 text-white",
-		success: "mt-5 bg-purple-500 hover:bg-yellow-400 text-white",
-		login: "bg-gray-500 hover:bg-yellow-400 text-white",
-		fullscreen: "mt-2 bg-gray-700 hover:bg-pink-400"
+		primary: "rounded font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed pxpx-4 py-2 px-5 mt-5 bg-purple-600 hover:bg-purple-300 text-white",
+		secondary: "rounded font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed pxpx-4 py-2 px-5 mt-5 bg-gray-600 hover:bg-gray-600 text-white",
+		success: "rounded font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed pxpx-4 py-2 px-5 mt-5 bg-purple-500 hover:bg-yellow-400 text-white",
+		login: "rounded font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed pxpx-4 py-2 px-5 bg-gray-500 hover:bg-yellow-400 text-white",
+		fullscreen: "rounded font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed pxpx-4 py-2 px-5 mt-2 bg-gray-700 hover:bg-pink-400",
+		icon: `sm:w-8 sm:h-8 w-6 h-6 font-icon transition rounded ${
+			isActive
+				? "bg-white text-black"
+				: "bg-gray-700 hover:bg-gray-600"
+		}`
 	};
 
 	return (
@@ -15,7 +18,7 @@ function Button({ children, onClick, type, disabled = false, variant = "primary"
 			onClick={onClick}
 			disabled={disabled}
 			type={type}
-			className={`${base} ${variants[variant]}`}
+			className={`${variants[variant]}`}
 		>
 			{children}
 		</button>

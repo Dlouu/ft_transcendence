@@ -1,3 +1,8 @@
+import ToolSelector from './ToolSelector';
+import BrushSelector from './BrushSelector';
+import ColorPalette from './ColorPalette';
+import UndoRedo from './UndoRedo';
+
 function PaintToolbar({
 	tool,
 	setTool,
@@ -5,75 +10,29 @@ function PaintToolbar({
 	setColor,
 	brushSize,
 	setBrushSize,
+	undo,
+	redo,
+	canvasRef
 }) {
-	const sizes= [1, 2, 3, 4];
-	const colors = [
-		"#000000",
-		"#ffffff",
-		"#ff0000",
-		"#00ff00",
-		"#0000ff",
-		"#ffff00",
-	];
-
 	return (
-		<div className="flex flex-col gap-4 p-3 border border-gray-700 rounded">
-
-			{/* Tools */}
-			<div className="flex gap-2">
-				<button
-					onClick={() => setTool("brush")}
-					className={tool === "brush" ? "bg-white text-black" : ""}
-				>
-					PEN
-				</button>
-
-				<button
-					onClick={() => setTool("eraser")}
-					className={tool === "eraser" ? "bg-white text-black" : ""}
-				>
-					ERASER
-				</button>
+		<>
+			<div className="flex flex-row justify-center gap-1 py-1">
+				<UndoRedo onUndo={undo} onRedo={redo} />
+				<BrushSelector brushSize={brushSize} setBrushSize={setBrushSize} />
 			</div>
-
-			{/* Brush size */}
-			<div className="flex gap-2">
-				{sizes.map((size) => (
-					<button
-						key={size}
-						onClick={() => setBrushSize(size)}
-						className={
-							brushSize === size
-								? "bg-white text-black"
-								: ""	
-						}
-					>
-						{size}x
-					</button>
-				))}
+			<div className="flex flex-row justify-center gap-1 py-1">
+				<ToolSelector tool={tool} setTool={setTool} canvasRef={canvasRef} />
 			</div>
-
-			{/* Colors */}
-			<div className="flex gap-2 flex-wrap">
-				{colors.map((c) => (
-					<button
-						key={c}
-						onClick={() => setColor(c)}
-						style={{ backgroundColor: c }}
-						className="w-6 h-6 border"
-					/>
-				))}
-
-				<input
-					type="color"
-					value={color}
-					onChange={(e) => setColor(e.target.value)}
-				/>
+			<div className="flex flex-row justify-center gap-1 py-1">
+				<ColorPalette color={color} setColor={setColor} />
 			</div>
-
-		</div>
-	)
+		</>
+	);
 }
 
-
 export default PaintToolbar;
+
+//choisir les picto
+//https://pictogrammers.com/library/mdi/
+
+//ctrl Z/Y
