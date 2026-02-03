@@ -1,6 +1,5 @@
 import jwt
-
-cache_token = {}
+from app.extensions import cache_token
 
 def add_token(token, public):
 	print("New token stored", flush=True)

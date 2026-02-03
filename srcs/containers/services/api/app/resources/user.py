@@ -107,6 +107,13 @@ class Test(Resource):
 		print(request.remote_addr, flush=True)
 		print(request.remote_user, flush=True)
 		return {}, 200
+	def get(self):
+		dct = dict(request.headers)
+		for k, v in dct.items():
+			print(k, " --- ", v, flush=True)
+		print(request.remote_addr, flush=True)
+		print(request.remote_user, flush=True)
+		return {}, 200
 
 jwt_test = ns.model("JWTTest", {
 	"jwt": fields.String()
@@ -120,3 +127,12 @@ class TestJWT(Resource):
 	def post(self):
 		return {"message": "success"}, 200
 
+@ns.route("/test_refresh_token")
+class TestRefreshToken(Resource):
+	def get(self):
+		response = requests.get(
+			"http://auth:5001/token_handler/test_refresh_token",
+			headers=request.headers,
+			timeout=5
+		)
+		return response.status_code

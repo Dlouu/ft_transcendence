@@ -17,10 +17,25 @@ CREATE TABLE IF NOT EXISTS credentials (
 CREATE TABLE IF NOT EXISTS refresh_tokens (
 	ID BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-	user_id BIGINT UNSIGNED NOT NULL UNIQUE,
+	user_id BIGINT UNSIGNED NOT NULL,
 	last_token VARCHAR(255) NULL UNIQUE,
 	active_token VARCHAR(255) NOT NULL UNIQUE,
 	expire_date TIMESTAMP NOT NULL,
 
+
 	UNIQUE KEY uq_active_token (active_token)
 ) ENGINE=InnoDB
+
+CREATE TABLE IF NOT EXISTS refresh_tokens_formula (
+	ID BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+	last_token_rules VARCHAR(255) NULL,
+	active_token_rules VARCHAR(255) NOT NULL,
+
+	UNIQUE KEY uq_active_token_rules (active_token_rules)
+) ENGINE=InnoDB
+
+/*
+DATA FROM HEADERS AND OTHERS | SALT | SALT INSERTION SEED | STR MIX SEED
+ex: User-agent+remote_addr|EWOFK23i35nfwx45|45|65
+*/

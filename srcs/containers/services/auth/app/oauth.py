@@ -9,10 +9,9 @@ import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
 import datetime
-import jwt
 from .user import User, email_exists, username_exists, load_user_payload
 from .extensions import db
-from .resources.session_token_handler import generate_refresh_token, store_refresh_token, generate_session_token, store_session_token, wrap_new_session_token
+from app.utils.tokens_manipulation import generate_refresh_token, store_refresh_token, generate_session_token, store_session_token, wrap_new_session_token
 
 load_dotenv()
 
