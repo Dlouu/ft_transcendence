@@ -46,3 +46,17 @@ def generate_refresh_token_from_rules(request, rules):
 	token = mix_string(token, int(splitted_rules[3]))
 	return hashlib.sha256(token.encode()).hexdigest()
 
+from app.schemas.refresh_tokens import refresh_token_schema, refresh_token_rules_schema
+from app.models.refresh_tokens import RefreshToken
+
+# def is_refresh_token_exist(user_id):
+# 	tokens = RefreshToken.query.filter_by(user_id=user_id).all()
+
+# 	if not tokens:
+# 		return False
+
+# 	for token in tokens:
+# 		pass
+
+# def store_refresh_token_and_rules(user_id, token, rules):
+# 	payload = {"user_id": user_id, "last_token"}
