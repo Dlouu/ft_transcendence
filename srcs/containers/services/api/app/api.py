@@ -1,5 +1,5 @@
 from flask_restx import Api, Namespace
-from .decorators.jwt_required import jwt_required
+from app.decorators.jwt_required import jwt_required
 
 Namespace.jwt_required = jwt_required
 

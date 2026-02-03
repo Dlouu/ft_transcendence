@@ -1,33 +1,15 @@
 from flask_restx import Namespace, Resource, fields
-from flask import request
+from flask import request, g
 from app.models.user import User
 from app.extensions import db
 from app.schemas.user import user_login_schema, user_schema, user_update_schema
-from app.resources.jwt_storage import add_token, delete_token
+from app.utils.jwt_storage_manipulation import add_token, delete_token
 from marshmallow import ValidationError
 from datetime import datetime, timezone
 import requests
 import jwt
 
 ns = Namespace("users", description="User operations")
-
-# @ns.route("/")
-# class UserList(Resource):
-# 	@ns.marshal_list_with(user_model)
-# 	def	get(self):
-# 		return User.query.all(), 200
-
-# 	@ns.expect(user_model)
-# 	@ns.marshal_with(user_model, code=201)
-# 	def	post(self):
-# 		user = None
-# 		try:
-# 			user = user_schema.load(request.json)
-# 		except ValidationError as err:
-# 			return {"message": err.messages}, 400
-# 		db.session.add(user)
-# 		db.session.commit()
-# 		return user, 201
 
 user_model = ns.model("User", {
 	"username": fields.String(required=False)
@@ -73,9 +55,10 @@ class UserRegistration(Resource):
 		else:
 			return {"message": "Error while creating the user."}, 500
 
-		add_token(json_response["encoded_payload"], json_response["jwt"])
+		add_token(json_response["token"], json_response["public"])
+		g.x_new_token = json_response["token"]
 
-		return {"message": "success", "id": user.id, "access_token": json_response["encoded_payload"]}, response.status_code
+		return {"message": "success", "id": user.id}, response.status_code
 
 @ns.route("/login")
 class UserLogin(Resource):
@@ -135,24 +118,5 @@ class TestJWT(Resource):
 	@ns.doc(security="BearerAuth")
 	@ns.jwt_required()
 	def post(self):
-		auth_header = request.headers.get("Authorization")
-		print(auth_header, flush=True)
-
-		if not auth_header or not auth_header.startswith("Bearer "):
-			return {"message": "Missing or invalid token"}, 401
-
-		token = auth_header.split(" ", 1)[1]
-
-		# print(cache_token[token], flush=True)
-		from cryptography.hazmat.primitives.asymmetric import rsa
-		private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-		encoded = jwt.encode({}, private_key, algorithm="RS256")
-
-		private_key2 = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-		print(jwt.decode(encoded, private_key2.public_key(), algorithms="RS256"), flush=True)
-
-		# jwt.exceptions.ExpiredSignatureError: Signature has expired
-		# jwt.exceptions.DecodeError: Not enough segments
-		# jwt.exceptions.InvalidSignatureError: Signature verification failed
 		return {"message": "success"}, 200
 

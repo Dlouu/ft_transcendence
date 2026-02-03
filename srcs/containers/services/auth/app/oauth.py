@@ -12,7 +12,7 @@ import datetime
 import jwt
 from .user import User, email_exists, username_exists, load_user_payload
 from .extensions import db
-from .resources.session_token_handler import generate_refresh_token, store_refresh_token, generate_session_token, store_session_token
+from .resources.session_token_handler import generate_refresh_token, store_refresh_token, generate_session_token, store_session_token, wrap_new_session_token
 
 load_dotenv()
 
@@ -189,10 +189,14 @@ def registration():
 		db.session.commit()
 		return {"message": "failure when storing refresh token"}, 500
 
-	encoded, public, private = generate_session_token(user.id, request.headers, request.remote_addr)
-	store_session_token(encoded, public, private, user.id)
+	token, public, private = generate_session_token(user.id, request.headers, request.remote_addr)
+	store_session_token(token, public, private, user.id)
 
-	return {"message": "success", "id": user.id, "encoded_payload": encoded, "jwt": public}, 201
+	response = wrap_new_session_token(token, public)
+	response["message"] = "success"
+	response["id"] = user.id
+
+	return response, 201
 
 @oauth.route("/login", methods=["POST"])
 def login():

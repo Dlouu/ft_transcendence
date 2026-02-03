@@ -53,6 +53,7 @@ services:
       - .env
     environment:
       REFRESH_TOKEN_EXPIRATION: 0
+      SESSION_TOKEN_EXPIRATION: 60
     depends_on:
       - auth_db
     networks:

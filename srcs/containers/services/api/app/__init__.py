@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, g
 from .config import Config
 from .extensions import db, ma
 
@@ -13,5 +13,10 @@ def	create_app():
 
 	api.init_app(app)
 
-	return app
+	@app.after_request
+	def after_request_handler(response):
+		if hasattr(g, "x_new_token"):
+			response.headers['x_new_token'] = f"Bearer {g.x_new_token}"
+		return response
 
+	return app
