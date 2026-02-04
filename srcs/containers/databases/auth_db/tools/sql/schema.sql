@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS refresh_token (
 
 	user_id BIGINT UNSIGNED NOT NULL,
 	last_token VARCHAR(255) NULL UNIQUE,
-	active_token VARCHAR(255) NOT NULL UNIQUE,
-	expire_date TIMESTAMP NOT NULL,
+	active_token VARCHAR(255) NULL UNIQUE,
+	expire_date TIMESTAMP NULL,
 
 
 	UNIQUE KEY uq_active_token (active_token)
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS refresh_token_rules (
 
 	token_id BIGINT UNSIGNED NOT NULL UNIQUE,
 	last_token_rules VARCHAR(255) NULL,
-	active_token_rules VARCHAR(255) NOT NULL,
+	active_token_rules VARCHAR(255) NULL,
 
 	UNIQUE KEY uq_active_token_rules (active_token_rules),
 

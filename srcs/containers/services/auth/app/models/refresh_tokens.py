@@ -7,8 +7,8 @@ class RefreshToken(db.Model):
 	id = db.Column(db.BigInteger, primary_key=True)
 	user_id = db.Column(db.BigInteger, nullable=False)
 	last_token = db.Column(db.String(255), nullable=True)
-	active_token = db.Column(db.String(255), nullable=False)
-	expire_date = db.Column(db.DateTime, nullable=False)
+	active_token = db.Column(db.String(255), nullable=True)
+	expire_date = db.Column(db.DateTime, nullable=True)
 	rules = db.relationship("RefreshTokenRules", backref="token", lazy=True, uselist=False)
 
 class RefreshTokenRules(db.Model):
@@ -17,4 +17,4 @@ class RefreshTokenRules(db.Model):
 	id = db.Column(db.BigInteger, primary_key=True)
 	token_id = db.Column(db.BigInteger, db.ForeignKey("refresh_token.id"), nullable=False)
 	last_token_rules = db.Column(db.String(255), nullable=True)
-	active_token_rules = db.Column(db.String(255), nullable=False)
+	active_token_rules = db.Column(db.String(255), nullable=True)

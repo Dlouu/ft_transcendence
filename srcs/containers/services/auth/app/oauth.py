@@ -11,7 +11,8 @@ from sqlalchemy import or_
 import datetime
 from .user import User, email_exists, username_exists, load_user_payload
 from .extensions import db
-from app.utils.tokens_manipulation import generate_refresh_token, store_refresh_token, generate_session_token, store_session_token, wrap_new_session_token
+from app.utils.session_token import generate_session_token, store_session_token, wrap_new_session_token
+from app.utils.refresh_token import initialize_new_refresh_token, does_refresh_token_exist, generate_new_active_refresh_token
 
 load_dotenv()
 
@@ -182,14 +183,14 @@ def registration():
 		db.session.rollback()
 		return {"message": str(exc)}, 500
 
-	refresh_token = generate_refresh_token(user.id, request.headers, request.remote_addr)
-	if not store_refresh_token(user.id, refresh_token, datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=int(os.getenv("REFRESH_TOKEN_EXPIRATION")))):
+	success, tid = initialize_new_refresh_token(user.id, request)
+	if not success:
 		db.session.delete(user)
 		db.session.commit()
 		return {"message": "failure when storing refresh token"}, 500
 
 	token, public, private = generate_session_token(user.id, request.headers, request.remote_addr)
-	store_session_token(token, public, private, user.id)
+	store_session_token(token, public, private, user.id, tid)
 
 	response = wrap_new_session_token(token, public)
 	response["message"] = "success"
@@ -218,4 +219,18 @@ def login():
 	except ValueError as exc:
 		return {"message": str(exc)}, 400
 
-	return {"message": "success", "id": user.id}, 201
+	refresh_token_exist, is_last_one, tid = does_refresh_token_exist(user.id, request)
+
+	if not refresh_token_exist and not is_last_one:
+		initialize_new_refresh_token(user.id, request)
+	elif is_last_one:
+		generate_new_active_refresh_token(request, tid)
+
+	token, public, private = generate_session_token(user.id, request.headers, request.remote_addr)
+	store_session_token(token, public, private, user.id, tid)
+
+	response = wrap_new_session_token(token, public)
+	response["message"] = "success"
+	response["id"] = user.id
+
+	return response, 201

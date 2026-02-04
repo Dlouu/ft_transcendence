@@ -91,7 +91,10 @@ class UserLogin(Resource):
 
 			db.session.commit()
 
-		return {}, response.status_code
+		add_token(json_response["token"], json_response["public"])
+		g.x_new_token = json_response["token"]
+
+		return {"message": "success", "id": user.id}, response.status_code
 
 test_model = ns.model("Test", {
 	"haha": fields.String()

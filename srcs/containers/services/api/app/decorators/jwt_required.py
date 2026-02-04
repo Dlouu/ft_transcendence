@@ -25,11 +25,13 @@ def jwt_required(self):
 			auth_header = request.headers.get("Authorization")
 
 			if not auth_header or not auth_header.startswith("Bearer "):
+				print(f"Missing header or bearer for remote address {request.remote_addr}", flush=True)
 				return {"message": "Missing or invalid token."}, 401
 
 			token = auth_header.split(" ", 1)[1]
 
 			if not is_token_stored(token):
+				print(f"No session token found for remote address {request.remote_addr}", flush=True)
 				return {"message": "Missing or invalid token."}, 401
 
 			try:
@@ -37,6 +39,11 @@ def jwt_required(self):
 			except ExpiredSignatureError:
 				response, code = update_session_token()
 				delete_token(token)
+
+				if code != 200:
+					print(f"An error occured in the auth service while generating a new session token / refresh token. Code: {code}, error: {response}", flush=True)
+					return {"message": "Missing or invalid token."}, code
+
 				add_token(response.get("token"), response.get("public"))
 				g.x_new_token = response.get("token")
 				return f(*args, **kwargs)

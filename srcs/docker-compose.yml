@@ -54,6 +54,7 @@ services:
     environment:
       REFRESH_TOKEN_EXPIRATION: 0
       SESSION_TOKEN_EXPIRATION: 60
+      TZ: UTC
     depends_on:
       - auth_db
     networks:
