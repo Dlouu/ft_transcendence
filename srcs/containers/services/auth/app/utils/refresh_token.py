@@ -1,0 +1,115 @@
+import string, secrets, random, hashlib
+from datetime import datetime, timezone, timedelta
+from app.extensions import db
+from app.schemas.refresh_tokens import refresh_token_schema, refresh_token_rules_schema
+from app.models.refresh_tokens import RefreshToken
+from sqlalchemy.orm import joinedload
+import hashlib
+
+available_data = {
+	"User-Agent": lambda req: req.headers["User-Agent"],
+	"Accept": lambda req: req.headers["Accept"],
+	"remote_addr": lambda req: req.remote_addr,
+}
+
+def random_string(length=32):
+	chars = string.ascii_letters + string.digits
+	return "".join(secrets.choice(chars) for _ in range(length))
+
+def insert_in_string(base, insert, seed):
+	rng = random.Random(seed)
+	result = list(base)
+
+	for c in insert:
+		pos = rng.randint(0, len(result))
+		result.insert(pos, c)
+
+	return "".join(result)
+
+def mix_string(s, seed):
+	chars = list(s)
+	rng = random.Random(seed)
+	rng.shuffle(chars)
+	return "".join(chars)
+
+MAX_RANGE = 4
+def generate_refresh_token_rules():
+	rules = ""
+
+	for x in range(0, MAX_RANGE):
+		rules += list(available_data.keys())[secrets.randbelow(len(available_data))] + ("" if x + 1 == MAX_RANGE else "+")
+
+	rules += "|" + random_string() + "|" + str(secrets.randbelow(500)) + "|" + str(secrets.randbelow(500))
+
+	return (rules)
+
+def generate_refresh_token_from_rules(request, rules):
+	splitted_rules = rules.split("|")
+	data = splitted_rules[0].split("+")
+
+	token = "".join(available_data[k](request) for k in data)
+	token = insert_in_string(token, splitted_rules[1], int(splitted_rules[2]))
+	token = mix_string(token, int(splitted_rules[3]))
+	return hashlib.sha256(token.encode()).hexdigest()
+
+def initialize_new_refresh_token(user_id, request):
+	rules = generate_refresh_token_rules()
+	token = generate_refresh_token_from_rules(request, rules)
+
+	token_payload = {"user_id": user_id, "active_token": token, "expire_date": datetime.now(timezone.utc) + timedelta(seconds=30)}
+	token_rules_payload = {"active_token_rules": rules}
+	try:
+		refresh_token = refresh_token_schema.load(token_payload)
+		refresh_token.rules = refresh_token_rules_schema.load(token_rules_payload)
+		db.session.add(refresh_token)
+		db.session.commit()
+	except Exception as e:
+		db.session.rollback()
+		print(e, flush=True)
+		print("Undefined exception have been raised in 'initialize_new_refresh_token', resolve this or handle this behavior.", flush=True)
+		return False
+	return True, refresh_token.id
+
+def generate_new_active_refresh_token(request, tid):
+	row = RefreshToken.query.filter_by(id=tid).first()
+
+	if not row:
+		return False
+
+	rules = generate_refresh_token_rules()
+	row.active_token = generate_refresh_token_from_rules(request, rules)
+	row.expire_date = datetime.now(timezone.utc) + timedelta(seconds=30)
+	row.rules.active_token_rules = rules;
+
+	db.session.commit()
+
+def does_refresh_token_exist(user_id, request):
+	query = RefreshToken.query.options(joinedload(RefreshToken.rules)).filter_by(user_id=user_id)
+
+	for row in query.yield_per(50):
+		if row.active_token and row.active_token == generate_refresh_token_from_rules(request, row.rules.active_token_rules):
+			return True, False, row.id
+		elif row.last_token and row.last_token == generate_refresh_token_from_rules(request, row.rules.last_token_rules):
+			return True, True, row.id
+
+	return False
+
+
+# def is_refresh_token_exist(user_id):
+# 	tokens = RefreshToken.query.filter_by(user_id=user_id).all()
+
+# 	if not tokens:
+# 		return False
+
+# 	for token in tokens:
+# 		pass
+
+# def store_refresh_token_and_rules(user_id, token, rules):
+# 	payload = {"user_id": user_id, "last_token"}
+
+"""
+	Function to save the new token and his rule,
+	if an active token and rule exist, move it to the last token and last rule columns
+
+	Function to check if a user_id have an active token
+"""

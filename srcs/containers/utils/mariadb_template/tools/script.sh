@@ -32,12 +32,12 @@ if [ "$FRESH_INSTALL" -eq 1 ] && [ -n "$DB_ROOT_PWD" ]; then
     ROOT_AUTH_ARGS+=( "-p${DB_ROOT_PWD}" )
 fi
 
-if [ -n "$DB_USER_NAME" ] && [ -n "$DB_USER_PWD" ] && [ -n "$DB_NAME" ]; then
+if [ -n "$USER_DB_NAME" ] && [ -n "$DB_USER_PWD" ] && [ -n "$DB_NAME" ]; then
     echo "Creating database and user..."
     mariadb "${ROOT_AUTH_ARGS[@]}" -e "
         CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`;
-        CREATE USER IF NOT EXISTS '${DB_USER_NAME}'@'%' IDENTIFIED BY '${DB_USER_PWD}';
-        GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER_NAME}'@'%';
+        CREATE USER IF NOT EXISTS '${USER_DB_NAME}'@'%' IDENTIFIED BY '${DB_USER_PWD}';
+        GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${USER_DB_NAME}'@'%';
         FLUSH PRIVILEGES;
     "
 fi
