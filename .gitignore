@@ -16,4 +16,5 @@
 ./srcs/volumes
 ***/.venv/
 ***/.env/
-***/volumes/*/*
+***/volumes/
+node_modules

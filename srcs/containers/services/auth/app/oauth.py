@@ -8,7 +8,11 @@ import string
 import re
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
-from user import db, User, email_exists, username_exists, load_user_payload
+import datetime
+from .user import User, email_exists, username_exists, load_user_payload
+from .extensions import db
+from app.utils.session_token import generate_session_token, store_session_token, wrap_new_session_token
+from app.utils.refresh_token import initialize_new_refresh_token, does_refresh_token_exist, generate_new_active_refresh_token
 
 load_dotenv()
 
@@ -28,7 +32,7 @@ def oauth42():
 
 	auth_url = (
 		"https://api.intra.42.fr/oauth/authorize"
-		f"?client_id={client_id}"	
+		f"?client_id={client_id}"
 		"&response_type=code"
 		f"&redirect_uri={redirect_uri}"
 	)
@@ -52,13 +56,13 @@ def oauth42_callback():
 		timeout=10,
 	)
 	if request_access_token.status_code != 200:
-		return "Token request failed", 502
+		return {"message": "Token request failed"}, 502
 
 	token_data = request_access_token.json()
 	access_token = token_data.get("access_token")
-	
+
 	if not access_token:
-		return "No token", 401 #?
+		return {"message": "No token"}, 401 #?
 
 	success_user = requests.get(
 		"https://api.intra.42.fr/v2/me",
@@ -66,14 +70,14 @@ def oauth42_callback():
 		timeout=10,
 	)
 	if success_user.status_code != 200:
-		return "User fetch failed", 502
+		return {"message": "User fetch failed"}, 502
 
 	user = success_user.json()
 	username = "~" + user.get("login")
 	email = user.get("email")
 	if not username or not email:
-		return "missing email or login from 42"
-	
+		return {"message": "missing email or login from 42"} # Ajoute un code d'erreur
+
 	data = {
 		"username": username,
 		"email": email,
@@ -81,7 +85,7 @@ def oauth42_callback():
 	}
 	existing = User.query.filter(User.email == email).first()
 	if existing is not None:
-		return "Successful 42api login (already logged once previously)", 200
+		return {"message": "Successful 42api login (already logged once previously)"}, 200
 	try:
 		user_payload = load_user_payload(data)
 		db.session.add(user_payload)
@@ -89,7 +93,7 @@ def oauth42_callback():
 	except Exception as exc:
 		db.session.rollback()
 		return str(exc), 500
-	return "Successful 42api login (first time login)"
+	return {"message": "Successful 42api login (first time login)"}
 
 def check_valid_username(data):
 	check_username = data.get("username")
@@ -111,7 +115,7 @@ At least one uppercase and one lowercase letter. At least one symbol and one dig
 '''
 
 def check_strong_password(str):
-	if len(str) < 8 or len(str) > 64:
+	if len(str) < int(os.getenv("AUTH_MIN_PASS_LENGTH")) or len(str) > int(os.getenv("AUTH_MAX_PASS_LENGTH")):
 		return "not a valid length", 440
 	has_upper = False
 	has_lower = False
@@ -127,7 +131,7 @@ def check_strong_password(str):
 			has_digit = True
 		elif c in string.punctuation:
 			has_symbol = True
-	
+
 	if not has_upper:
 		return "missing one uppercase character", 1
 	if not has_lower:
@@ -146,28 +150,26 @@ def registration():
 			data = json.load(f)
 	regex = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}"
 	if not re.fullmatch(regex, data.get("email")):
-		return jsonify({"error": "invalid email"}), 409
+		return {"message": "invalid email"}, 409
 	error = check_valid_username(data)
 	if error is not None:
 		msg, code = error
-		return jsonify({"error": msg}), code
+		return {"message": msg}, code
 	try:
 		user = load_user_payload(data)
 	except ValueError as exc:
-		return jsonify({"error": str(exc)}), 400
+		return {"message": str(exc)}, 400
 	if email_exists(user.email):
-		return jsonify({"error": "email already exists"}), 409
+		return {"message": "email already exists"}, 409
 	if username_exists(user.username):
-		return jsonify({"error": "username already exists"}), 410
+		return {"message": "username already exists"}, 410
 	password = data.get("password")
 	if not password:
-		return jsonify({"error": "missing password"}), 400
+		return {"message": "missing password"}, 400
 	error = check_strong_password(password)
 	if error:
 		msg, code = error
-		return jsonify({"error": msg}), 400
-	#if password != data.get("second_password"): # double password verification
-		#return "both passwords mismatch", 411
+		return {"message": msg}, 400
 	try:
 		password_bytes = password.encode("utf-8")
 		password_hash = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
@@ -176,11 +178,25 @@ def registration():
 		db.session.commit()
 	except IntegrityError:
 		db.session.rollback()
-		return jsonify({"error": "email already exists"}), 409
+		return {"message": "email already exists"}, 409
 	except Exception as exc:
 		db.session.rollback()
-		return jsonify({"error": str(exc)}), 500
-	return jsonify({"status": "success"}), 201
+		return {"message": str(exc)}, 500
+
+	success, tid = initialize_new_refresh_token(user.id, request)
+	if not success:
+		db.session.delete(user)
+		db.session.commit()
+		return {"message": "failure when storing refresh token"}, 500
+
+	token, public, private = generate_session_token(user.id, request.headers, request.remote_addr)
+	store_session_token(token, public, private, user.id, tid)
+
+	response = wrap_new_session_token(token, public)
+	response["message"] = "success"
+	response["id"] = user.id
+
+	return response, 201
 
 @oauth.route("/login", methods=["POST"])
 def login():
@@ -188,18 +204,33 @@ def login():
 	if data is None:
 		with open("test_login.json", "r") as f:
 			data = json.load(f)
-	username_or_login = data.get("login_email")
+	username_or_login = data.get("email") or data.get("username")
 	password = data.get("password")
 	if not username_or_login and password:
-		return "infobulle: nothing given", 438
+		return {"message": "infobulle: nothing given"}, 438
 	user = User.query.filter(or_(User.email == username_or_login, User.username == username_or_login)).first()
 	if user is None:
-		return "login/user and password mismatch", 439
+		return {"message": "login/user and password mismatch"}, 439
 	try:
 		password_bytes = password.encode("utf-8")
 		password_hash = user.password.encode("utf-8")
 		if not bcrypt.checkpw(password_bytes, password_hash):
-			return "login/user and password mismatch", 439
+			return {"message": "login/user and password mismatch"}, 439
 	except ValueError as exc:
-		return jsonify({"error": str(exc)}), 400
-	return jsonify({"status": "success"}), 201
+		return {"message": str(exc)}, 400
+
+	refresh_token_exist, is_last_one, tid = does_refresh_token_exist(user.id, request)
+
+	if not refresh_token_exist and not is_last_one:
+		initialize_new_refresh_token(user.id, request)
+	elif is_last_one:
+		generate_new_active_refresh_token(request, tid)
+
+	token, public, private = generate_session_token(user.id, request.headers, request.remote_addr)
+	store_session_token(token, public, private, user.id, tid)
+
+	response = wrap_new_session_token(token, public)
+	response["message"] = "success"
+	response["id"] = user.id
+
+	return response, 201

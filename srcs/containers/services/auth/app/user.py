@@ -1,8 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import EXCLUDE, ValidationError, fields, pre_load
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
-
-db = SQLAlchemy()
+from .extensions import db
 
 class User(db.Model):
 	__tablename__ = "credentials"

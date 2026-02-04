@@ -19,8 +19,10 @@ services:
       - .env
     volumes:
       - website_data:/var/www/website
-    depends_on:
-      - api
+    # depends_on:
+    #   - api
+    ports:
+      - 5173:5173
     networks:
       - website_network
       - api_network
@@ -51,6 +53,10 @@ services:
       - "5001:5001"
     env_file:
       - .env
+    environment:
+      REFRESH_TOKEN_EXPIRATION: 0
+      SESSION_TOKEN_EXPIRATION: 60
+      TZ: UTC
     depends_on:
       - auth_db
     networks:
