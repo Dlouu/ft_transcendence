@@ -32,6 +32,7 @@ services:
     restart: on-failure
     env_file:
       - .env
+      - .secrets
     environment:
       CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
       USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
