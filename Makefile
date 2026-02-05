@@ -21,6 +21,8 @@ COMPOSE	:= docker compose -f $(COMPOSE_PATH) -f $(COMPOSE_PATH_OVERRIDE)
 all: build run
 
 build:
+	mkdir -p ./srcs/volumes/auth_db_volume
+	mkdir -p ./srcs/volumes/user_db_volume
 	$(COMPOSE) build $(DOCK)
 
 run:

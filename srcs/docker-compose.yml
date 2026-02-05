@@ -118,14 +118,15 @@ volumes:
   nginx_data:
   website_data:
   api_data:
+  game_db_data:
+  
   auth_db_data:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: ${VOLUME_PATH}/auth_db_volume
-
-  game_db_data:
+      
   user_db_data:
     driver: local
     driver_opts:
