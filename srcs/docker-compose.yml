@@ -11,6 +11,11 @@ services:
       - website
     networks:
       - website_network
+  redis:
+    container_name: service_redis
+    image: redis:8.4
+    networks:
+      - redis_network
   website:
     container_name: service_website
     build: ./containers/services/website
@@ -34,6 +39,7 @@ services:
       - .env
       - .secrets
     environment:
+      REDIS_URL: service_redis://redis:6379/0
       CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
       USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
     ports:
@@ -45,6 +51,7 @@ services:
       - website_network
       - auth_network
       - game_network
+      - redis_network
       - user_db_network
   auth:
     container_name: service_auth
@@ -55,6 +62,7 @@ services:
     env_file:
       - .env
     environment:
+      REDIS_URL: redis://redis:6379/0
       REFRESH_TOKEN_EXPIRATION: 3600
       REFRESH_TOKEN_EXPIRATION_CHECK_DELAY: 120
       SESSION_TOKEN_EXPIRATION: 3600
@@ -62,6 +70,7 @@ services:
     depends_on:
       - auth_db
     networks:
+      - redis_network
       - auth_network
       - auth_db_network
   game:
@@ -143,6 +152,8 @@ networks:
   auth_network:
     driver: bridge
   game_network:
+    driver: bridge
+  redis_network:
     driver: bridge
   website_network:
     driver: bridge
