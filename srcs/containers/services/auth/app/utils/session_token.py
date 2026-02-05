@@ -26,8 +26,7 @@ def generate_session_token(user_id, headers, remote_addr):
 		"user_id": user_id,
 		"agent": headers["User-Agent"],
 		"remote_addr": remote_addr,
-		# "exp": datetime.now(tz=timezone.utc) + timedelta(seconds=int(os.getenv("SESSION_TOKEN_EXPIRATION")))
-		"exp": datetime.now(tz=timezone.utc) + timedelta(seconds=0)
+		"exp": datetime.now(tz=timezone.utc) + timedelta(seconds=int(os.getenv("SESSION_TOKEN_EXPIRATION")))
 	}
 
 	encoded_jwt = jwt.encode(payload, private_pem, algorithm="RS256")

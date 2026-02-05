@@ -1,14 +1,14 @@
-import string, secrets, random, hashlib
+import string, secrets, random, hashlib, os
+
 from datetime import datetime, timezone, timedelta
+from sqlalchemy.orm import joinedload
+
 from app.extensions import db
 from app.schemas.refresh_tokens import refresh_token_schema, refresh_token_rules_schema
 from app.models.refresh_tokens import RefreshToken
-from sqlalchemy.orm import joinedload
-import hashlib
 
 available_data = {
 	"User-Agent": lambda req: req.headers["User-Agent"],
-	"Accept": lambda req: req.headers["Accept"],
 	"remote_addr": lambda req: req.remote_addr,
 }
 
@@ -56,7 +56,7 @@ def initialize_new_refresh_token(user_id, request):
 	rules = generate_refresh_token_rules()
 	token = generate_refresh_token_from_rules(request, rules)
 
-	token_payload = {"user_id": user_id, "active_token": token, "expire_date": datetime.now(timezone.utc) + timedelta(seconds=30)}
+	token_payload = {"user_id": user_id, "active_token": token, "expire_date": datetime.now(timezone.utc) + timedelta(seconds=int(os.getenv("REFRESH_TOKEN_EXPIRATION")))}
 	token_rules_payload = {"active_token_rules": rules}
 	try:
 		refresh_token = refresh_token_schema.load(token_payload)
