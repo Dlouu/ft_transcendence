@@ -1,9 +1,13 @@
-FROM alpine:3.19
+FROM python:3.13-alpine
 
-RUN apk add --no-cache bash
+RUN apk add --no-cache bash mariadb-connector-c-dev gcc musl-dev python3-dev mariadb-client
 
-COPY ./tools/script.sh /
+COPY app/ .
 
-RUN chmod +x /script.sh
+WORKDIR /app
 
-CMD [ "/script.sh" ]
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["python", "-m", "main"]
