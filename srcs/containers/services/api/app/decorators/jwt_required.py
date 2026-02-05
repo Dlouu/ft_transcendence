@@ -1,10 +1,8 @@
 from functools import wraps
 from flask import request, g
-from flask_restx import Namespace
-import jwt
 import requests
 from app.utils.jwt_storage_manipulation import add_token, delete_token, is_token_stored, decode_token
-from jwt.exceptions import ExpiredSignatureError, DecodeError, InvalidSignatureError
+from jwt.exceptions import ExpiredSignatureError
 
 def update_session_token():
 	response = requests.get(
