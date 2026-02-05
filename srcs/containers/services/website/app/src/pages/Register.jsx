@@ -18,6 +18,21 @@ function Register() {
 	
 		const handleSubmit = async (e) => {
 		e.preventDefault();
+		const request = await fetch("http://localhost:5002/users/registration", {
+			method: "POST",
+			headers: {
+				"accept": "application/json",
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				"email": userEmail,
+				"username": playerName,
+				"password": password
+			})
+		})
+		if (request.ok)
+			console.log(await request.json());
+			
 		await login(playerName, userEmail, password, passwordCheck);
 	  };
 

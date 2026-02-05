@@ -19,8 +19,8 @@ services:
       - .env
     volumes:
       - website_data:/var/www/website
-    # depends_on:
-    #   - api
+    depends_on:
+      - api
     ports:
       - 5173:5173
     networks:
@@ -36,7 +36,7 @@ services:
       CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
       USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
     ports:
-      - 5000:5000
+      - 5002:5000
     volumes:
       - api_data:/var/www/api
     networks:
