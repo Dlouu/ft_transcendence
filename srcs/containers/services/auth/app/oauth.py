@@ -190,7 +190,7 @@ def registration():
 		return {"message": "failure when storing refresh token"}, 500
 
 	token, public, private = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
-	st.store_session_token(token, public)
+	st.store_session_token(token, public, user.id)
 
 	response = st.wrap_new_session_token(token, public)
 	response["message"] = "success"
@@ -227,7 +227,7 @@ def login():
 		rt.generate_new_active_refresh_token(request, tid)
 
 	token, public, private = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
-	st.store_session_token(token, public)
+	st.store_session_token(token, public, user.id)
 
 	response = st.wrap_new_session_token(token, public)
 	response["message"] = "success"

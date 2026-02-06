@@ -18,9 +18,5 @@ def decode_session_token(key):
 		return None
 	data = r.hgetall(f"token:{key}")
 
-	try:
-		payload = jwt.decode(key, data["public"], algorithms="RS256")
-	except Exception as e:
-		print(f"Session token: Unhandled error occured while decoding the token {key} ({e})", flush=True)
-		return None
+	payload = jwt.decode(key, data["public"], algorithms="RS256")
 	return payload

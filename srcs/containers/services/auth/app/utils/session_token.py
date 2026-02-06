@@ -33,12 +33,12 @@ def generate_session_token(user_id, tid, headers, remote_addr):
 
 	return encoded_jwt, public_pem, private_pem
 
-def store_session_token(key, public):
+def store_session_token(key, public, user_id):
 	if not r:
 		print(UNAVAILABLE_MESSAGE, flush=True)
 		return None
 
-	r.hset(f"token:{key}", mapping={"public": public})
+	r.hset(f"token:{key}", mapping={"public": public, "user_id": user_id})
 
 def delete_session_token(key):
 	if not r:
@@ -59,16 +59,22 @@ def decode_session_token(key):
 		print(UNAVAILABLE_MESSAGE, flush=True)
 		return None
 
-	if not r.exists(f"token:{key}"):
+	if not does_session_token_exist(key):
 		return None
 	data = r.hgetall(f"token:{key}")
 
-	try:
-		payload = jwt.decode(key, data["public"], algorithms="RS256")
-	except Exception as e:
-		print(f"Session token: Unhandled error occured while decoding the token {key} ({e})", flush=True)
-		return None
+	payload = jwt.decode(key, data["public"], algorithms="RS256")
 	return payload
+
+def get_token_associated_data(key):
+	if not r:
+		print(UNAVAILABLE_MESSAGE, flush=True)
+		return None
+
+	if not does_session_token_exist(key):
+		return None
+
+	return r.hgetall(f"token:{key}")
 
 def wrap_new_session_token(token, public):
 	return {"token": token, "public": public}

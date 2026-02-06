@@ -5,16 +5,19 @@ from app.utils import session_token as st
 from jwt.exceptions import ExpiredSignatureError
 
 def update_session_token():
-	response = requests.get(
-		"http://auth:5001/token_handler/update",
-		json=request.json,
-		headers=request.headers,
-		timeout=5
-	)
 	try:
+		response = requests.get(
+			"http://auth:5055/token_handler/update",
+			json=request.json,
+			headers=request.headers,
+			timeout=5
+		)
 		return response.json(), response.status_code
+	except requests.exceptions.ConnectionError as e:
+		print(f"Unable to communicate with the auth service for registration ({e})", flush=True)
+		return {"message": "Service currently unavailable."}, 503
 	except requests.exceptions.JSONDecodeError as e:
-		return {}, 404
+		return {"message": "Unable to convert the response in json, an exception might have been raised in the auth service."}, 500
 
 def jwt_required(self):
 	def decorator(f):
