@@ -1,4 +1,4 @@
-import { useContext, useState, useRef } from "react";
+import { useContext, useState } from "react";
 import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
 import { Card, Page, Input, Button } from "../ui";

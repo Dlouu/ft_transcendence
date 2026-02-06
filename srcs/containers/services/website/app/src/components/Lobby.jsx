@@ -15,7 +15,7 @@ function Lobby({ onCreate, onJoin }) {
 					maxLength={4}
 					value={normalizedCode}
 					onChange={(e) =>
-						setCode(e.target.value.replace(/[^a-zA-Z]/g, ""))
+						setCode(e.target.value.replace(/[^a-zA-Z0-9]/g, ""))
 					}
 					className="text-center tracking-widest text-lg"
 				/>
