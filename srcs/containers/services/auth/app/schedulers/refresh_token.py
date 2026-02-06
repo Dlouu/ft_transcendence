@@ -37,7 +37,7 @@ def init_schedulers(app):
 			print(f"Refresh token scheduler done. Number of existing token: {refresh_token_count}, Number of expired token: {refresh_token_expired}, Number of inactive token: {refresh_token_without_active}", flush=True)
 
 	scheduler = BackgroundScheduler(timezone=timezone.utc)
-	scheduler.add_job(refresh_token_expiration_check, "interval", seconds=10)
+	scheduler.add_job(refresh_token_expiration_check, "interval", seconds=int(os.getenv("REFRESH_TOKEN_EXPIRATION_CHECK_DELAY")))
 
 	if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
 		scheduler.start()
