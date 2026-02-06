@@ -21,15 +21,16 @@ def generate_session_token(user_id, tid, headers, remote_addr):
 		format=serialization.PublicFormat.SubjectPublicKeyInfo
 	).decode("utf-8")
 
+	created_at = datetime.now(tz=timezone.utc) + timedelta(seconds=int(os.getenv("SESSION_TOKEN_EXPIRATION", "3600")))
 	payload = {
 		"user_id": user_id,
 		"tid": tid,
 		"agent": headers["User-Agent"],
 		"remote_addr": remote_addr,
-		"exp": datetime.now(tz=timezone.utc) + timedelta(seconds=int(os.getenv("SESSION_TOKEN_EXPIRATION", "3600")))
+		"exp": created_at
 	}
 
-	encoded_jwt = jwt.encode(payload, private_pem, algorithm="RS256")
+	encoded_jwt = jwt.encode(payload, private_pem, algorithm="RS256"), created_at
 
 	return encoded_jwt, public_pem, private_pem
 

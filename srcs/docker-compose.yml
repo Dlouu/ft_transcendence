@@ -63,7 +63,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       REFRESH_TOKEN_EXPIRATION: 3600
       REFRESH_TOKEN_EXPIRATION_CHECK_DELAY: 120
-      SESSION_TOKEN_EXPIRATION: 1
+      SESSION_TOKEN_EXPIRATION: 600
       TZ: UTC
     depends_on:
       - auth_db
