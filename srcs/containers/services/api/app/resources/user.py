@@ -3,7 +3,7 @@ from flask import request, g
 from app.models.user import User
 from app.extensions import db
 from app.schemas.user import user_login_schema, user_schema, user_update_schema
-from app.utils.jwt_storage_manipulation import add_token, delete_token
+from app.utils import session_token as st
 from marshmallow import ValidationError
 from datetime import datetime, timezone
 import requests
@@ -55,9 +55,7 @@ class UserRegistration(Resource):
 		else:
 			return {"message": "Error while creating the user."}, 500
 
-		add_token(json_response["token"], json_response["public"])
 		g.x_new_token = json_response["token"]
-
 		return {"message": "success", "id": user.id}, response.status_code
 
 @ns.route("/login")
@@ -91,7 +89,5 @@ class UserLogin(Resource):
 
 			db.session.commit()
 
-		add_token(json_response["token"], json_response["public"])
 		g.x_new_token = json_response["token"]
-
 		return {"message": "success", "id": user.id}, response.status_code

@@ -56,7 +56,7 @@ def initialize_new_refresh_token(user_id, request):
 	rules = generate_refresh_token_rules()
 	token = generate_refresh_token_from_rules(request, rules)
 
-	token_payload = {"user_id": user_id, "active_token": token, "expire_date": datetime.now(timezone.utc) + timedelta(seconds=int(os.getenv("REFRESH_TOKEN_EXPIRATION")))}
+	token_payload = {"user_id": user_id, "active_token": token, "expire_date": datetime.now(timezone.utc) + timedelta(seconds=int(os.getenv("REFRESH_TOKEN_EXPIRATION", "86400")))}
 	token_rules_payload = {"active_token_rules": rules}
 	try:
 		refresh_token = refresh_token_schema.load(token_payload)
@@ -93,23 +93,3 @@ def does_refresh_token_exist(user_id, request):
 			return True, True, row.id
 
 	return False
-
-
-# def is_refresh_token_exist(user_id):
-# 	tokens = RefreshToken.query.filter_by(user_id=user_id).all()
-
-# 	if not tokens:
-# 		return False
-
-# 	for token in tokens:
-# 		pass
-
-# def store_refresh_token_and_rules(user_id, token, rules):
-# 	payload = {"user_id": user_id, "last_token"}
-
-"""
-	Function to save the new token and his rule,
-	if an active token and rule exist, move it to the last token and last rule columns
-
-	Function to check if a user_id have an active token
-"""

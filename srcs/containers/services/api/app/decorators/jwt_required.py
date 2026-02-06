@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import request, g
 import requests
-from app.utils.jwt_storage_manipulation import add_token, delete_token, is_token_stored, decode_token
+from app.utils import session_token as st
 from jwt.exceptions import ExpiredSignatureError
 
 def update_session_token():
@@ -28,26 +28,25 @@ def jwt_required(self):
 
 			token = auth_header.split(" ", 1)[1]
 
-			if not is_token_stored(token):
+			if not st.does_session_token_exist(token):
 				print(f"No session token found for remote address {request.remote_addr}", flush=True)
 				return {"message": "Missing or invalid token."}, 401
 
 			try:
-				decoded = decode_token(token)
+				payload = st.decode_session_token(token)
+				print(payload, flush=True)
 			except ExpiredSignatureError:
 				response, code = update_session_token()
-				delete_token(token)
 
 				if code != 200:
 					print(f"An error occured in the auth service while generating a new session token / refresh token. Code: {code}, error: {response}", flush=True)
 					return {"message": "Missing or invalid token."}, code
 
-				add_token(response.get("token"), response.get("public"))
 				g.x_new_token = response.get("token")
-				return f(*args, **kwargs)
 			except Exception as e:
 				print(e, flush=True)
 				print("Undefined exception have been raised in the jwt check, resolve this or handle this behavior.", flush=True)
+				return {"message": "Missing or invalid token."}, 401
 
 			return f(*args, **kwargs)
 		return decorated

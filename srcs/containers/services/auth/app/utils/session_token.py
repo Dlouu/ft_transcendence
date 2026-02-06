@@ -2,12 +2,11 @@ import jwt, hashlib, os
 from datetime import datetime, timedelta, timezone
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
-from app.extensions import db, cache_token
-from app.models.refresh_tokens import RefreshToken
-from app.schemas.refresh_tokens import refresh_token_schema
-from werkzeug.datastructures.headers import EnvironHeaders
+from app.extensions import r
 
-def generate_session_token(user_id, headers, remote_addr):
+UNAVAILABLE_MESSAGE = "WARNING: Redis is unavailable, the service might be offline or bad configured in this one."
+
+def generate_session_token(user_id, tid, headers, remote_addr):
 	private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 	public_key = private_key.public_key()
 
@@ -24,20 +23,52 @@ def generate_session_token(user_id, headers, remote_addr):
 
 	payload = {
 		"user_id": user_id,
+		"tid": tid,
 		"agent": headers["User-Agent"],
 		"remote_addr": remote_addr,
-		"exp": datetime.now(tz=timezone.utc) + timedelta(seconds=int(os.getenv("SESSION_TOKEN_EXPIRATION")))
+		"exp": datetime.now(tz=timezone.utc) + timedelta(seconds=int(os.getenv("SESSION_TOKEN_EXPIRATION", "3600")))
 	}
 
 	encoded_jwt = jwt.encode(payload, private_pem, algorithm="RS256")
 
 	return encoded_jwt, public_pem, private_pem
 
-def store_session_token(encoded, public, private, user_id, tid):
-	cache_token[encoded] = [public, private, user_id, tid]
+def store_session_token(key, public):
+	if not r:
+		print(UNAVAILABLE_MESSAGE, flush=True)
+		return None
+
+	r.hset(f"token:{key}", mapping={"public": public})
 
 def delete_session_token(key):
-	cache_token[key] = None
+	if not r:
+		print(UNAVAILABLE_MESSAGE, flush=True)
+		return None
+
+	r.delete(f"token:{key}")
+
+def does_session_token_exist(key):
+	if not r:
+		print(UNAVAILABLE_MESSAGE, flush=True)
+		return None
+
+	return r.exists(f"token:{key}")
+
+def decode_session_token(key):
+	if not r:
+		print(UNAVAILABLE_MESSAGE, flush=True)
+		return None
+
+	if not r.exists(f"token:{key}"):
+		return None
+	data = r.hgetall(f"token:{key}")
+
+	try:
+		payload = jwt.decode(key, data["public"], algorithms="RS256")
+	except Exception as e:
+		print(f"Session token: Unhandled error occured while decoding the token {key} ({e})", flush=True)
+		return None
+	return payload
 
 def wrap_new_session_token(token, public):
 	return {"token": token, "public": public}

@@ -1,6 +1,5 @@
 from flask import Blueprint, request
-from app.extensions import cache_token
-from app.utils.session_token import delete_session_token, generate_session_token, store_session_token, wrap_new_session_token
+from app.utils import session_token as st
 from app.utils.refresh_token import generate_refresh_token_rules, generate_refresh_token_from_rules, does_refresh_token_exist, generate_new_active_refresh_token
 
 token_handler = Blueprint("token_handler", __name__)
@@ -14,22 +13,24 @@ def update_token():
 
 	token = auth_header.split(" ", 1)[1]
 
-	if token not in cache_token:
+	if not st.does_session_token_exist(token):
 		return {"message": "Missing token in the cache."}, 401
 
-	user_id = cache_token[token][2]
+	payload = st.decode_session_token(token)
+	if not payload:
+		return {"message": "A problem occured while decoding the token."}, 401
 
-	refresh_token_exist, is_last_one, tid = does_refresh_token_exist(user_id, request)
+	refresh_token_exist, is_last_one, tid = does_refresh_token_exist(payload["user_id"], request)
 	if not refresh_token_exist and not is_last_one:
 		return {"message": "No active or inactive refresh token found."}, 401
 	elif is_last_one:
 		generate_new_active_refresh_token(request, tid)
 
-	delete_session_token(token)
-	token, public, private = generate_session_token(user_id, request.headers, request.remote_addr)
-	store_session_token(token, public, private, user_id, tid)
+	st.delete_session_token(token)
+	token, public, private = st.generate_session_token(payload["user_id"], request.headers, request.remote_addr)
+	st.store_session_token(token, public)
 
-	response = wrap_new_session_token(token, public)
+	response = st.wrap_new_session_token(token, public)
 	response["message"] = "success"
 
 	return response, 200

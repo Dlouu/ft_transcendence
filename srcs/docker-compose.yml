@@ -39,11 +39,11 @@ services:
       - .env
       - .secrets
     environment:
-      REDIS_URL: service_redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
       CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
       USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
     ports:
-      - 5000:5000
+      - 5050:5000
     volumes:
       - api_data:/var/www/api
     networks:
@@ -57,15 +57,13 @@ services:
     container_name: service_auth
     build: ./containers/services/auth
     restart: on-failure
-    ports:
-      - "5001:5001"
     env_file:
       - .env
     environment:
       REDIS_URL: redis://redis:6379/0
       REFRESH_TOKEN_EXPIRATION: 3600
       REFRESH_TOKEN_EXPIRATION_CHECK_DELAY: 120
-      SESSION_TOKEN_EXPIRATION: 3600
+      SESSION_TOKEN_EXPIRATION: 1
       TZ: UTC
     depends_on:
       - auth_db

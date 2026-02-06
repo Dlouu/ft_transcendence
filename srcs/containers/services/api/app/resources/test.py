@@ -44,7 +44,7 @@ class TestJWT(Resource):
 class TestRefreshToken(Resource):
 	def get(self):
 		response = requests.get(
-			"http://auth:5001/token_handler/test_refresh_token",
+			"http://auth:5050/token_handler/test_refresh_token",
 			headers=request.headers,
 			timeout=5
 		)
