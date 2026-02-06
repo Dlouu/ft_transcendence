@@ -49,17 +49,10 @@ function Game() {
 		const container = containerRef.current;
 		if (!canvas || !container) return;
 
-		const ctx = canvas.getContext("2d");
-
 		const resize = () => {
-			const dpr = window.devicePixelRatio || 1;
 			const { width, height } = container.getBoundingClientRect();
 
-			canvas.width = width * dpr;
-			canvas.height = height * dpr;
-			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-			gameService.onResize?.(canvas.width, canvas.height);
+			gameService.onResize?.(width, height);
 		};
 
 		resize();
