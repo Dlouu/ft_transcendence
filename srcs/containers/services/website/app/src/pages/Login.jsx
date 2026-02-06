@@ -20,24 +20,6 @@ function Login() {
     await login(playerName, password);
   };
 
-	// const handleJoin = async () => {
-	// 	const response = await fetch("http://localhost:5173/", {
-	// 		method: "GET",
-	// 	});
-	// 	const response = await fetch("http://localhost:3000/api/player", {
-	// 		method: "POST",
-	// 		headers: {
-	// 			"Content-Type": "application/json",
-	// 		},
-	// 		body: JSON.stringify({ name: playerName }),
-	// 	});
-
-	// 	const data = await response.json();
-	// 	console.log(data);
-
-	// 	onStart();
-	// };
-
 	return (
 		<Page center>
 			<Card center>
@@ -82,10 +64,6 @@ function Login() {
 					</div>
 				</form>
 			</Card>
-
-			{/* <Button variant="secondary" onClick={handleJoin}>
-				TEST pour FETCH plus tard
-			</Button> */}
 		</Page>
 	);
 }

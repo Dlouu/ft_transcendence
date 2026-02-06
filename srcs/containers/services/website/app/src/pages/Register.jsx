@@ -18,7 +18,7 @@ function Register() {
 	
 		const handleSubmit = async (e) => {
 		e.preventDefault();
-		const request = await fetch("http://localhost:5002/users/registration", {
+		const request = await fetch("http://localhost:5002/registration", {
 			method: "POST",
 			headers: {
 				"accept": "application/json",
@@ -26,8 +26,8 @@ function Register() {
 			},
 			body: JSON.stringify({
 				"email": userEmail,
-				"username": playerName,
-				"password": password
+				"password": password,
+				"username": playerName
 			})
 		})
 		if (request.ok)
