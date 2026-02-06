@@ -11,6 +11,11 @@ services:
       - website
     networks:
       - website_network
+  redis:
+    container_name: service_redis
+    image: redis:8.4
+    networks:
+      - redis_network
   website:
     container_name: service_website
     build: ./containers/services/website
@@ -32,11 +37,14 @@ services:
     restart: on-failure
     env_file:
       - .env
+      - .secrets
     environment:
+      REDIS_URL: redis://redis:6379/0
       CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
       USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
+      S3_BUCKET_DATABASE_URI: mysql+mysqldb://s3_bucket_user:user_pwd@s3_bucket_db:3306/user_obj_links
     ports:
-      - 5002:5000
+      - 5050:5000
     volumes:
       - api_data:/var/www/api
     networks:
@@ -44,22 +52,24 @@ services:
       - website_network
       - auth_network
       - game_network
+      - redis_network
       - user_db_network
   auth:
     container_name: service_auth
     build: ./containers/services/auth
     restart: on-failure
-    ports:
-      - "5001:5001"
     env_file:
       - .env
     environment:
-      REFRESH_TOKEN_EXPIRATION: 0
-      SESSION_TOKEN_EXPIRATION: 60
+      REDIS_URL: redis://redis:6379/0
+      REFRESH_TOKEN_EXPIRATION: 3600
+      REFRESH_TOKEN_EXPIRATION_CHECK_DELAY: 120
+      SESSION_TOKEN_EXPIRATION: 600
       TZ: UTC
     depends_on:
       - auth_db
     networks:
+      - redis_network
       - auth_network
       - auth_db_network
   game:
@@ -113,6 +123,19 @@ services:
       - user_db_data:/var/lib/mysql
     networks:
       - user_db_network
+  s3_bucket_db:
+    container_name: s3_bucket_db
+    build: ./containers/databases/s3_bucket_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpwd
+      MYSQL_DATABASE: user_obj_links
+      MYSQL_USER: s3_bucket_user
+      MYSQL_PASSWORD: user_pwd
+    volumes:
+      - s3_bucket_db_data:/var/lib/mysql
+    networks:
+      - s3_bucket_network
 
 volumes:
   nginx_data:
@@ -134,6 +157,13 @@ volumes:
       o: bind
       device: ${VOLUME_PATH}/user_db_volume
 
+  s3_bucket_db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${VOLUME_PATH}/s3_bucket_db_volume
+
 networks:
   mariadb_network:
     driver: bridge
@@ -143,6 +173,8 @@ networks:
     driver: bridge
   game_network:
     driver: bridge
+  redis_network:
+    driver: bridge
   website_network:
     driver: bridge
   auth_db_network:
@@ -150,4 +182,6 @@ networks:
   game_db_network:
     driver: bridge
   user_db_network:
+    driver: bridge
+  s3_bucket_network:
     driver: bridge
