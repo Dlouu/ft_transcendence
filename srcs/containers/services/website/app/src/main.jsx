@@ -19,3 +19,10 @@ ReactDOM.createRoot(root).render(
 		</BrowserRouter>
 	</AuthProvider>
 );
+
+// TO DELETE (USE FOR YOHANN'S TESTS)
+if (import.meta.hot) {
+	import.meta.hot.on('vite:beforeUpdate', () => {
+		window.location.href = "/";
+	});
+}

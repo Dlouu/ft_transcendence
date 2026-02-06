@@ -1,47 +1,13 @@
 import { useEffect, useRef } from "react";
-import { Button } from "../../ui";
+import { WIDTH, HEIGHT, MAX_HEIGHT_RATIO } from "./constants";
+import { drawCheckerBoard, drawLine, restoreCheckerBoard } from "./drawingUtils";
+import { useUndoRedo } from "./useUndoRedo";
 
-const WIDTH = 88;
-const HEIGHT = 136;
-const MAX_HEIGHT_RATIO = 0.7;
-
-function restoreCheckerBoard(ctx, x, y, size) {
-	const light = "#9e91a4";
-	const dark = "#7a6b81";
-
-	for (let dy = 0; dy < size; dy++) {
-		for (let dx = 0; dx < size; dx++) {
-			const px = x + dx;
-			const py = y + dy;
-
-			if (px < 0 || py < 0 || px >= WIDTH || py >= HEIGHT)
-				continue;
-
-			ctx.fillStyle =
-				(px + py) % 2 === 0 ? light : dark;
-			ctx.fillRect(px, py, 1, 1);
-		}
-	}
-}
-
-function drawCheckerBoard(ctx, width, height) {
-	const light = "#9e91a4";
-	const dark = "#7a6b81";
-
-	for (let y = 0; y < height; y++) {
-		for (let x = 0; x < width; x++) {
-			ctx.fillStyle = (x + y) % 2 === 0 ? light : dark;
-			ctx.fillRect(x, y, 1, 1);
-		}
-	}
-}
-
-function PaintCanvas({ canvasRef, tool, color, brushSize }) {
+function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 	const ctxRef = useRef(null);
 	const isDrawingRef = useRef(false);
 	const lastPosRef = useRef(null);
-	const undoStack = useRef([]);
-	const redoStack = useRef([]);
+	const pointerIdRef = useRef(null);
 
 	const scale = Math.floor(
 		Math.min(
@@ -49,6 +15,8 @@ function PaintCanvas({ canvasRef, tool, color, brushSize }) {
 			(window.innerHeight * MAX_HEIGHT_RATIO) / HEIGHT
 		)
 	);
+
+	const { saveSnapshot, undo, redo } = useUndoRedo(ctxRef);
 
 	useEffect(() => {
 		const canvas = canvasRef.current;
@@ -60,7 +28,11 @@ function PaintCanvas({ canvasRef, tool, color, brushSize }) {
 		ctxRef.current = ctx;
 	
 		drawCheckerBoard(ctx, WIDTH, HEIGHT);
-	}, []);
+		
+		if (onUndoRedoReady) {
+			onUndoRedoReady({ undo, redo });
+		}
+	}, [onUndoRedoReady]);
 
 	function drawPixel(x, y) {
 		if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT)
@@ -75,30 +47,6 @@ function PaintCanvas({ canvasRef, tool, color, brushSize }) {
 
 		ctx.fillStyle = color;
 		ctx.fillRect(x, y, brushSize, brushSize);
-	}
-
-	function drawLine(x0, y0, x1, y1) {
-		const dx = Math.abs(x1 - x0);
-		const dy = Math.abs(y1 - y0);
-		const sx = x0 < x1 ? 1 : -1;
-		const sy = y0 < y1 ? 1 : -1;
-		let err = dx - dy;
-
-		while (true) {
-			drawPixel(x0, y0);
-			if (x0 === x1 && y0 === y1)
-				break;
-
-			const e2 = 2 * err;
-			if (e2 > -dy) {
-				err -= dy;
-				x0 += sx;
-			}
-			if (e2 < dx) {
-				err += dx;
-				y0 += sy;
-			}
-		}
 	}
 
 	function drawAtEvent(e) {
@@ -116,7 +64,7 @@ function PaintCanvas({ canvasRef, tool, color, brushSize }) {
 
 		if (lastPosRef.current) {
 			const { x: lx, y: ly } = lastPosRef.current;
-			drawLine(lx, ly, x, y);
+			drawLine(ctxRef.current, lx, ly, x, y, brushSize, color, tool);
 		} else {
 			drawPixel(x, y);
 		}
@@ -124,82 +72,43 @@ function PaintCanvas({ canvasRef, tool, color, brushSize }) {
 		lastPosRef.current = { x, y };
 	}
 
-	function saveSnapshot() {
-		const ctx = ctxRef.current;
-		if (!ctx)
-			return;
-
-		const imageData = ctx.getImageData(0, 0, WIDTH, HEIGHT);
-		undoStack.current.push(imageData);
-		redoStack.current = [];
-		console.log("UNDO stack:", undoStack.current.length);
+	function handlePointerDown(e) {
+		e.preventDefault();
+		saveSnapshot();
+		isDrawingRef.current = true;
+		pointerIdRef.current = e.pointerId;
+		canvasRef.current.setPointerCapture(e.pointerId);
+		drawAtEvent(e);
 	}
 
-	function undo() {
-		const ctx = ctxRef.current;
-		if (undoStack.current.length === 0) return;
-		if (!ctx) return;
-
-		redoStack.current.push(
-			ctx.getImageData(0, 0, WIDTH, HEIGHT)
-		);
-		
-		const last = undoStack.current.pop();
-
-		ctx.putImageData(last, 0, 0);
+	function handlePointerMove(e) {
+		if (!isDrawingRef.current)
+			return;
+		drawAtEvent(e);
 	}
 
-	function redo() {
-		if (redoStack.current.length === 0)
-			return;
+	function handlePointerUp(e) {
+		if (pointerIdRef.current !== null) {
+			canvasRef.current.releasePointerCapture(pointerIdRef.current);
+		}
+		isDrawingRef.current = false;
+		lastPosRef.current = null;
+		pointerIdRef.current = null;
+	}
 
-		const ctx = ctxRef.current;
-		const next = redoStack.current.pop();
-
-		undoStack.current.push(
-			ctx.getImageData(0, 0, WIDTH, HEIGHT)
-		);
-
-		ctx.putImageData(next, 0, 0);
+	function handlePointerCancel(e) {
+		handlePointerUp(e);
 	}
 
 	return (
-		<div className="w-full max-w-md aspect-88-136 border border-gray-700">
-			<div className="flex justify-center border border-gray-500">
+		<div className="w-full aspect-88-136">
+			<div className="flex justify-center">
 				<canvas
 					ref={canvasRef}
-					onMouseDown={(e) => {
-						saveSnapshot();
-						isDrawingRef.current = true;
-						drawAtEvent(e);
-					}}
-					onMouseMove={(e) => {
-						if (!isDrawingRef.current)
-							return;
-						drawAtEvent(e);
-					}}
-					onMouseUp={() => {
-						isDrawingRef.current = false;
-						lastPosRef.current = null;
-					}}
-					onMouseLeave={() => {
-						isDrawingRef.current = false;
-					}}
-					onTouchStart={(e) => {
-						e.preventDefault();
-						isDrawingRef.current = true;
-						drawAtEvent(e);
-					}}
-					onTouchMove={(e) => {
-						e.preventDefault();
-						if (!isDrawingRef.current)
-							return;
-						drawAtEvent(e);
-					}}
-					onTouchEnd={() => {
-						isDrawingRef.current = false;
-						lastPosRef.current = null;
-					}}
+					onPointerDown={handlePointerDown}
+					onPointerMove={handlePointerMove}
+					onPointerUp={handlePointerUp}
+					onPointerCancel={handlePointerCancel}
 					style={{
 						width: WIDTH * scale,
 						height: HEIGHT * scale,
@@ -207,16 +116,6 @@ function PaintCanvas({ canvasRef, tool, color, brushSize }) {
 						touchAction: "none"
 					}}
 				/>
-			</div>
-
-			<div>
-				<Button onClick={undo}>
-					UNDO
-				</Button>
-
-				<Button onClick={redo}>
-					REDO
-				</Button>
 			</div>
 		</div>
 	);
