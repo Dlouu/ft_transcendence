@@ -1,5 +1,6 @@
 from app.extensions import db
 from sqlalchemy.sql import func
+from app.models.card_gallery import CardGallery
 
 class User(db.Model):
 	__bind_key__ = "user"
@@ -13,3 +14,5 @@ class User(db.Model):
 
 	created_at = db.Column(db.DateTime, server_default=db.func.now())
 	updated_at = db.Column(db.DateTime, onupdate=db.func.now())
+
+	cards = db.relationship("CardGallery", backref="card_gallery", lazy=True)
