@@ -15,11 +15,11 @@ function Register() {
 			password &&
 			passwordCheck &&
 			password === passwordCheck;
-	
+
 		const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
-			const request = await fetch("http://localhost:5050/users/registration", {
+			const request = await fetch("/api/users/registration", {
 				headers: {
 					'Accept': 'application/json',
 					'Content-Type': 'application/json'
@@ -30,19 +30,17 @@ function Register() {
 					"password": password,
 					"username": playerName
 				}),
-				mode: "no-cors",
-				url: `http://localhost:5050`,
 			})
 			if (request.ok)
 				console.log(await request.json());
 
 		} catch (error) {
 			console.log(error);
-			
+
 		}
 
 		await login(playerName, userEmail, password, passwordCheck);
-	  };
+	};
 
 	return (
 		<Page center>
@@ -94,7 +92,7 @@ function Register() {
 						onChange={(e) => setPasswordCheck(e.target.value)}
 					/>
 				</form>
-				
+
 				<div className="flex flex-col items-center">
 					<Button onClick={handleSubmit} disabled={!isFormValid}>
 						REGISTER
