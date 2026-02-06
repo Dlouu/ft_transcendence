@@ -51,9 +51,9 @@ function Login() {
 						LET'S PLAY
 					</Button>
 					<div className="flex flex-col justify-center items-center">
-						<Link className="flex flex-row gap-2 py-5" to="/register">
+						<a href="http://localhost:5050/oauth/42" className="flex flex-row gap-2 py-5">
 							sign in with <img src={imageLog42} className="h-6"/>
-						</Link>
+						</a>
 						<p>
 							no account ?
 							<Link className="text-purple-300 font-bold p-2" to="/register">
