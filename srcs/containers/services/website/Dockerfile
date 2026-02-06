@@ -7,6 +7,7 @@ RUN apk add --no-cache bash libc6-compat
 COPY app/package.json app/package-lock.json ./
 
 RUN npm install
+RUN npm i pixi.js
 
 EXPOSE 5173
 
