@@ -24,6 +24,7 @@ def home():
 
 @oauth.route("/oauth/42", methods=["GET"])
 def oauth42():
+	print("biteeeeeeeee", flush=True)
 	client_id = os.getenv("TRANSCENDANCE_ID")
 	redirect_uri = os.getenv("TRANSCENDANCE_REDIRECTION")
 
@@ -40,6 +41,7 @@ def oauth42():
 
 @oauth.route("/oauth/42/callback")
 def oauth42_callback():
+	print("sexeeeeeeee", flush=True)
 	code = request.args.get("code")
 	if not code:
 		return "No code", 400
@@ -98,10 +100,10 @@ def oauth42_callback():
 def check_valid_username(data):
 	check_username = data.get("username")
 	if not check_username:
-		return "blank", 430
+		return "empty username", 430
 	check_username = check_username.strip()
 	if " " in check_username:
-		return "not one single string", 431
+		return "whitespace forbidden", 431
 	if len(check_username) < 3 or len(check_username) > 64:
 		return "length not valid", 433
 	for c in check_username:
@@ -165,7 +167,7 @@ def registration():
 		return {"message": "username already exists"}, 410
 	password = data.get("password")
 	if not password:
-		return {"message": "missing password"}, 400
+		return {"message": "missing password"}, 411
 	error = check_strong_password(password)
 	if error:
 		msg, code = error
@@ -187,7 +189,7 @@ def registration():
 	if not success:
 		db.session.delete(user)
 		db.session.commit()
-		return {"message": "failure when storing refresh token"}, 500
+		return {"message": "failure when storing refresh token"}, 500 # Theo explique nous
 
 	token, public, private = generate_session_token(user.id, request.headers, request.remote_addr)
 	store_session_token(token, public, private, user.id, tid)

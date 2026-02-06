@@ -9,10 +9,11 @@
     <div class="lobby">
       <form method="POST" action="/join_lobby">
         <label for="code">Join lobby:</label>
-        <input type="password" id="code" name="code" required maxlength="255" size="10" />
+        <input type="text" id="code" name="code" required maxlength="255" size="10" />
         <button type="submit">Join</button>
       </form>
       <form method="POST" action="/create_lobby">
+        <input type="text" name="room_name" required maxlength="4" size="10"/>
         <button type="submit">Create</button>
       </form>
     </div>
