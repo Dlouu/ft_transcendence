@@ -62,6 +62,8 @@ services:
       - .env
     environment:
       REDIS_URL: redis://redis:6379/0
+      AUTH_MIN_PASS_LENGTH: 8
+      AUTH_MAX_PASS_LENGTH: 64
       REFRESH_TOKEN_EXPIRATION: 3600
       REFRESH_TOKEN_EXPIRATION_CHECK_DELAY: 120
       SESSION_TOKEN_EXPIRATION: 600

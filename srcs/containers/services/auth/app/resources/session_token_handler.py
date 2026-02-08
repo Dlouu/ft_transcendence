@@ -51,10 +51,12 @@ def update_token():
 		generate_new_active_refresh_token(request, tid)
 
 	st.delete_session_token(token)
-	token, public, private = st.generate_session_token(payload["user_id"], tid, request.headers, request.remote_addr)
+	token, public, private, created_at = st.generate_session_token(payload["user_id"], tid, request.headers, request.remote_addr)
 	st.store_session_token(token, public, payload["user_id"])
 
-	response = st.wrap_new_session_token(token, public)
-	response["message"] = "success"
+	response = {
+		"message": "success",
+		"token": token,
+	}
 
 	return response, 201

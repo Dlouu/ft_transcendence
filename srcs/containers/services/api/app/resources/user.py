@@ -113,7 +113,12 @@ class UserLogin(Resource):
 			return {"message": "Failed to log the user."}, 401
 
 
-		json_response = response.json()
+		try:
+			json_response = response.json()
+		except requests.exceptions.JSONDecodeError as e:
+			print("Something went wrong while decoding the response to json, the auth service may have encountered an error and crashed.", flush=True)
+			return {"message": "Something wrong when trying to log the user."}, 400
+
 		if response.status_code != 201:
 			return json_response, 502
 

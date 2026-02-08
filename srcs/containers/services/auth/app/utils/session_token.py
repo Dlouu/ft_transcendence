@@ -43,9 +43,9 @@ def generate_session_token(user_id, tid, headers, remote_addr):
 		"exp": created_at
 	}
 
-	encoded_jwt = jwt.encode(payload, private_pem, algorithm="RS256"), created_at
+	encoded_jwt = jwt.encode(payload, private_pem, algorithm="RS256")
 
-	return encoded_jwt, public_pem, private_pem
+	return encoded_jwt, public_pem, private_pem, created_at
 
 def store_session_token(key, public, user_id):
 	"""
@@ -65,6 +65,7 @@ def store_session_token(key, public, user_id):
 		return False
 
 	r.hset(f"token:{key}", mapping={"public": public, "user_id": user_id})
+	r.expire(f"token:{key}", int(os.getenv("SESSION_TOKEN_EXPIRATION", 3600)) + 300)
 	return True
 
 def delete_session_token(key):
