@@ -20,6 +20,10 @@ def update_session_token():
 		return {"message": "Unable to convert the response in json, an exception might have been raised in the auth service."}, 500
 
 def jwt_required(self):
+	"""
+	This decorator is used to check if the request the API received contain a session token and check for its validity, depending of the context
+	this function could communicate with the auth service to generate a new session token for example.
+	"""
 	def decorator(f):
 		@wraps(f)
 		def decorated(*args, **kwargs):
