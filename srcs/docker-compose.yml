@@ -78,11 +78,8 @@ services:
     restart: on-failure
     env_file:
       - .env
-    depends_on:
-      - game_db
     networks:
       - game_network
-      - game_db_network
   auth_db:
     container_name: auth_db
     build: ./containers/databases/auth_db
@@ -98,16 +95,6 @@ services:
       - auth_db_data:/var/lib/mysql
     networks:
       - auth_db_network
-  game_db:
-    container_name: game_db
-    build: ./containers/databases/game_db
-    restart: unless-stopped
-    env_file:
-      - .env
-    volumes:
-      - game_db_data:/var/lib/mysql
-    networks:
-      - game_db_network
   user_db:
     container_name: user_db
     build: ./containers/databases/user_db
@@ -147,15 +134,12 @@ volumes:
       type: none
       o: bind
       device: ${VOLUME_PATH}/auth_db_volume
-
-  game_db_data:
   user_db_data:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: ${VOLUME_PATH}/user_db_volume
-
   s3_bucket_db_data:
     driver: local
     driver_opts:
@@ -177,8 +161,6 @@ networks:
   website_network:
     driver: bridge
   auth_db_network:
-    driver: bridge
-  game_db_network:
     driver: bridge
   user_db_network:
     driver: bridge
