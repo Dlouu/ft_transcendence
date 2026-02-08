@@ -20,4 +20,4 @@
 node_modules
 
 ***/.secrets
-***/.envd
+***/.env
