@@ -7,6 +7,11 @@ from sqlalchemy.orm import joinedload
 import atexit, os
 
 def init_schedulers(app):
+	"""
+		This scheduler check all refresh token's expiration date and move them to the old_token column
+		when a token expired.
+		The interval is defined by the environment variable REFRESH_TOKEN_EXPIRATION_CHECK_DELAY.
+	"""
 	def refresh_token_expiration_check():
 		with app.app_context():
 			query = RefreshToken.query.options(joinedload(RefreshToken.rules))

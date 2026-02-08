@@ -34,6 +34,12 @@ def mix_string(s, seed):
 
 MAX_RANGE = 4
 def generate_refresh_token_rules():
+	"""
+	Generate a string representing the rules to build a user refresh token.
+
+	return:
+		A string used to construct a refresh token (example: User-Agent+remote_addr|glti5032nshxa432f|51|185)
+	"""
 	rules = ""
 
 	for x in range(0, MAX_RANGE):
@@ -44,6 +50,19 @@ def generate_refresh_token_rules():
 	return (rules)
 
 def generate_refresh_token_from_rules(request, rules):
+	"""
+	Construct a refresh token using data inside a request and the given rules, this function dont check any data type,
+	make sure to make all the necessary check before using this.
+
+	param:
+		request: request object
+		rule: a string representing the rules to build the refresh token, this string should be created using
+			the function generate_refresh_token_rules().
+
+	return :
+		a hashed string.
+
+	"""
 	splitted_rules = rules.split("|")
 	data = splitted_rules[0].split("+")
 
@@ -53,6 +72,17 @@ def generate_refresh_token_from_rules(request, rules):
 	return hashlib.sha256(token.encode()).hexdigest()
 
 def initialize_new_refresh_token(user_id, request):
+	"""
+	Using a user id and a request object, this function generate rules and a refresh token then store them in a database.
+	This function dont check the validy of his arguments so make sure to make these verification before using this.
+
+	param:
+		user_id: the id of the user.
+		request: request object.
+
+	return:
+		False if something wrong happened, otherwise True + the refresh token id to make it easier to find in the database.
+	"""
 	rules = generate_refresh_token_rules()
 	token = generate_refresh_token_from_rules(request, rules)
 
@@ -71,6 +101,18 @@ def initialize_new_refresh_token(user_id, request):
 	return True, refresh_token.id
 
 def generate_new_active_refresh_token(request, tid):
+	"""
+	Generate a new refresh token for an EXISTING token id in the database.
+	This function dont check the validy of his arguments so make sure to make these verification before using this.
+
+
+	param:
+		request: request object
+		tid: refresh token id
+
+	return:
+		False if the tid does not exist, else True.
+	"""
 	row = RefreshToken.query.filter_by(id=tid).first()
 
 	if not row:
@@ -82,8 +124,25 @@ def generate_new_active_refresh_token(request, tid):
 	row.rules.active_token_rules = rules;
 
 	db.session.commit()
+	return True
 
 def does_refresh_token_exist(user_id, request):
+	"""
+	Check if a user_id own a certain refresh token bases on the request object.
+	This function dont check the validy of his arguments so make sure to make these verification before using this.
+
+	param:
+		user_id: the user id
+		request: request object
+
+	return:
+		False if refresh token generated using the request object do not match any token in the dabase.
+		If a token exist the function return:
+			- a bool: does the token exist?
+			- a bool: Is it the last token? If this one is True that mean that the user no longer have an active refresh token,
+					so it is necessary to generate a new one.
+			- an integer: the token id, it is the primary key of the token in the database.
+	"""
 	query = RefreshToken.query.options(joinedload(RefreshToken.rules)).filter_by(user_id=user_id)
 
 	for row in query.yield_per(50):

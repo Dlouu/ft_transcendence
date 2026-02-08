@@ -41,7 +41,7 @@ def jwt_required(self):
 			except ExpiredSignatureError:
 				response, code = update_session_token()
 
-				if code != 200:
+				if code != 201:
 					print(f"An error occured in the auth service while generating a new session token / refresh token. Code: {code}, error: {response}", flush=True)
 					return {"message": "Missing or invalid token."}, code
 

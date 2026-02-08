@@ -10,7 +10,8 @@ def does_session_token_exist(key):
 	param:
 		key: The token you are looking for.
 
-	return: True if found, else False.
+	return:
+		True if found, else False.
 	"""
 	if not r:
 		print(UNAVAILABLE_MESSAGE, flush=True)
@@ -25,7 +26,8 @@ def decode_session_token(key):
 	param:
 		key: The token you want to decode.
 
-	return: None if the token don't exist, else the decoded token (payload).
+	return:
+		None if the token don't exist, else the decoded token (payload).
 	"""
 	if not r:
 		print(UNAVAILABLE_MESSAGE, flush=True)
