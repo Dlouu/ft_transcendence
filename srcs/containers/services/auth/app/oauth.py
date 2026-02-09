@@ -145,9 +145,9 @@ def check_strong_password(str):
 @oauth.route("/registration", methods=["POST"])
 def registration():
 	data = request.get_json(silent=True)
-	if data is None:
-		with open("test_registration.json", "r") as f:
-			data = json.load(f)
+	# if data is None:
+	# 	with open("test_registration.json", "r") as f:
+	# 		data = json.load(f)
 	regex = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}"
 	if not re.fullmatch(regex, data.get("email")):
 		return {"message": "invalid email"}, 409

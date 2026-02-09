@@ -1,34 +1,94 @@
-import { useEffect, useContext } from "react";
+import { useEffect, useContext, useRef, useState } from "react";
 import { GameContext } from "../context/GameContext";
-import { Button, Page } from "../ui";
-import { useNavigate } from "react-router-dom";
+import { Page, Button } from "../ui";
+import { gameService } from "../services/gameService";
 
 function Game() {
-	const { playerName, gameState, socket } = useContext(GameContext);
-	const navigate = useNavigate();
+	const { playerName } = useContext(GameContext);
+
+	const canvasRef = useRef(null);
+	const containerRef = useRef(null);
+
+	const [portrait, setPortrait] = useState(false);
 
 	useEffect(() => {
-		console.log("Game mounted for", playerName);
-		//init canvas ici
+		if (!canvasRef.current) return;
 
-		return () => {
-			console.log("Game unmounted");
+		gameService.init({ canvas: canvasRef.current });
+		console.log("Game mounted for", playerName);
+		gameService.start();
+
+		return () => gameService.destroy();
+	}, []);
+
+	const enterFullscreen = () => {
+		console.log("Game unmounted");
+		const el = containerRef.current;
+		if (!el) return;
+
+		if (el.requestFullscreen) el.requestFullscreen();
+	};
+
+	useEffect(() => {
+		const check = () => {
+			const portrait =
+				window.matchMedia("(orientation: portrait)").matches;
+			const mobile =
+				window.matchMedia("(pointer: coarse)").matches;
+
+		setPortrait(portrait && mobile);
 		};
-	}, [playerName]);
+
+		check();
+		window.addEventListener("resize", check);
+		return () => window.removeEventListener("resize", check);
+	}, []);
+
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		const container = containerRef.current;
+		if (!canvas || !container) return;
+
+		const resize = () => {
+			const { width, height } = container.getBoundingClientRect();
+
+			gameService.onResize?.(width, height);
+		};
+
+		resize();
+		window.addEventListener("resize", resize);
+		return () => window.removeEventListener("resize", resize);
+	}, []);
 
 	return (
-		<Page center>
 
-			<div className="w-full max-w-4xl aspect-video border border-gray-700">
-				{/* Le canvas de Yohann ici */}
+		<Page className="h-screen overflow-hidden">
+			<div className="w-full h-full flex items-center justify-center">
+				<div
+					ref={containerRef}
+					className="w-full h-full max-w-7xl aspect-video"
+				>
+					<canvas
+						ref={canvasRef}
+						className="w-full h-full bg-white"
+					/>
+					<Button
+						variant="fullscreen"
+						onClick={enterFullscreen}
+					>
+						⌞ ⌝
+					</Button>
+				</div>
 			</div>
 
-			{/* <pre>{JSON.stringify(gameState, null, 2)}</pre> */}
-
-			<Button variant="secondary" onClick={() => navigate("/")}>
-				QUIT
-			</Button>
-
+			{portrait && (
+				<div className="fixed inset-0 z-50 bg-black text-white flex flex-col items-center justify-center text-center p-6">
+					<p className="text-xl font-bold mb-4">
+						Rotate your device
+					</p>
+					<p>UwUNO is playable in landscape mode only.</p>
+				</div>
+			)}
 		</Page>
 	);
 }

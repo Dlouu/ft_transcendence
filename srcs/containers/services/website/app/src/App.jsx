@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom"
+import ProtectedRoute from "./routes/ProtectedRoutes";
 import AppLayout from "./ui/AppLayout";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
 import Profile from "./pages/Profile";
@@ -11,7 +13,6 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext";
-import ProtectedRoute from "./routes/ProtectedRoutes";
 
 
 function App() {
@@ -20,8 +21,11 @@ function App() {
 	return (
 		<AppLayout>
 			<Routes>
+				{/* <Route path="/" element={user ? <Game /> : <Login />}/> */}
 				<Route path="/" element={user ? <Home /> : <Login />}/>
+				{/* <Route path="/game" element={<Game />}/> */}
 				<Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>}/>
+				<Route path="/register" element={<Register />}/>
 				<Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>}/>
 				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>}/>
 				<Route path="/gallery/:id" element={<ProtectedRoute><GalleryImage /></ProtectedRoute>}/>
@@ -30,7 +34,7 @@ function App() {
 				<Route path="/privacy" element={<Privacy />}/>
 				//friendlist (statut online uniquement)
 				//rules (revendication)
-				//profile match history
+				//profile users
 				//settings (avatar)
 				//erreurs 404 etc
 			</Routes>
