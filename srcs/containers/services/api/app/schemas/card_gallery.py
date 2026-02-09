@@ -10,3 +10,5 @@ class CardGallerySchema(ma.SQLAlchemyAutoSchema):
 		model = CardGallery
 		load_instance = True
 		sqla_session = db.session
+
+card_gallery_schema = CardGallerySchema()

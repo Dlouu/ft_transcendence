@@ -8,6 +8,21 @@ token_handler = Blueprint("token_handler", __name__)
 
 @token_handler.route("/update", methods=["GET"])
 def update_token():
+	"""
+	This endpoint is used to create a new session token for a user, it check whether the user's session has its
+	refresh token, if not then we dont regenerate a session token, if it has been found but it dont have an active
+	refresh token anymore then we regenerate a new one before making a new session token.
+
+	API:
+		Method: GET
+		Endpoint: /token_handler/update
+		Token: no
+
+	Response:
+		201: A new session token have been created.
+		401: If the user's request does not meet a requirement.
+		500: An error occured during the process.
+	"""
 	auth_header = request.headers.get("Authorization")
 
 	if not auth_header or not auth_header.startswith("Bearer "):
@@ -36,24 +51,12 @@ def update_token():
 		generate_new_active_refresh_token(request, tid)
 
 	st.delete_session_token(token)
-	token, public, private = st.generate_session_token(payload["user_id"], tid, request.headers, request.remote_addr)
+	token, public, private, created_at = st.generate_session_token(payload["user_id"], tid, request.headers, request.remote_addr)
 	st.store_session_token(token, public, payload["user_id"])
 
-	response = st.wrap_new_session_token(token, public)
-	response["message"] = "success"
+	response = {
+		"message": "success",
+		"token": token,
+	}
 
-	return response, 200
-
-@token_handler.route("/test_refresh_token", methods=["GET"])
-def test_refresh_token():
-	rules = generate_refresh_token_rules()
-	print(rules, flush=True)
-	print("Generated token:", generate_refresh_token_from_rules(request, rules), flush=True)
-	return {}, 200
-
-'''
-	make a function to create a refresh token
-	make a task to check refresh token expiration
-	make a function to create a session token based on the refresh token
-	make a function to check if the active refresh token is equal to the one the client sent
-'''
+	return response, 201

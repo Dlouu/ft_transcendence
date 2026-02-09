@@ -1,4 +1,6 @@
 from flask import Flask, g
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from .config import Config
 from .extensions import db, ma
 
@@ -8,6 +10,13 @@ def	create_app():
 
 	db.init_app(app)
 	ma.init_app(app)
+
+	limiter = Limiter(
+		app=app,
+		key_func=get_remote_address,
+		storage_uri="redis://redis:6379",
+		default_limits=["10 per second"]
+	)
 
 	from .api import api
 

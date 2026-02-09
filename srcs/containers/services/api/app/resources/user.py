@@ -11,10 +11,6 @@ import jwt
 
 ns = Namespace("users", description="User operations")
 
-user_model = ns.model("User", {
-	"username": fields.String(required=False)
-})
-
 user_login_model = ns.model("UserLogin", {
 	"email": fields.String(required=True),
 	"username": fields.String(required=True),
@@ -25,6 +21,20 @@ user_login_model = ns.model("UserLogin", {
 class UserRegistration(Resource):
 	@ns.expect(user_login_model)
 	def post(self):
+		"""
+		Prepare the communication with the authentification service to create a new user.
+
+		API:
+			Method: POST
+			Endpoint: /users/registration
+			Token: no
+
+		Response:
+			201: User created.
+			400: The request body isn't valid.
+			401: Something wrong happened in the auth service during the creation of the user.
+			503: Unable to communicate witht the auth service.
+		"""
 		auth_data = None
 		try:
 			auth_data = user_login_schema.load(request.json)
@@ -68,6 +78,21 @@ class UserRegistration(Resource):
 class UserLogin(Resource):
 	@ns.expect(user_login_model)
 	def patch(self):
+		"""
+		Prepare the communication with the authentification service to login the user.
+
+		API:
+			Method: PATCH
+			Endpoint: /users/login
+			Token: no
+
+		Response:
+			201: User can login, a token session is added to the response header.
+			400: The request body isn't valid.
+			401: Something wrong happened in the auth service or during users metadata initializaion.
+			502: The auth service' response is invalid.
+			503: Unable to communicate witht the auth service.
+		"""
 		try:
 			user_login_schema.load(request.json)
 		except ValidationError as err:
@@ -88,14 +113,27 @@ class UserLogin(Resource):
 			return {"message": "Failed to log the user."}, 401
 
 
-		json_response = response.json()
+		try:
+			json_response = response.json()
+		except requests.exceptions.JSONDecodeError as e:
+			print("Something went wrong while decoding the response to json, the auth service may have encountered an error and crashed.", flush=True)
+			return {"message": "Something wrong when trying to log the user."}, 400
+
 		if response.status_code != 201:
-			return json_response, response.status_code
+			return json_response, 502
 
 		user = User.query.filter_by(user_id=json_response["id"]).first()
 
 		if not user:
-			return {"message": "User data not found"}, 404
+			try:
+				auth_data = user_login_schema.load(request.json)
+				user_payload = {"username": auth_data["username"], "user_id": json_response["id"]}
+				user = user_schema.load(user_payload)
+				db.session.add(user)
+				db.session.commit()
+			except Exception as e:
+				print(e, flush=True)
+				return {"message": "The user exist but something went wrong while initializing his metadata."}, 401
 
 		update_payload = {"is_active": True, "updated_at": datetime.now(timezone.utc)}
 		update_data = user_update_schema.load(update_payload)
@@ -106,4 +144,4 @@ class UserLogin(Resource):
 		db.session.commit()
 		g.x_new_token = json_response["token"]
 
-		return {"message": "success", "id": user.id}, response.status_code
+		return {"message": "success", "id": user.id}, 201

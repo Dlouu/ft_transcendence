@@ -8,7 +8,6 @@ def update_session_token():
 	try:
 		response = requests.get(
 			"http://auth:5055/token_handler/update",
-			json=request.json,
 			headers=request.headers,
 			timeout=5
 		)
@@ -20,6 +19,10 @@ def update_session_token():
 		return {"message": "Unable to convert the response in json, an exception might have been raised in the auth service."}, 500
 
 def jwt_required(self):
+	"""
+	This decorator is used to check if the request the API received contain a session token and check for its validity, depending of the context
+	this function could communicate with the auth service to generate a new session token for example.
+	"""
 	def decorator(f):
 		@wraps(f)
 		def decorated(*args, **kwargs):
@@ -37,15 +40,17 @@ def jwt_required(self):
 
 			try:
 				payload = st.decode_session_token(token)
-				print(payload, flush=True)
+				g.token = token
+				g.token_payload = payload
 			except ExpiredSignatureError:
 				response, code = update_session_token()
-
-				if code != 200:
+				if code != 201:
 					print(f"An error occured in the auth service while generating a new session token / refresh token. Code: {code}, error: {response}", flush=True)
 					return {"message": "Missing or invalid token."}, code
 
 				g.x_new_token = response.get("token")
+				g.token = response.get("token")
+				g.token_payload = st.decode_session_token(g.token)
 			except Exception as e:
 				print(e, flush=True)
 				print("Undefined exception have been raised in the jwt check, resolve this or handle this behavior.", flush=True)

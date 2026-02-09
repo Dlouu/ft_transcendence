@@ -62,7 +62,7 @@ def oauth42_callback():
 	access_token = token_data.get("access_token")
 
 	if not access_token:
-		return {"message": "No token"}, 401 #?
+		return {"message": "No token"}, 401 #? #??
 
 	success_user = requests.get(
 		"https://api.intra.42.fr/v2/me",
@@ -76,7 +76,7 @@ def oauth42_callback():
 	username = "~" + user.get("login")
 	email = user.get("email")
 	if not username or not email:
-		return {"message": "missing email or login from 42"} # Ajoute un code d'erreur
+		return {"message": "missing email or login from 42"}, 400
 
 	data = {
 		"username": username,
@@ -189,12 +189,14 @@ def registration():
 		db.session.commit()
 		return {"message": "failure when storing refresh token"}, 500
 
-	token, public, private = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
+	token, public, private, created_at = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
 	st.store_session_token(token, public, user.id)
 
-	response = st.wrap_new_session_token(token, public)
-	response["message"] = "success"
-	response["id"] = user.id
+	response = {
+		"message": "success",
+		"id": user.id,
+		"token": token
+	}
 
 	return response, 201
 
@@ -226,11 +228,13 @@ def login():
 	elif is_last_one:
 		rt.generate_new_active_refresh_token(request, tid)
 
-	token, public, private = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
+	token, public, private, created_at = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
 	st.store_session_token(token, public, user.id)
 
-	response = st.wrap_new_session_token(token, public)
-	response["message"] = "success"
-	response["id"] = user.id
+	response = {
+		"message": "success",
+		"id": user.id,
+		"token": token
+	}
 
 	return response, 201
