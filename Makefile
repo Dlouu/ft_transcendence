@@ -56,7 +56,7 @@ ps:
 	$(COMPOSE) ps
 
 privileged:
-	@docker run --rm -it --privileged -v /home/tclaereb:/host ubuntu bash
+	@docker run --rm -it --privileged -v /home/$(USER):/host ubuntu bash
 
 commit:
 	@git add .

@@ -16,9 +16,28 @@ function Login() {
 	};
 
 	const handleSubmit = async (e) => {
-    e.preventDefault();
-    await login(playerName, password);
-  };
+		e.preventDefault();
+		try {
+			const request = await fetch("/api/users/login", {
+				headers: {
+					'Accept': 'application/json',
+					'Content-Type': 'application/json'
+				},
+				method: "PATCH",
+				body: JSON.stringify({
+					"login_email": playerName,
+					"password": password
+				}),
+			})
+			if (request.ok) {
+				console.log(await request.json());
+				handleLogin(login(playerName));
+			}
+		} catch (error) {
+			console.log(error);
+
+		}
+	};
 
 	return (
 		<Page center>
@@ -47,7 +66,7 @@ function Login() {
 						onChange={(e) => setPassword(e.target.value)}
 					/>
 
-					<Button onClick={handleLogin} disabled={!playerName || !password}>
+					<Button onClick={handleSubmit} disabled={!playerName && !password}>
 						LET'S PLAY
 					</Button>
 					<div className="flex flex-col justify-center items-center">

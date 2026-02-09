@@ -130,8 +130,6 @@ volumes:
   nginx_data:
   website_data:
   api_data:
-  game_db_data:
-  
   auth_db_data:
     driver: local
     driver_opts:

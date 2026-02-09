@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
 import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 import { Card, Page, Input, Button } from "../ui";
 
 function Register() {
@@ -48,6 +49,13 @@ function Register() {
 				<h2 className="text-center font-pixelm text-xl font-bold mb-4">
 					NEW ACCOUNT
 				</h2>
+
+				<p className="flex flex-row justify-center py-2">
+					already have an account ?
+					<Link className="text-purple-300 px-2 font-bold" to="/">
+						sign in
+					</Link>
+				</p>
 
 				<form className="sm:text-right grid gap-3 grid-cols-1 sm:grid-cols-[auto_1fr]" onSubmit={handleSubmit}>
 					<label className="sm:p-2">
@@ -98,7 +106,6 @@ function Register() {
 						REGISTER
 					</Button>
 				</div>
-
 			</Card>
 		</Page>
 	);
