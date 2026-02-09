@@ -19,15 +19,13 @@ function Navbar() {
 		setOpen(false);
 	};
 
+	// Handler pour bouton test JWT a supprimer plus tard + suppr ligne 60-62
 	const handleJWT = async (e) => {
 		e.preventDefault();
 		try {
 			const request = await fetch("/tests/test_jwt", {
 				method: "GET",
-			})
-			if (request.ok) {
-				console.log(await request.json());
-			}
+			});
 		} catch (error) {
 			console.log(error);
 		}
