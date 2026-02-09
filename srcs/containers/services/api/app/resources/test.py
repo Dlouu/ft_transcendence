@@ -27,16 +27,11 @@ class Test(Resource):
 		print(request.remote_user, flush=True)
 		return {}, 200
 
-jwt_test = ns.model("JWTTest", {
-	"jwt": fields.String()
-})
-
 @ns.route("/test_jwt")
 class TestJWT(Resource):
-	@ns.expect(jwt_test)
 	@ns.doc(security="BearerAuth")
 	@ns.jwt_required()
-	def post(self):
+	def get(self):
 		return {"message": "success", "data": [g.token_payload]}, 200
 
 
