@@ -206,7 +206,7 @@ def login():
 	if data is None:
 		with open("test_login.json", "r") as f:
 			data = json.load(f)
-	username_or_login = data.get("email") or data.get("username")
+	username_or_login = data.get("login_email")
 	password = data.get("password")
 	if not username_or_login and password:
 		return {"message": "infobulle: nothing given"}, 438

@@ -20,9 +20,15 @@ class UserUpdateSchema(Schema):
 
 user_update_schema = UserUpdateSchema()
 
-class UserLoginSchema(Schema):
-	email = fields.Email(required=True)
+class UserRegistrationSchema(Schema):
+	email = fields.String(required=True)
 	username = fields.String(required=True)
+	password = fields.String(required=True, load_only=True)
+
+user_registration_schema = UserRegistrationSchema()
+
+class UserLoginSchema(Schema):
+	login_email = fields.String(required=True)
 	password = fields.String(required=True, load_only=True)
 
 user_login_schema = UserLoginSchema()
