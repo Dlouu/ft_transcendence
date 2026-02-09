@@ -19,6 +19,28 @@ function Navbar() {
 		setOpen(false);
 	};
 
+	const handleJWT = async (e) => {
+		e.preventDefault();
+		try {
+			const request = await fetch("/tests/test_jwt", {
+				headers: {
+					'Accept': 'application/json',
+					'Content-Type': 'application/json'
+				},
+				method: "POST",
+				body: JSON.stringify({
+					"jwt": "caca"
+				}),
+			})
+			if (request.ok) {
+				console.log(await request.json());
+			}
+		} catch (error) {
+			console.log(error);
+
+		}
+	};
+
 	const navLinks = [
 		{ to: "/", label: "PLAY" },
 		{ to: "/gallery", label: "CUSTOMIZE" },
@@ -44,6 +66,10 @@ function Navbar() {
 			<Link to="/" className="text-lg font-pixelm font-bold text-purple-500">
 				UwUNO
 			</Link>
+
+		{/* A delete, pour tester si y'a le cookie actif */}
+			<div className="px-2"></div>
+			<Button variant="icon" onClick={handleJWT}>󱛞</Button>
 
 		{/* Burger */}
 			{user && (
