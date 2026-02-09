@@ -8,7 +8,6 @@ def update_session_token():
 	try:
 		response = requests.get(
 			"http://auth:5055/token_handler/update",
-			json=request.json,
 			headers=request.headers,
 			timeout=5
 		)
@@ -41,15 +40,17 @@ def jwt_required(self):
 
 			try:
 				payload = st.decode_session_token(token)
-				print(payload, flush=True)
+				g.token = token
+				g.token_payload = payload
 			except ExpiredSignatureError:
 				response, code = update_session_token()
-
 				if code != 201:
 					print(f"An error occured in the auth service while generating a new session token / refresh token. Code: {code}, error: {response}", flush=True)
 					return {"message": "Missing or invalid token."}, code
 
 				g.x_new_token = response.get("token")
+				g.token = response.get("token")
+				g.token_payload = st.decode_session_token(g.token)
 			except Exception as e:
 				print(e, flush=True)
 				print("Undefined exception have been raised in the jwt check, resolve this or handle this behavior.", flush=True)

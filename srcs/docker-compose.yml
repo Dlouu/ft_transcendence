@@ -42,7 +42,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
       USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
-      S3_BUCKET_DATABASE_URI: mysql+mysqldb://s3_bucket_user:user_pwd@s3_bucket_db:3306/user_obj_links
+      S3_BUCKET_NAME: s3-transcendence-bucket
     ports:
       - 5050:5000
     volumes:

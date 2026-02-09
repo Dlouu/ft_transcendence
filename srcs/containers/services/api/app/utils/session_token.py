@@ -1,6 +1,7 @@
 import jwt
 from app.extensions import cache_token, r
 
+
 UNAVAILABLE_MESSAGE = "WARNING: Redis is unavailable, the service might be offline or bad configured in this one."
 
 def does_session_token_exist(key):
@@ -34,7 +35,16 @@ def decode_session_token(key):
 
 	if not does_session_token_exist(key):
 		return None
-	data = r.hgetall(f"token:{key}")
 
+	data = r.hgetall(f"token:{key}")
 	payload = jwt.decode(key, data["public"], algorithms="RS256")
+
 	return payload
+
+def get_token_from_request(request):
+	auth_header = request.headers.get("Authorization")
+
+	if not auth_header or not auth_header.startswith("Bearer "):
+		return None
+
+	return auth_header.split(" ", 1)[1]

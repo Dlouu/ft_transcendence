@@ -35,6 +35,7 @@ def generate_session_token(user_id, tid, headers, remote_addr):
 	).decode("utf-8")
 
 	created_at = datetime.now(tz=timezone.utc) + timedelta(seconds=int(os.getenv("SESSION_TOKEN_EXPIRATION", "3600")))
+	# created_at = datetime.now(tz=timezone.utc) + timedelta(seconds=15)
 	payload = {
 		"user_id": user_id,
 		"tid": tid,
@@ -65,7 +66,7 @@ def store_session_token(key, public, user_id):
 		return False
 
 	r.hset(f"token:{key}", mapping={"public": public, "user_id": user_id})
-	r.expire(f"token:{key}", int(os.getenv("SESSION_TOKEN_EXPIRATION", 3600)) + 300)
+	r.expire(f"token:{key}", int(os.getenv("SESSION_TOKEN_EXPIRATION", 3600)) + 3600)
 	return True
 
 def delete_session_token(key):
