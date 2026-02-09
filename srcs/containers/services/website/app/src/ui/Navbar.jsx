@@ -23,21 +23,13 @@ function Navbar() {
 		e.preventDefault();
 		try {
 			const request = await fetch("/tests/test_jwt", {
-				headers: {
-					'Accept': 'application/json',
-					'Content-Type': 'application/json'
-				},
-				method: "POST",
-				body: JSON.stringify({
-					"jwt": "caca"
-				}),
+				method: "GET",
 			})
 			if (request.ok) {
 				console.log(await request.json());
 			}
 		} catch (error) {
 			console.log(error);
-
 		}
 	};
 
