@@ -21,10 +21,10 @@ function App() {
 	return (
 		<AppLayout>
 			<Routes>
-				{/* <Route path="/" element={user ? <Game /> : <Login />}/> */}
-				<Route path="/" element={user ? <Home /> : <Login />}/>
-				{/* <Route path="/game" element={<Game />}/> */}
-				<Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>}/>
+				<Route path="/" element={user ? <Game /> : <Game />}/>
+				{/* <Route path="/" element={user ? <Home /> : <Login />}/> */}
+				<Route path="/game" element={<Game />}/>
+				{/* <Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>}/> */}
 				<Route path="/register" element={<Register />}/>
 				<Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>}/>
 				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>}/>

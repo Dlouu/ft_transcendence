@@ -1,5 +1,7 @@
-import { Application, Assets, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
-import uwuBack from '../gallery/UwU-back.png';
+import { Application, Assets, Graphics, Sprite, Texture } from 'pixi.js';
+import { Hand, HandRotation } from './game/Hand';
+import { CardPool } from './game/CardPool';
+import { AssetsManager, CardSet, CardsTheme, CardValue } from './game/AssetsManager';
 
 interface IGameInitOptions
 {
@@ -10,15 +12,20 @@ export class GameService
 {
     private app: Application | null = null;
 
-    private isInitialized: boolean = false;
+    private _isInitialized: boolean = false;
 
-    private theme: any | null = null;
-    private texture: any | null = null;
+    private _playerHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.DEG_0);
+    private _topOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.DEG_180);
+    private _leftOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.DEG_90);
+    private _rightOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.DEG_270);
+
+    private _cardPool!: CardPool;
+    private _assetsMangr!: AssetsManager;
 
     constructor()
     {
         this.app = null;
-        this.isInitialized = false;
+        this._isInitialized = false;
     }
 
     /**
@@ -44,14 +51,25 @@ export class GameService
             antialias: true
         });
 
-        this.isInitialized = true;
+        this._assetsMangr = new AssetsManager();
+
+        this._cardPool = new CardPool(this.app.stage);
+
+        await this._assetsMangr.loadTheme(CardsTheme.Uwu);
+        await this._assetsMangr.loadCardBacks(["uwu"]);
+
+        this._cardPool = new CardPool(this.app.stage);
+
+        this.app.stage.addChild(this._playerHand, 
+                                this._topOppHand,
+                                this._leftOppHand,
+                                this._rightOppHand);
+
+        this._isInitialized = true;
+
+        this.onResize(canvas.clientWidth, canvas.clientHeight);
 
         this.start();
-    }
-
-    private async preloadGameAssets(): Promise<void>
-    {
-
     }
 
     /**
@@ -59,10 +77,26 @@ export class GameService
      */
     public start(): void
     {
-        if (!this.app || !this.isInitialized) return;
+        if (!this.app || !this._isInitialized) return;
 
         // Example: Add a simple "Card" to the stage
-        this.drawExampleCardFromSprite();
+        // this.drawExampleCardFromSprite();
+
+        // TO DELETE, JUST FOR TEST
+        for (let i = 0; i < 7; i++) {
+            const upCard = this._cardPool.getCard();
+            const dowTopCard = this._cardPool.getCard();
+            const dowLeftCard = this._cardPool.getCard();
+            const dowRightCard = this._cardPool.getCard();
+            upCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, CardValue.One), true);
+            dowTopCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
+            dowLeftCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
+            dowRightCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
+            this._playerHand.addCard(upCard);
+            this._topOppHand.addCard(dowTopCard);
+            this._leftOppHand.addCard(dowLeftCard);
+            this._rightOppHand.addCard(dowRightCard);
+        }
 
         // Pixi handles the loop automatically via app.ticker
         // You can add your own update logic here:
@@ -74,52 +108,27 @@ export class GameService
 
     /**
      * Main Game Loop
-     * @param dt Delta time from Pixi Ticker
+     * @param _dt Delta time from Pixi Ticker
      */
-    private update(dt: number): void
+    private update(_dt: number): void
     {
         // Add your game logic here
         // Example: socket.emit('playerMove', ...)
     }
 
-    /**
-     * Example function to draw something using Pixi
-     */
-    private drawExampleCard(): void
-    {
-        if (!this.app) return;
+    // private async drawExampleCardFromSprite(): Promise<void>
+    // {
+    //     if (!this.app) return;
+    //     // Create a card graphic
+    //     const card = new Sprite(this._textures[0]);
 
-        // Create a card graphic
-        const card = new Graphics();
-        
-        // Draw Card Body (Yellow)
-        card.roundRect(0, 0, 100, 150, 10);
-        card.fill("#4A4A4A"); // Gold/Yellow
-        
-        // Add a border
-        card.stroke({ width: 4, color: 0xFFFFFF });
+    //     // Position in center
+    //     card.x = this.app.screen.width / 2 - 50;
+    //     card.y = this.app.screen.height / 2 - 75;
 
-        // Position in center
-        card.x = this.app.screen.width / 2 - 50;
-        card.y = this.app.screen.height / 2 - 75;
-
-        // Add to stage
-        this.app.stage.addChild(card);
-    }
-
-    private async drawExampleCardFromSprite(): Promise<void>
-    {
-        if (!this.app) return;
-        // Create a card graphic
-        const card = new Sprite(this.texture);
-
-        // Position in center
-        card.x = this.app.screen.width / 2 - 50;
-        card.y = this.app.screen.height / 2 - 75;
-
-        // Add to stage
-        this.app.stage.addChild(card);
-    }
+    //     // Add to stage
+    //     this.app.stage.addChild(card);
+    // }
 
     /**
      * Handle window resizing.
@@ -127,15 +136,34 @@ export class GameService
      */
     public onResize(width: number, height: number): void
     {
-        if (!this.app || !this.isInitialized) return;
+        if (!this.app || !this._isInitialized) return;
 
         console.log("Width : " + width + " | Height : " + height)
 
-        // Tell Pixi renderer to resize
-        this.app.renderer.resize(width, height);
+        // this.app.renderer.resize(width, height);
 
-        // Optional: Re-center elements after resize
-        // this.recalculateLayout();
+        const w = this.app.screen.width;
+        const h = this.app.screen.height;
+
+        // 1. Player Hand: Positioned at Bottom Center
+        this._playerHand.position.set(w / 2, h * 0.875); 
+        this._playerHand.resize(w, h);
+        this._playerHand.setVisible(true);
+
+        // 2. Top Opponent: Positioned at Top Center
+        this._topOppHand.position.set(w / 2, h * 0.125);
+        this._topOppHand.resize(w, h);
+        this._topOppHand.setVisible(true);
+
+        // 3. Left Opponent: Positioned at Left Center
+        this._leftOppHand.position.set(w * 0.09, h / 2);
+        this._leftOppHand.resize(w, h);
+        this._leftOppHand.setVisible(true);
+
+        // 4. Right Opponent: Positioned at Right Center
+        this._rightOppHand.position.set(w * 0.91, h / 2);
+        this._rightOppHand.resize(w, h);
+        this._rightOppHand.setVisible(true);
     }
 
     /**
@@ -145,13 +173,11 @@ export class GameService
     {
         if (this.app)
         {
-            // Destroy the application, but KEEP the canvas (false)
-            // because React controls the DOM element.
             this.app.destroy({ removeView: false }, { children: true });
             this.app = null;
         }
         
-        this.isInitialized = false;
+        this._isInitialized = false;
     }
 }
 

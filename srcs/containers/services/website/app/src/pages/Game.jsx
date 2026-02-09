@@ -23,7 +23,7 @@ function Game() {
 
 	const enterFullscreen = () => {
 		console.log("Game unmounted");
-		const el = containerRef.current;
+		const el = canvasRef.current;
 		if (!el) return;
 
 		if (el.requestFullscreen) el.requestFullscreen();
@@ -70,7 +70,7 @@ function Game() {
 				>
 					<canvas
 						ref={canvasRef}
-						className="w-full h-full bg-white"
+						className="w-full h-full bg-black"
 					/>
 					<Button
 						variant="fullscreen"
