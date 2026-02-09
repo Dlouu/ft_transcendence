@@ -151,4 +151,4 @@ def does_refresh_token_exist(user_id, request):
 		elif row.last_token and row.last_token == generate_refresh_token_from_rules(request, row.rules.last_token_rules):
 			return True, True, row.id
 
-	return False
+	return False, False, -1
