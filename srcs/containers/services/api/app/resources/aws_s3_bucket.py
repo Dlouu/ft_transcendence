@@ -6,6 +6,7 @@ from uuid import uuid4
 import os
 
 from app.schemas.card_gallery import card_gallery_schema
+from app.models.card_gallery import CardGallery
 from app.utils import session_token as st
 from app.extensions import s3, db
 
@@ -49,8 +50,8 @@ class Upload(Resource):
 
 		print(s3_url, flush=True)
 
-		if True:
-			return {"message": "bypass"}, 200
+		# if True:
+		# 	return {"message": "bypass"}, 200
 
 		try:
 			image_db_obj = card_gallery_schema.load({"user_id": payload["user_id"], "img_url": s3_url})
@@ -73,3 +74,20 @@ class Upload(Resource):
 
 		db.session.commit()
 		return {"message": "success"}, 201
+
+@ns.route("/card_image/<user_id>")
+class GetCardImage(Resource):
+	def get(self, user_id):
+		query = CardGallery().query.filter_by(user_id=user_id)
+
+		images_url = []
+		for row in query.yield_per(50):
+			url = s3.generate_presigned_url(
+				ClientMethod="get_object",
+				Params={"Bucket": os.getenv("S3_BUCKET_NAME"), "Key": row.img_url},
+				ExpiresIn = 3600,
+			)
+			images_url.append(url)
+			obj = s3.get_object(Bucket=os.getenv("S3_BUCKET_NAME", ""), Key=row.img_url)
+
+		return {"message": "success", "images_url": images_url}, 200
