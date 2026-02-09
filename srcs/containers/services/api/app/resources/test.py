@@ -1,5 +1,5 @@
 from flask_restx import Resource, Namespace, fields
-from flask import request
+from flask import request, g
 import requests
 
 
@@ -37,7 +37,7 @@ class TestJWT(Resource):
 	@ns.doc(security="BearerAuth")
 	@ns.jwt_required()
 	def post(self):
-		return {"message": "success"}, 200
+		return {"message": "success", "data": [g.token_payload]}, 200
 
 
 @ns.route("/test_refresh_token")

@@ -26,7 +26,7 @@ def jwt_required(self):
 	def decorator(f):
 		@wraps(f)
 		def decorated(*args, **kwargs):
-			auth_header = request.headers.get("Authorization")
+			auth_header = request.cookies.get("session_token")
 
 			if not auth_header or not auth_header.startswith("Bearer "):
 				print(f"Missing header or bearer for remote address {request.remote_addr}", flush=True)

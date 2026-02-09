@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask import request, g
 from app.models.user import User
 from app.extensions import db
-from app.schemas.user import user_login_schema, user_schema, user_update_schema
+from app.schemas.user import user_registration_schema, user_login_schema, user_schema, user_update_schema
 from app.utils import session_token as st
 from marshmallow import ValidationError
 from datetime import datetime, timezone
@@ -11,7 +11,7 @@ import jwt
 
 ns = Namespace("users", description="User operations")
 
-user_login_model = ns.model("UserLogin", {
+user_registration_model = ns.model("UserRegistration", {
 	"email": fields.String(required=True),
 	"username": fields.String(required=True),
 	"password": fields.String(required=True),
@@ -19,7 +19,7 @@ user_login_model = ns.model("UserLogin", {
 
 @ns.route("/registration")
 class UserRegistration(Resource):
-	@ns.expect(user_login_model)
+	@ns.expect(user_registration_model)
 	def post(self):
 		"""
 		Prepare the communication with the authentification service to create a new user.
@@ -37,7 +37,7 @@ class UserRegistration(Resource):
 		"""
 		auth_data = None
 		try:
-			auth_data = user_login_schema.load(request.json)
+			auth_data = user_registration_schema.load(request.json)
 		except ValidationError as err:
 			return {"message": err.messages}, 400
 
@@ -74,6 +74,12 @@ class UserRegistration(Resource):
 		g.x_new_token = json_response["token"]
 		return {"message": "success", "id": user.id}, response.status_code
 
+
+user_login_model = ns.model("UserLogin", {
+	"login_email": fields.String(required=True),
+	"password": fields.String(required=True),
+})
+
 @ns.route("/login")
 class UserLogin(Resource):
 	@ns.expect(user_login_model)
@@ -94,7 +100,7 @@ class UserLogin(Resource):
 			503: Unable to communicate witht the auth service.
 		"""
 		try:
-			user_login_schema.load(request.json)
+			auth_data = user_login_schema.load(request.json)
 		except ValidationError as err:
 			return {"message": err.messages}, 400
 
@@ -126,7 +132,6 @@ class UserLogin(Resource):
 
 		if not user:
 			try:
-				auth_data = user_login_schema.load(request.json)
 				user_payload = {"username": auth_data["username"], "user_id": json_response["id"]}
 				user = user_schema.load(user_payload)
 				db.session.add(user)

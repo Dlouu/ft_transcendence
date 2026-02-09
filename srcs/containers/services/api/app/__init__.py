@@ -25,7 +25,14 @@ def	create_app():
 	@app.after_request
 	def after_request_handler(response):
 		if hasattr(g, "x_new_token"):
-			response.headers['x_new_token'] = f"Bearer {g.x_new_token}"
+			response.set_cookie(
+				"session_token",
+				f"Bearer {g.x_new_token}",
+				httponly=True,
+				secure=True,
+				samesite="None",
+				max_age=3600*24
+			)
 		return response
 
 	return app
