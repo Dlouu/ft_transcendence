@@ -121,9 +121,10 @@ def decode_session_token(key):
 
 	if not does_session_token_exist(key):
 		return None
-	data = r.hgetall(f"token:{key}")
 
+	data = r.hgetall(f"token:{key}")
 	payload = jwt.decode(key, data["public"], algorithms="RS256")
+
 	return payload
 
 def get_token_associated_data(key):

@@ -1,18 +1,14 @@
 from flask import Blueprint, render_template, request, redirect, jsonify
-from dotenv import load_dotenv
-import requests
-import os
-import json
-import bcrypt
-import string
-import re
 from sqlalchemy.exc import IntegrityError
+from dotenv import load_dotenv
 from sqlalchemy import or_
-import datetime
-from .user import User, email_exists, username_exists, load_user_payload
-from .extensions import db
+import requests, os, json, bcrypt
+
 from app.utils import session_token as st
 from app.utils import refresh_token as rt
+from app.utils import user_check as uc
+from app.models.user import User
+from .extensions import db
 
 load_dotenv()
 
@@ -87,7 +83,7 @@ def oauth42_callback():
 	if existing is not None:
 		return {"message": "Successful 42api login (already logged once previously)"}, 200
 	try:
-		user_payload = load_user_payload(data)
+		user_payload = uc.load_user_payload(data)
 		db.session.add(user_payload)
 		db.session.commit()
 	except Exception as exc:
@@ -99,28 +95,28 @@ def oauth42_callback():
 def registration():
 	data = request.get_json(silent=True)
 
-	if not re.fullmatch(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}", data.get("email")):
+	if not uc.is_email_valid(data.get("email", "")):
 		return {"message": "The email is not valid."}, 409
 
 	min_len = int(os.getenv("AUTH_MIN_USERNAME_LENGTH", "3"))
 	max_len = int(os.getenv("AUTH_MAX_USERNAME_LENGTH", 10))
-	if not re.fullmatch(rf"^[A-Za-z0-9_-]{{{min_len},{max_len}}}$", data.get("username") or ""):
+	if not uc.is_username_valid(data.get("username", "")):
 		return {"message": f"The username is not valid, only alphanumeric, _ and - characters are allowed. Length must be between {min_len} and {max_len}"}, 400
 
 	min_len = int(os.getenv("AUTH_MIN_PASS_LENGTH"))
 	max_len = int(os.getenv("AUTH_MAX_PASS_LENGTH"))
 	password = data.get("password") or ""
-	if not re.fullmatch(rf"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{{{min_len},{max_len}}}$", password):
+	if not uc.is_password_valid(password):
 		return {"message": f"Password is not valid, it must have at least one upper character, one lower, one digit, one special character and a length  between {min_len} and {max_len}"}, 400
 
 	try:
-		user = load_user_payload(data)
+		user = uc.load_user_payload(data)
 	except ValueError as exc:
 		return {"message": str(exc)}, 400
 
-	if email_exists(user.email):
+	if uc.email_exists(user.email):
 		return {"message": "Email already exists."}, 409
-	if username_exists(user.username):
+	if uc.username_exists(user.username):
 		return {"message": "username already exists"}, 410
 
 	try:

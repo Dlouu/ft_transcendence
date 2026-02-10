@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask import request, g
 from app.models.user import User
 from app.extensions import db
-from app.schemas.user import user_registration_schema, user_login_schema, user_schema, user_update_schema
+from app.schemas.user import user_registration_schema, user_login_schema, user_schema
 from app.utils import session_token as st
 from marshmallow import ValidationError
 from datetime import datetime, timezone
@@ -101,7 +101,7 @@ class UserLogin(Resource):
 		try:
 			auth_data = user_login_schema.load(request.json)
 		except ValidationError as err:
-			return {"message": err.messages}, 400
+			return {"message": "The body format isn't valid."}, 400
 
 		try:
 			response = requests.post(
@@ -111,21 +111,20 @@ class UserLogin(Resource):
 				timeout=5
 			)
 		except requests.exceptions.ConnectionError as e:
-			print(f"Unable to communicate with the auth service for login ({e})", flush=True)
+			print(f"{request.path}: Unable to communicate with the auth service ({e})", flush=True)
 			return {"message": "Service currently unavailable."}, 503
 		except Exception as e:
-			print(f"WARNING: unhandled error happened in the login entrypoint ({e})", flush=True)
+			print(f"{request.path}: WARNING: unhandled error happened, fix this as soon as possible ({e})", flush=True)
 			return {"message": "Failed to log the user."}, 401
-
 
 		try:
 			json_response = response.json()
 		except requests.exceptions.JSONDecodeError as e:
-			print("Something went wrong while decoding the response to json, the auth service may have encountered an error and crashed.", flush=True)
-			return {"message": "Something wrong when trying to log the user."}, 400
+			print(f"{request.path}: Something went wrong while decoding the response to json, the auth service may have encountered an error and crashed.", flush=True)
+			return {"message": f"Something wrong when trying to log the user."}, 400
 
 		if response.status_code != 200:
-			return json_response, 400
+			return json_response, response.status_code
 
 		user = User.query.filter_by(user_id=json_response["id"]).first()
 
@@ -136,14 +135,11 @@ class UserLogin(Resource):
 				db.session.add(user)
 				db.session.commit()
 			except Exception as e:
-				print(e, flush=True)
+				print(f"{request.path}: something went wrong while trying to initialize the user in the database. ({e})", flush=True)
 				return {"message": "The user exist but something went wrong while initializing his metadata. If the problem persist contact an admin."}, 401
 
-		update_payload = {"is_active": True, "updated_at": datetime.now(timezone.utc)}
-		update_data = user_update_schema.load(update_payload)
-
-		for k, v in update_data.items():
-			setattr(user, k, v)
+		user.is_active = True
+		user.updated_at = datetime.now(timezone.utc)
 
 		db.session.commit()
 		g.x_new_token = json_response["token"]

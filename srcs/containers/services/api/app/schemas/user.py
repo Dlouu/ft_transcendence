@@ -14,12 +14,6 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
-class UserUpdateSchema(Schema):
-	is_active = fields.Boolean(required=True)
-	updated_at = fields.DateTime(required=True)
-
-user_update_schema = UserUpdateSchema()
-
 class UserRegistrationSchema(Schema):
 	email = fields.String(required=True)
 	username = fields.String(required=True)
@@ -32,3 +26,9 @@ class UserLoginSchema(Schema):
 	password = fields.String(required=True, load_only=True)
 
 user_login_schema = UserLoginSchema()
+
+class UserUpdateSchema(Schema):
+	email = fields.String(required=True)
+	username = fields.String(required=True)
+
+user_update_schema = UserUpdateSchema()

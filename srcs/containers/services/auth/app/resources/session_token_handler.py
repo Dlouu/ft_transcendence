@@ -4,9 +4,9 @@ from app.utils import session_token as st
 from app.utils.refresh_token import generate_refresh_token_rules, generate_refresh_token_from_rules, does_refresh_token_exist, generate_new_active_refresh_token
 
 
-token_handler = Blueprint("token_handler", __name__)
+ns = Blueprint("TokenValidationHandler", __name__)
 
-@token_handler.route("/update", methods=["GET"])
+@ns.route("/update", methods=["GET"])
 def update_token():
 	"""
 	This endpoint is used to create a new session token for a user, it check whether the user's session has its

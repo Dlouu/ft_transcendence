@@ -1,5 +1,4 @@
 from app.extensions import db
-from sqlalchemy.sql import func
 from app.models.card_gallery import CardGallery
 
 class User(db.Model):
