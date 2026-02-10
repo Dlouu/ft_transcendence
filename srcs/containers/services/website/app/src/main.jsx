@@ -4,16 +4,21 @@ import "./styles/index.css";
 import { GameProvider } from "./context/GameContext";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { AlertProvider } from "./context/AlertContext";
+import Notifications from "./ui/Notifications";
 
 const root = document.getElementById("root");
 
 ReactDOM.createRoot(root).render(
 	<AuthProvider>
-		<BrowserRouter>
-			<GameProvider>
-				<App />
-			</GameProvider>
-		</BrowserRouter>
+		<AlertProvider>
+			<BrowserRouter>
+				<GameProvider>
+					<App />
+					<Notifications />
+				</GameProvider>
+			</BrowserRouter>
+		</AlertProvider>
 	</AuthProvider>
 );
 

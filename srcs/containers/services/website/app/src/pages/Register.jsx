@@ -3,6 +3,7 @@ import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import { Card, Page, Input, Button } from "../ui";
+import { useNotifications } from "../context/AlertContext";
 
 function Register() {
 		const { login } = useContext(AuthContext);
@@ -16,6 +17,7 @@ function Register() {
 			password &&
 			passwordCheck &&
 			password === passwordCheck;
+		const { notify } = useNotifications();
 
 		const handleSubmit = async (e) => {
 		e.preventDefault();
@@ -32,12 +34,16 @@ function Register() {
 					"username": playerName
 				}),
 			})
-			if (request.ok)
-				console.log(await request.json());
-
+			const answer = await request.json();
+			if (request.ok) {
+				handleLogin();
+				notify(answer.message, "success");
+			}
+			else {
+				notify(answer.message, "error");
+			}
 		} catch (error) {
 			console.log(error);
-
 		}
 
 		await login(playerName, userEmail, password, passwordCheck);

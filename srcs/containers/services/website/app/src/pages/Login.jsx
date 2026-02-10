@@ -4,12 +4,14 @@ import { AuthContext } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import { Button, Page, Input, Card } from "../ui";
 import imageLog42 from "../assets/42login.svg"
+import { useNotifications } from "../context/AlertContext";
 
 function Login() {
 	const { login } = useContext(AuthContext);
 	const { playerName, setPlayerName } = useContext(GameContext);
 	const [password, setPassword] = useState("");
 	const passwordRef = useRef(null);
+	const { notify } = useNotifications();
 
 	const handleLogin = () => {
 		login(playerName);
@@ -29,13 +31,16 @@ function Login() {
 					"password": password
 				}),
 			})
+			const answer = await request.json();
 			if (request.ok) {
-				console.log(await request.json());
-				handleLogin(login(playerName));
+				handleLogin();
+				notify(answer.message, "success");
+			}
+			else {
+				notify(answer.message, "error");
 			}
 		} catch (error) {
 			console.log(error);
-
 		}
 	};
 
