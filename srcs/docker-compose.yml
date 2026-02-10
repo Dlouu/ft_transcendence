@@ -191,3 +191,7 @@ networks:
     driver: bridge
   s3_bucket_network:
     driver: bridge
+  redis_network:
+    driver: bridge
+  lobby_network:
+    driver: bridge
