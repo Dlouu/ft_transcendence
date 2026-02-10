@@ -93,83 +93,36 @@ def oauth42_callback():
 	except Exception as exc:
 		db.session.rollback()
 		return str(exc), 500
-	return {"message": "Successful 42api login (first time login)"}
-
-def check_valid_username(data):
-	check_username = data.get("username")
-	if not check_username:
-		return "Empty username", 430
-	check_username = check_username.strip()
-	if " " in check_username:
-		return "No space allowed", 431
-	if len(check_username) < 3 or len(check_username) > 64:
-		return "Username must be between 3 and 64 characters", 433
-	for c in check_username:
-		if not (c.isalnum() or c in "-_"):
-			return "Only alphanumeric characters and '-' or '_' are accepted", 436
-	return None
-
-'''
-8 characters minimum
-At least one uppercase and one lowercase letter. At least one symbol and one digit.
-'''
-
-def check_strong_password(str):
-	if len(str) < int(os.getenv("AUTH_MIN_PASS_LENGTH")) or len(str) > int(os.getenv("AUTH_MAX_PASS_LENGTH")):
-		return "Password must be between 8 and 64 characters", 440
-	has_upper = False
-	has_lower = False
-	has_symbol = False
-	has_digit = False
-
-	for c in str:
-		if c.isupper():
-			has_upper = True
-		elif c.islower():
-			has_lower = True
-		elif c.isdigit():
-			has_digit = True
-		elif c in string.punctuation:
-			has_symbol = True
-
-	if not has_upper:
-		return "Password is missing one uppercase character", 1
-	if not has_lower:
-		return "Password is missing one lowercase character", 2
-	if not has_digit:
-		return "Password is missing one digit", 3
-	if not has_symbol:
-		return "Password is missing one special character", 4
-	return None
+	return {"message": "Successful 42api login (first time login)."}
 
 @oauth.route("/registration", methods=["POST"])
 def registration():
 	data = request.get_json(silent=True)
-	# if data is None:
-	# 	with open("test_registration.json", "r") as f:
-	# 		data = json.load(f)
-	regex = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}"
-	if not re.fullmatch(regex, data.get("email")):
-		return {"message": "Invalid email"}, 409
-	error = check_valid_username(data)
-	if error is not None:
-		msg, code = error
-		return {"message": msg}, code
+
+	if not re.fullmatch(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}", data.get("email")):
+		return {"message": "The email is not valid."}, 409
+
+	min_len = int(os.getenv("AUTH_MIN_USERNAME_LENGTH", "3"))
+	max_len = int(os.getenv("AUTH_MAX_USERNAME_LENGTH", 10))
+	if not re.fullmatch(rf"^[A-Za-z0-9_-]{{{min_len},{max_len}}}$", data.get("username") or ""):
+		return {"message": f"The username is not valid, only alphanumeric, _ and - characters are allowed. Length must be between {min_len} and {max_len}"}, 400
+
+	min_len = int(os.getenv("AUTH_MIN_PASS_LENGTH"))
+	max_len = int(os.getenv("AUTH_MAX_PASS_LENGTH"))
+	password = data.get("password") or ""
+	if not re.fullmatch(rf"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{{{min_len},{max_len}}}$", password):
+		return {"message": f"Password is not valid, it must have at least one upper character, one lower, one digit, one special character and a length  between {min_len} and {max_len}"}, 400
+
 	try:
 		user = load_user_payload(data)
 	except ValueError as exc:
 		return {"message": str(exc)}, 400
+
 	if email_exists(user.email):
-		return {"message": "Email already exists"}, 409
+		return {"message": "Email already exists."}, 409
 	if username_exists(user.username):
 		return {"message": "Username already exists"}, 410
-	password = data.get("password")
-	if not password:
-		return {"message": "Missing password"}, 400
-	error = check_strong_password(password)
-	if error:
-		msg, code = error
-		return {"message": msg}, 400
+
 	try:
 		password_bytes = password.encode("utf-8")
 		password_hash = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
@@ -208,18 +161,19 @@ def login():
 	# 		data = json.load(f)
 	username_or_login = data.get("login_email")
 	password = data.get("password")
-	if not username_or_login and not password or not password or not username_or_login:
-		return {"message": "Please enter something"}, 438
+	if not username_or_login or not password:
+		return {"message": f"Username/Email or password is missing."}, 400
 	user = User.query.filter(or_(User.email == username_or_login, User.username == username_or_login)).first()
 	if user is None:
-		return {"message": "login/user and password mismatch"}, 439
+		return {"message": "Username/Email and password does not match."}, 400
+
 	try:
 		password_bytes = password.encode("utf-8")
 		password_hash = user.password.encode("utf-8")
 		if not bcrypt.checkpw(password_bytes, password_hash):
-			return {"message": "login/user and password mismatch"}, 439
+			return {"message": "Username/Email and password does not match."}, 400
 	except ValueError as exc:
-		return {"message": str(exc)}, 400
+		return {"message": "Something wrong happened when trying to login the user, if the problem persist contact an admin."}, 400
 
 	refresh_token_exist, is_last_one, tid = rt.does_refresh_token_exist(user.id, request)
 
@@ -237,4 +191,4 @@ def login():
 		"token": token
 	}
 
-	return response, 201
+	return response, 200

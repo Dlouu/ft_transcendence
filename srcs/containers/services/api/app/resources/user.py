@@ -7,7 +7,6 @@ from app.utils import session_token as st
 from marshmallow import ValidationError
 from datetime import datetime, timezone
 import requests
-import jwt
 
 ns = Namespace("users", description="User operations")
 
@@ -39,7 +38,7 @@ class UserRegistration(Resource):
 		try:
 			auth_data = user_registration_schema.load(request.json)
 		except ValidationError as err:
-			return {"message": err.messages}, 400
+			return {"message": "One or more fields are missing"}, 400
 
 		try:
 			response = requests.post(
@@ -51,7 +50,7 @@ class UserRegistration(Resource):
 
 			json_response = response.json()
 		except requests.exceptions.JSONDecodeError as e:
-			return {"message": "Failed to create the account."}, 401
+			return {"message": "Something wrong happened while creating the user, contact an admin if the problem persist."}, 401
 		except requests.exceptions.ConnectionError as e:
 			print(f"Unable to communicate with the auth service for registration ({e})", flush=True)
 			return {"message": "Service currently unavailable."}, 503
@@ -125,8 +124,8 @@ class UserLogin(Resource):
 			print("Something went wrong while decoding the response to json, the auth service may have encountered an error and crashed.", flush=True)
 			return {"message": "Something wrong when trying to log the user."}, 400
 
-		if response.status_code != 201:
-			return json_response, 502
+		if response.status_code != 200:
+			return json_response, 400
 
 		user = User.query.filter_by(user_id=json_response["id"]).first()
 
@@ -138,7 +137,7 @@ class UserLogin(Resource):
 				db.session.commit()
 			except Exception as e:
 				print(e, flush=True)
-				return {"message": "The user exist but something went wrong while initializing his metadata."}, 401
+				return {"message": "The user exist but something went wrong while initializing his metadata. If the problem persist contact an admin."}, 401
 
 		update_payload = {"is_active": True, "updated_at": datetime.now(timezone.utc)}
 		update_data = user_update_schema.load(update_payload)
@@ -149,4 +148,4 @@ class UserLogin(Resource):
 		db.session.commit()
 		g.x_new_token = json_response["token"]
 
-		return {"message": "success", "id": user.id}, 201
+		return {"message": "success", "id": user.id}, 200
