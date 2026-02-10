@@ -24,8 +24,8 @@ def home():
 
 @oauth.route("/oauth/42", methods=["GET"])
 def oauth42():
-	client_id = os.getenv("TRANSCENDANCE_ID")
-	redirect_uri = os.getenv("TRANSCENDANCE_REDIRECTION")
+	client_id = os.getenv("TRANSCENDENCE_ID")
+	redirect_uri = os.getenv("TRANSCENDENCE_REDIRECTION")
 
 	if not client_id or not redirect_uri:
 		return "Missing OAuth configuration", 500
@@ -48,10 +48,10 @@ def oauth42_callback():
 		"https://api.intra.42.fr/oauth/token",
 		data = {
 			"grant_type":"authorization_code",
-			"client_id": os.getenv("TRANSCENDANCE_ID"),
-			"client_secret": os.getenv("TRANSCENDANCE_SECRET"),
+			"client_id": os.getenv("TRANSCENDENCE_ID"),
+			"client_secret": os.getenv("TRANSCENDENCE_SECRET"),
 			"code": code,
-			"redirect_uri": os.getenv("TRANSCENDANCE_REDIRECTION"),
+			"redirect_uri": os.getenv("TRANSCENDENCE_REDIRECTION"),
 		},
 		timeout=10,
 	)
@@ -103,7 +103,7 @@ def registration():
 		return {"message": "The email is not valid."}, 409
 
 	min_len = int(os.getenv("AUTH_MIN_USERNAME_LENGTH", "3"))
-	max_len = int(os.getenv("AUTH_MAX_USERNAME_LENGTH", 10))
+	max_len = int(os.getenv("AUTH_MAX_USERNAME_LENGTH", "24"))
 	if not re.fullmatch(rf"^[A-Za-z0-9_-]{{{min_len},{max_len}}}$", data.get("username") or ""):
 		return {"message": f"The username is not valid, only alphanumeric, _ and - characters are allowed. Length must be between {min_len} and {max_len}"}, 400
 
