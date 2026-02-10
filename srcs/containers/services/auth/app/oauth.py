@@ -98,12 +98,12 @@ def oauth42_callback():
 def check_valid_username(data):
 	check_username = data.get("username")
 	if not check_username:
-		return "blank", 430
+		return "Empty username", 430
 	check_username = check_username.strip()
 	if " " in check_username:
-		return "not one single string", 431
+		return "No space allowed", 431
 	if len(check_username) < 3 or len(check_username) > 64:
-		return "length not valid", 433
+		return "Username must be between 3 and 64 characters", 433
 	for c in check_username:
 		if not (c.isalnum() or c in "-_"):
 			return "Only alphanumeric characters and '-' or '_' are accepted", 436
@@ -116,7 +116,7 @@ At least one uppercase and one lowercase letter. At least one symbol and one dig
 
 def check_strong_password(str):
 	if len(str) < int(os.getenv("AUTH_MIN_PASS_LENGTH")) or len(str) > int(os.getenv("AUTH_MAX_PASS_LENGTH")):
-		return "not a valid length", 440
+		return "Password must be between 8 and 64 characters", 440
 	has_upper = False
 	has_lower = False
 	has_symbol = False
@@ -133,13 +133,13 @@ def check_strong_password(str):
 			has_symbol = True
 
 	if not has_upper:
-		return "missing one uppercase character", 1
+		return "Password is missing one uppercase character", 1
 	if not has_lower:
-		return "missing one lowercase character", 2
+		return "Password is missing one lowercase character", 2
 	if not has_digit:
-		return "missing one digit", 3
+		return "Password is missing one digit", 3
 	if not has_symbol:
-		return "missing one special character", 4
+		return "Password is missing one special character", 4
 	return None
 
 @oauth.route("/registration", methods=["POST"])
@@ -150,7 +150,7 @@ def registration():
 	# 		data = json.load(f)
 	regex = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}"
 	if not re.fullmatch(regex, data.get("email")):
-		return {"message": "invalid email"}, 409
+		return {"message": "Invalid email"}, 409
 	error = check_valid_username(data)
 	if error is not None:
 		msg, code = error
@@ -160,12 +160,12 @@ def registration():
 	except ValueError as exc:
 		return {"message": str(exc)}, 400
 	if email_exists(user.email):
-		return {"message": "email already exists"}, 409
+		return {"message": "Email already exists"}, 409
 	if username_exists(user.username):
-		return {"message": "username already exists"}, 410
+		return {"message": "Username already exists"}, 410
 	password = data.get("password")
 	if not password:
-		return {"message": "missing password"}, 400
+		return {"message": "Missing password"}, 400
 	error = check_strong_password(password)
 	if error:
 		msg, code = error
@@ -178,7 +178,7 @@ def registration():
 		db.session.commit()
 	except IntegrityError:
 		db.session.rollback()
-		return {"message": "email already exists"}, 409
+		return {"message": "Email already exists"}, 409
 	except Exception as exc:
 		db.session.rollback()
 		return {"message": str(exc)}, 500
@@ -203,13 +203,13 @@ def registration():
 @oauth.route("/login", methods=["POST"])
 def login():
 	data = request.get_json(silent=True)
-	if data is None:
-		with open("test_login.json", "r") as f:
-			data = json.load(f)
+	# if data is None:
+	# 	with open("test_login.json", "r") as f:
+	# 		data = json.load(f)
 	username_or_login = data.get("login_email")
 	password = data.get("password")
-	if not username_or_login and password:
-		return {"message": "infobulle: nothing given"}, 438
+	if not username_or_login and not password or not password or not username_or_login:
+		return {"message": "Please enter something"}, 438
 	user = User.query.filter(or_(User.email == username_or_login, User.username == username_or_login)).first()
 	if user is None:
 		return {"message": "login/user and password mismatch"}, 439

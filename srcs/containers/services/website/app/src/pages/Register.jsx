@@ -36,8 +36,7 @@ function Register() {
 			})
 			const answer = await request.json();
 			if (request.ok) {
-				handleLogin();
-				notify(answer.message, "success");
+				await login(playerName, userEmail, password, passwordCheck);
 			}
 			else {
 				notify(answer.message, "error");
@@ -45,8 +44,6 @@ function Register() {
 		} catch (error) {
 			console.log(error);
 		}
-
-		await login(playerName, userEmail, password, passwordCheck);
 	};
 
 	return (

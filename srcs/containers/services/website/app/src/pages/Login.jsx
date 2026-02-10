@@ -34,7 +34,6 @@ function Login() {
 			const answer = await request.json();
 			if (request.ok) {
 				handleLogin();
-				notify(answer.message, "success");
 			}
 			else {
 				notify(answer.message, "error");
