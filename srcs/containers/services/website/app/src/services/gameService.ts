@@ -2,6 +2,7 @@ import { Application, Assets, Graphics, Sprite, Texture } from 'pixi.js';
 import { Hand, HandRotation } from './game/Hand';
 import { CardPool } from './game/CardPool';
 import { AssetsManager, CardSet, CardsTheme, CardValue } from './game/AssetsManager';
+import { CardPile } from './game/CardPile';
 
 interface IGameInitOptions
 {
@@ -14,10 +15,13 @@ export class GameService
 
     private _isInitialized: boolean = false;
 
-    private _playerHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.DEG_0);
-    private _topOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.DEG_180);
-    private _leftOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.DEG_90);
-    private _rightOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.DEG_270);
+    private _playerHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Bottom, true);
+    private _topOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Top);
+    private _leftOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Left);
+    private _rightOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Right);
+
+    private _deck: CardPile = new CardPile(null, true, true);
+    private _discard: CardPile = new CardPile(null, true, false);
 
     private _cardPool!: CardPool;
     private _assetsMangr!: AssetsManager;
@@ -28,9 +32,6 @@ export class GameService
         this._isInitialized = false;
     }
 
-    /**
-     * Initializes the Pixi Application with the canvas provided by React.
-     */
     public async init({ canvas }: IGameInitOptions): Promise<void>
     {
         if (!canvas)
@@ -63,7 +64,9 @@ export class GameService
         this.app.stage.addChild(this._playerHand, 
                                 this._topOppHand,
                                 this._leftOppHand,
-                                this._rightOppHand);
+                                this._rightOppHand,
+                                this._deck,
+                                this._discard);
 
         this._isInitialized = true;
 
@@ -83,20 +86,30 @@ export class GameService
         // this.drawExampleCardFromSprite();
 
         // TO DELETE, JUST FOR TEST
-        for (let i = 0; i < 7; i++) {
-            const upCard = this._cardPool.getCard();
+        const deckCard = this._cardPool.getCard();
+        deckCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
+        this._deck.setCard(deckCard);
+        const discardCard = this._cardPool.getCard();
+        discardCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, CardValue.One), true);
+        this._discard.setCard(discardCard);
+
+        for (let i = 0; i < 25; i++) {
             const dowTopCard = this._cardPool.getCard();
             const dowLeftCard = this._cardPool.getCard();
             const dowRightCard = this._cardPool.getCard();
-            upCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, CardValue.One), true);
             dowTopCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
             dowLeftCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
             dowRightCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
-            this._playerHand.addCard(upCard);
             this._topOppHand.addCard(dowTopCard);
             this._leftOppHand.addCard(dowLeftCard);
             this._rightOppHand.addCard(dowRightCard);
         }
+        for (let i = 0; i < 25; i++) {
+            const upCard = this._cardPool.getCard();
+            upCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, CardValue.One), true);
+            this._playerHand.addCard(upCard);
+        }
+        // END OF DELETE
 
         // Pixi handles the loop automatically via app.ticker
         // You can add your own update logic here:
@@ -138,32 +151,48 @@ export class GameService
     {
         if (!this.app || !this._isInitialized) return;
 
-        console.log("Width : " + width + " | Height : " + height)
+        // console.log("Width : " + width + " | Height : " + height)
 
         // this.app.renderer.resize(width, height);
 
         const w = this.app.screen.width;
         const h = this.app.screen.height;
 
-        // 1. Player Hand: Positioned at Bottom Center
+        // ===== HANDS =====
+
+        // Player Hand
         this._playerHand.position.set(w / 2, h * 0.875); 
         this._playerHand.resize(w, h);
         this._playerHand.setVisible(true);
 
-        // 2. Top Opponent: Positioned at Top Center
+        // Top Opponent
         this._topOppHand.position.set(w / 2, h * 0.125);
         this._topOppHand.resize(w, h);
         this._topOppHand.setVisible(true);
 
-        // 3. Left Opponent: Positioned at Left Center
-        this._leftOppHand.position.set(w * 0.09, h / 2);
+        // Left Opponent
+        this._leftOppHand.position.set(w * 0.07, h / 2);
         this._leftOppHand.resize(w, h);
         this._leftOppHand.setVisible(true);
 
-        // 4. Right Opponent: Positioned at Right Center
-        this._rightOppHand.position.set(w * 0.91, h / 2);
+        // Right Opponent
+        this._rightOppHand.position.set(w * 0.93, h / 2);
         this._rightOppHand.resize(w, h);
         this._rightOppHand.setVisible(true);
+
+        // ===== CARD PILES =====
+
+        let pilesOffset: number = w / 9;
+
+        // Deck
+        this._deck.position.set((w / 2) - pilesOffset, h / 2);
+        this._deck.resize(w, h);
+        this._deck.setVisible(true);
+
+        // Discard
+        this._discard.position.set((w / 2) + pilesOffset, h / 2);
+        this._discard.resize(w, h);
+        this._discard.setVisible(true);
     }
 
     /**

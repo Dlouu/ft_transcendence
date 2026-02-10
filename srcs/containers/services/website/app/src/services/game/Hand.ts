@@ -1,52 +1,51 @@
-import { Container } from 'pixi.js';
 import { UnoCard } from './UnoCard';
+import { Container } from 'pixi.js';
 
 export enum HandRotation
 {
-    DEG_0 = 0,      // Bottom Player (Horizontal)
-    DEG_90 = 90,    // Right Opponent (Vertical)
-    DEG_180 = 180,  // Top Opponent (Horizontal)
-    DEG_270 = 270   // Left Opponent (Vertical)
+    Bottom = 0,
+    Left = 90,
+    Top = 180,
+    Right = 270
 }
 
 export class Hand extends Container
 {
     private _cards: UnoCard[] = [];
-    
+    private _hoveredCard: UnoCard | null = null;
+
     // Config
-    /** Percentage of the canvas dimension (width or height) available for the hand to layout cards. */
     private _areaPercent: number;
-    
-    /** Percentage of a card's width that should be overlapped by the next card. */
     private _overlapPercent: number;
-    
-    /** Aspect ratio (width / height) used to maintain card proportions during resizing. */
     private _cardRatio: number;
-    
-    /** Current rotation state of the hand, determining its position on the table (e.g., DEG_0 for bottom player). */
-    private _rotationEnum: HandRotation;
+    private _isInteractive: boolean; // Only the player's hand should be interactive
+
+    // Responsiveness
+    private _hoverJumpPercent: number = 0.25; // Card moves up by 25% of its height
+    private _hoverSpreadPercent: number = 0.20; // Adjacent cards move away by 20% of card width
 
     // Dimensions
-    /** The current width of the rendering area/canvas. */
     private _canvasWidth: number = 0;
-    
-    /** The current height of the rendering area/canvas. */
     private _canvasHeight: number = 0;
-    
-    private _isVisible: boolean = true;
 
     constructor(
         areaPercent: number = 0.6,
-        overlapPercent: number = 0.5,
+        overlapPercent: number = 0.3,
         cardRatio: number = 0.66,
-        rotation: HandRotation = HandRotation.DEG_0
+        rotation: HandRotation = HandRotation.Bottom,
+        isInteractive: boolean = false,
+        isVisible: boolean = true
     )
     {
         super();
         this._areaPercent = areaPercent;
         this._overlapPercent = overlapPercent;
         this._cardRatio = cardRatio;
-        this._rotationEnum = rotation;
+        this._isInteractive = isInteractive;
+        this.visible = isVisible;
+        
+        // Ensure zIndex sorting works automatically
+        this.sortableChildren = true;
 
         this.angle = rotation;
     }
@@ -55,6 +54,18 @@ export class Hand extends Container
     {
         this._cards.push(card);
         this.addChild(card);
+        
+        // Setup Interaction if this hand is interactive (the player's hand)
+        if (this._isInteractive)
+        {
+            card.eventMode = 'static';
+            card.cursor = 'pointer';
+
+            // Use binding or arrow functions to preserve 'this' context
+            card.on('pointerenter', () => this.onCardHover(card));
+            card.on('pointerleave', () => this.onCardOut(card));
+        }
+
         this.updateLayout();
     }
 
@@ -63,8 +74,40 @@ export class Hand extends Container
         const index = this._cards.indexOf(card);
         if (index > -1)
         {
+            // Clean up listeners to prevent memory leaks
+            if (this._isInteractive)
+            {
+                card.removeAllListeners();
+                card.eventMode = 'none';
+                card.cursor = 'default';
+            }
+
             this._cards.splice(index, 1);
             this.removeChild(card);
+
+            if (this._hoveredCard === card)
+            {
+                this._hoveredCard = null;
+            }
+
+            this.updateLayout();
+        }
+    }
+
+    private onCardHover(card: UnoCard): void
+    {
+        if (this._hoveredCard !== card)
+        {
+            this._hoveredCard = card;
+            this.updateLayout();
+        }
+    }
+
+    private onCardOut(card: UnoCard): void
+    {
+        if (this._hoveredCard === card)
+        {
+            this._hoveredCard = null;
             this.updateLayout();
         }
     }
@@ -78,20 +121,13 @@ export class Hand extends Container
 
     public setRotation(rotation: HandRotation): void
     {
-        this._rotationEnum = rotation;
         this.angle = rotation;
         this.updateLayout();
     }
 
     public setVisible(visible: boolean): void
     {
-        this._isVisible = visible;
-        this.refreshVisibility();
-    }
-
-    public refreshVisibility(): void
-    {
-        this.visible = this._isVisible;
+        this.visible = visible;
     }
 
     private updateLayout(): void
@@ -99,34 +135,26 @@ export class Hand extends Container
         if (this._cards.length === 0 || this._canvasWidth === 0) return;
 
         const count = this._cards.length;
-        const isVertical = (this._rotationEnum === HandRotation.DEG_90 || this._rotationEnum === HandRotation.DEG_270);
 
+        // 1. Calculate Limits
         let handLengthAvailable = 0;
         let maxCardThickness = 0;
 
-		// handLengthAvailable = this._canvasHeight * this._areaPercent;
-		// maxCardThickness = this._canvasWidth * 0.15; 
-		handLengthAvailable = this._canvasWidth * this._areaPercent;
-		maxCardThickness = this._canvasHeight * 0.20;
+        handLengthAvailable = this._canvasWidth * this._areaPercent;
+        maxCardThickness = this._canvasHeight * 0.20;
 
+        // 2. Calculate Card Size
         let cardWidth = 0;
         let cardHeight = 0;
 
-        if (isVertical)
-        {
-            cardHeight = maxCardThickness;
-            cardWidth = cardHeight * this._cardRatio;
-        }
-        else
-        {
-            cardHeight = maxCardThickness;
-            cardWidth = cardHeight * this._cardRatio;
-        }
+        cardHeight = maxCardThickness;
+        cardWidth = cardHeight * this._cardRatio;
 
+        // 3. Spacing Logic
         const visiblePercent = 1 - this._overlapPercent;
         const normalStep = cardWidth * visiblePercent;
         const fullSpanIfNeeded = cardWidth + (count - 1) * normalStep;
-        
+
         let step = 0;
         let actualSpan = 0;
 
@@ -143,29 +171,57 @@ export class Hand extends Container
 
         const startOffset = -actualSpan / 2 + (cardWidth / 2);
 
+        // 4. Calculate Jump and Spread (Responsive)
+        // Move negative Y (up) relative to the hand container
+        const jumpOffset = -(cardHeight * this._hoverJumpPercent);
+        
+        // Calculate the extra X spacing for cards adjacent to the hovered card
+        const hoverSpread = cardWidth * this._hoverSpreadPercent;
+        const hoveredIndex = this._hoveredCard ? this._cards.indexOf(this._hoveredCard) : -1;
+
         for (let i = 0; i < count; i++)
         {
             const card = this._cards[i];
 
             card.width = cardWidth;
             card.height = cardHeight;
-            card.rotation = 0; 
-            card.x = startOffset + (step * i);
-            card.y = 0; 
-            card.zIndex = i;
+            card.rotation = 0;
 
-            // --- SHADOW ADJUSTMENT ---
-            // We want the shadow to fall on the PREVIOUS card (index i-1).
-            // Since cards are stacked i on top of i-1, and 'step' moves +X (Right),
-            // we must cast the shadow to -X (Left) to hit the card underneath.
-            
-            // Adjust scale of offset based on card size so it looks proportional
-            const shadowX = -(cardWidth * 0.05); // Negative X for left projection
-            const shadowY = cardHeight * 0.05;   // Positive Y for down projection
-            
-            card.setShadowOffset(shadowX, shadowY);
+            // Base X Position
+            let xPos = startOffset + (step * i);
+
+            // Apply Hover Spread (X Position)
+            if (hoveredIndex !== -1)
+            {
+                if (i < hoveredIndex)
+                {
+                    // Push left cards further left
+                    xPos -= hoverSpread;
+                }
+                else if (i > hoveredIndex)
+                {
+                    // Push right cards further right
+                    xPos += hoverSpread;
+                }
+                // The hovered card itself stays at its calculated center
+            }
+
+            card.x = xPos;
+
+            // Y Position and Z-Index (Handling the Hover)
+            if (card === this._hoveredCard)
+            {
+                card.y = jumpOffset;
+                // If hovered, put it visually in front of its neighbors
+                card.zIndex = count + 1;
+            }
+            else
+            {
+                card.y = 0;
+                card.zIndex = i;
+            }
         }
-        
+
         this.sortChildren();
     }
 }

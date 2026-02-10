@@ -9,7 +9,6 @@ export class UnoCard extends Container
     private _isFaceUp: boolean = false;
     private _shadowActive: boolean = false;
 
-    // Default offsets
     private _shadowOffsetX: number = 0;
     private _shadowOffsetY: number = 0;
 
@@ -37,9 +36,9 @@ export class UnoCard extends Container
         this._faceSprite.anchor.set(0.5);
         this._faceSprite.zIndex = 1;
 
-        this.addChild(this._shadowSprite); 
-        this.addChild(this._backSprite);
-        this.addChild(this._faceSprite);
+        this.addChild(this._shadowSprite,
+                    this._backSprite,
+                    this._faceSprite); 
 
         this.visible = false;
         this.reset();
