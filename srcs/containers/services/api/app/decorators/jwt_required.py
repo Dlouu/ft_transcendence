@@ -9,6 +9,7 @@ def update_session_token():
 		response = requests.get(
 			"http://auth:5055/token_handler/update",
 			headers=request.headers,
+			cookies=request.cookies,
 			timeout=5
 		)
 		return response.json(), response.status_code
@@ -30,7 +31,7 @@ def jwt_required(self):
 
 			if not auth_header or not auth_header.startswith("Bearer "):
 				print(f"Missing header or bearer for remote address {request.remote_addr}", flush=True)
-				return {"message": "Missing or invalid token."}, 401
+				return {"message": "No existing token."}, 401
 
 			token = auth_header.split(" ", 1)[1]
 

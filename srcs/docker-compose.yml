@@ -30,7 +30,6 @@ services:
       - 5173:5173
     networks:
       - website_network
-      - api_network
   api:
     container_name: service_api
     build: ./containers/services/api
@@ -43,14 +42,13 @@ services:
       CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
       USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
       S3_BUCKET_NAME: s3-transcendence-bucket
-    ports:
-      - 5050:5000
     volumes:
       - api_data:/var/www/api
+    ports:
+      - 5050:5050
     networks:
-      - api_network
-      - website_network
       - auth_network
+      - website_network
       - game_network
       - redis_network
       - user_db_network
@@ -68,13 +66,13 @@ services:
       AUTH_MAX_USERNAME_LENGTH: 24
       REFRESH_TOKEN_EXPIRATION: 3600
       REFRESH_TOKEN_EXPIRATION_CHECK_DELAY: 120
-      SESSION_TOKEN_EXPIRATION: 600
+      SESSION_TOKEN_EXPIRATION: 10
       TZ: UTC
     depends_on:
       - auth_db
     networks:
-      - redis_network
       - auth_network
+      - redis_network
       - auth_db_network
   game:
     container_name: service_game
@@ -153,8 +151,6 @@ volumes:
 
 networks:
   mariadb_network:
-    driver: bridge
-  api_network:
     driver: bridge
   auth_network:
     driver: bridge

@@ -66,7 +66,7 @@ def store_session_token(key, public, user_id):
 		return False
 
 	r.hset(f"token:{key}", mapping={"public": public, "user_id": user_id})
-	r.expire(f"token:{key}", int(os.getenv("SESSION_TOKEN_EXPIRATION", 3600)) + 3600)
+	r.expire(f"token:{key}", int(os.getenv("TOKEN_CACHE_LIFETIME", os.getenv("REFRESH_TOKEN_EXPIRATION", "3600"))))
 	return True
 
 def delete_session_token(key):

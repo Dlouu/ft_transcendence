@@ -1,6 +1,8 @@
 from flask import Flask, g
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import os
+
 from .config import Config
 from .extensions import db, ma
 
@@ -31,7 +33,7 @@ def	create_app():
 				httponly=True,
 				secure=True,
 				samesite="None",
-				max_age=3600*24
+				max_age=int(os.getenv("TOKEN_CACHE_LIFETIME", "3600"))
 			)
 		return response
 

@@ -23,12 +23,11 @@ def update_token():
 		401: If the user's request does not meet a requirement.
 		500: An error occured during the process.
 	"""
-	auth_header = request.headers.get("Authorization")
-
-	if not auth_header or not auth_header.startswith("Bearer "):
+	session_token = request.cookies.get("session_token")
+	if not session_token or not session_token.startswith("Bearer "):
 		return {"message": "Missing or invalid token in the request header."}, 401
 
-	token = auth_header.split(" ", 1)[1]
+	token = session_token.split(" ", 1)[1]
 
 	if not st.does_session_token_exist(token):
 		return {"message": "Missing token in the cache."}, 401
