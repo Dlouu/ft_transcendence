@@ -54,3 +54,12 @@ def update_information():
 
 	db.session.commit()
 	return {"message": "success"}, 200
+
+@ns.route("/email/<user_id>", methods=["GET"])
+def get_user_email(user_id):
+	user = User.query.filter_by(id=user_id).first()
+
+	if not user:
+		return {"message": f"No user found with the id {user_id}"}, 404
+
+	return {"message": "success", "email": user.email}, 200

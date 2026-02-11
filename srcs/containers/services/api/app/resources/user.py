@@ -2,13 +2,12 @@ from flask_restx import Namespace, Resource, fields
 from datetime import datetime, timezone
 from marshmallow import ValidationError
 from flask import request, g
-import requests
 
 from app.schemas.user import user_update_schema
 from app.models.user import User
 from app.extensions import db
-from app.services import session_service as st
 from app.services import request_service as rs
+from app.services import me_service as ms
 
 ns = Namespace("User", description="User endpoints")
 
@@ -20,23 +19,7 @@ class Me(Resource):
 
 		payload = g.token_payload
 
-		user = User.query.filter_by(user_id=payload["user_id"]).first()
-		if not user:
-			return {"message": "No user found using /me"}, 404
-
-		updated_at = datetime.now(timezone.utc)
-		user.updated_at = updated_at
-
-		db.session.commit()
-
-		response = {
-			"message": "success",
-			"user_id": user.user_id,
-			"username": user.username,
-			"created_at": user.created_at.timestamp(),
-			"updated_at": user.updated_at.timestamp()
-		}
-		return response, 200
+		return ms.me(payload["user_id"])
 
 update_information_model = ns.model("UpdateInformationModel", {
 	"username": fields.String(required=False),

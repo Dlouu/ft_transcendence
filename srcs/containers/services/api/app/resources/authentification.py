@@ -6,6 +6,7 @@ import requests
 
 from app.schemas.user import user_registration_schema, user_login_schema, user_schema
 from app.services import request_service as rs
+from app.services import me_service as ms
 from app.models.user import User
 from app.extensions import db
 
@@ -57,7 +58,7 @@ class UserRegistration(Resource):
 			return {"message": "Error while creating the user."}, 401
 
 		g.x_new_token = json_response["token"]
-		return {"message": "success", "id": user.id}, response.status_code
+		return ms.me(json_response["id"])
 
 
 user_login_model = ns.model("UserLogin", {
@@ -113,4 +114,4 @@ class UserLogin(Resource):
 		db.session.commit()
 		g.x_new_token = json_response["token"]
 
-		return {"message": "success", "id": user.id}, 200
+		return ms.me(json_response["id"])

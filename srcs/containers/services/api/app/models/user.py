@@ -12,6 +12,6 @@ class User(db.Model):
 	is_active = db.Column(db.Boolean, nullable=False, default=True)
 
 	created_at = db.Column(db.DateTime, server_default=db.func.now())
-	updated_at = db.Column(db.DateTime, onupdate=db.func.now())
+	updated_at = db.Column(db.DateTime, server_default=db.func.now())
 
 	cards = db.relationship("CardGallery", backref="card_gallery", lazy=True)
