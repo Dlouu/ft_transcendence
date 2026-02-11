@@ -32,6 +32,7 @@ Route for creating lobby. Checks in this order:
 Add the lobby to the lobby dict with 0 players and game not started. Start a timer to remove the lobby after X seconds if no one joins. Redirect to the join lobby page if success
 """
 @lobby.route("/create_lobby", methods=["POST"])
+# @login_jwt_required() #need to implement a function to check the jwt and get the user info from it.
 def create_lobby():
     room_name = request.form.get("room_name", "").strip().upper()
 
@@ -43,14 +44,14 @@ def create_lobby():
         return "No more rooms available", 603
 
     lobbies[room_name] = {"players": 0, "game_started": False}
-    lobby_removal(room_name, delay=10)
+    lobby_removal(room_name, delay=30)
 
     return redirect(url_for("lobby.join_lobby", code=room_name))
 
 # Join lobby with code
 @lobby.route("/join_lobby", methods=["POST"])
+# @login_jwt_required() #need to implement a function to check the jwt and get the user info from it.
 def join_lobby_post():
-    print("chaaaaaaaaaaaaaate", flush=True)
     user_code = request.form.get("code", "").strip().upper()
     if user_code not in lobbies:
         return "Room doesn't exist"
@@ -58,8 +59,8 @@ def join_lobby_post():
 
 #join lobby after creating the lobby
 @lobby.route("/join_lobby", methods=["GET"])
+# @login_jwt_required() #need to implement a function to check the jwt and get the user info from it.
 def join_lobby():
-    print("biiiiiiiiiiiiiiiiiiiiiiite", flush=True)
     code = request.args.get("code", "").strip().upper()
     if not code or code not in lobbies:
         return "Wrong room code"
@@ -68,7 +69,7 @@ def join_lobby():
 # SocketIO event for joining a lobby.
 @socketio.on("join_lobby")
 def join_lobby_socket(data):
-    print("sexeeeeeeeeeeeeeeeeeeeeeeee", flush=True)
+    # get the jwt
     code = (data.get("code") or "").strip().upper()
     if code not in lobbies:
         emit("error", {"message": "Room doesn't exist"})
@@ -118,7 +119,7 @@ def remove_lobby(code):
             socketid_lobby.pop(sid, None)
 
 # Start a timer to remove the lobby after X seconds. If the lobby is already removed, do nothing
-def lobby_removal(code, delay=10):
+def lobby_removal(code, delay=30):
     timer = threading.Timer(delay, remove_lobby, args=[code])
     timer.daemon = True
     timer.start()
