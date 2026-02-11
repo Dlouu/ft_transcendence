@@ -32,3 +32,10 @@ class UserUpdateSchema(Schema):
 	username = fields.String(required=False)
 
 user_update_schema = UserUpdateSchema()
+
+class PasswordUpdateSchema(Schema):
+	password = fields.String(required=True)
+	new_password = fields.String(required=True)
+
+password_update_schema = PasswordUpdateSchema()
+

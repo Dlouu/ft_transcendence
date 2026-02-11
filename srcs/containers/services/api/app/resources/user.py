@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from marshmallow import ValidationError
 from flask import request, g
 
-from app.schemas.user import user_update_schema
+from app.schemas import user as su
 from app.models.user import User
 from app.extensions import db
 from app.services import request_service as rs
@@ -32,22 +32,22 @@ class UpdateInformation(Resource):
 	@ns.expect(update_information_model)
 	def post(self):
 		try:
-			information = user_update_schema.load(request.json)
+			information = su.user_update_schema.load(request.json)
 		except ValidationError:
 			return {"message": "The body isn't valid."}, 400
 
-		payload = g.token_payload
-		request.json["payload"] = payload
+		user_id = g.token_payload["user_id"]
+		request.json["user_id"] = user_id
 
 		response = rs.make_request("http://auth:5055/user/update_information", "POST")
 		if response.status_code != 200:
 			print(f"{request.path}: The auth service was unable to update user information.", flush=True)
 			return response.json(), response.status_code
 
-		user = User.query.filter_by(user_id=payload["user_id"]).first()
+		user = User.query.filter_by(user_id=user_id).first()
 
 		if not user:
-			print(f"{request.path}: The user {payload["user_id"]} does not exist in the database, this isn't a normal error.", flush=True)
+			print(f"{request.path}: The user {user_id} does not exist in the database, this isn't a normal error.", flush=True)
 			return {"message": "Something wrong while trying to update user's information."}, 400
 
 		if "username" in information and user.username != information["username"]:
@@ -68,5 +68,19 @@ update_password_model = ns.model("UpdatePasswordModel", {
 @ns.route("/update_password")
 class UpdatePassword(Resource):
 	@ns.jwt_required()
+	@ns.expect(update_password_model)
 	def post(self):
-		pass
+		try:
+			information = su.password_update_schema.load(request.json)
+		except ValidationError:
+			return {"message": "The body isn't valid."}, 400
+
+		user_id = g.token_payload["user_id"]
+		request.json["user_id"] = user_id
+
+		response = rs.make_request("http://auth:5055/user/update_password", "POST")
+		if response.status_code != 200:
+			print(f"{request.path}: The auth service was unable to update the user's password.", flush=True)
+			return response.json(), response.status_code
+
+		return {"message": "success"}, 200

@@ -20,7 +20,7 @@ def make_request(url, method):
 		)
 	except requests.exceptions.ConnectionError as e:
 		print(f"{request.path}: Unable to communicate with the url {url} ({e})", flush=True)
-		return make_custom_response(response, 503,{"message": "Service currently unavailable."})
+		return make_custom_response(requests.Response(), 503,{"message": "Service currently unavailable."})
 		# return {"message": "Service currently unavailable."}, 503
 	except Exception as e:
 		print(f"{request.path}: WARNING: unhandled error happened: ({e})", flush=True)
