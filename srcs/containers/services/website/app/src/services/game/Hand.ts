@@ -1,5 +1,5 @@
 import { UnoCard } from './UnoCard';
-import { Container } from 'pixi.js';
+import { Container, Rectangle, Graphics } from 'pixi.js';
 
 export enum HandRotation
 {
@@ -13,16 +13,17 @@ export class Hand extends Container
 {
     private _cards: UnoCard[] = [];
     private _hoveredCard: UnoCard | null = null;
+    private _underlay: Graphics;
 
     // Config
     private _areaPercent: number;
     private _overlapPercent: number;
     private _cardRatio: number;
-    private _isInteractive: boolean; // Only the player's hand should be interactive
+    private _isInteractive: boolean;
 
     // Responsiveness
-    private _hoverJumpPercent: number = 0.25; // Card moves up by 25% of its height
-    private _hoverSpreadPercent: number = 0.20; // Adjacent cards move away by 20% of card width
+    private _hoverJumpPercent: number = 0.25;
+    private _hoverSpreadPercent: number = 0.40;
 
     // Dimensions
     private _canvasWidth: number = 0;
@@ -44,10 +45,13 @@ export class Hand extends Container
         this._isInteractive = isInteractive;
         this.visible = isVisible;
         
-        // Ensure zIndex sorting works automatically
         this.sortableChildren = true;
-
         this.angle = rotation;
+
+        // Initialize Underlay
+        this._underlay = new Graphics();
+        this._underlay.zIndex = -1000; // Ensure it stays behind cards
+        this.addChild(this._underlay);
     }
 
     public addCard(card: UnoCard): void
@@ -55,13 +59,10 @@ export class Hand extends Container
         this._cards.push(card);
         this.addChild(card);
         
-        // Setup Interaction if this hand is interactive (the player's hand)
         if (this._isInteractive)
         {
             card.eventMode = 'static';
             card.cursor = 'pointer';
-
-            // Use binding or arrow functions to preserve 'this' context
             card.on('pointerenter', () => this.onCardHover(card));
             card.on('pointerleave', () => this.onCardOut(card));
         }
@@ -74,7 +75,6 @@ export class Hand extends Container
         const index = this._cards.indexOf(card);
         if (index > -1)
         {
-            // Clean up listeners to prevent memory leaks
             if (this._isInteractive)
             {
                 card.removeAllListeners();
@@ -132,52 +132,65 @@ export class Hand extends Container
 
     private updateLayout(): void
     {
-        if (this._cards.length === 0 || this._canvasWidth === 0) return;
+        if (this._canvasWidth === 0) return;
 
         const count = this._cards.length;
+        const isVertical = (Math.abs(this.angle) === 90 || Math.abs(this.angle) === 270);
 
-        // 1. Calculate Limits
-        let handLengthAvailable = 0;
-        let maxCardThickness = 0;
+        // --- 1. Calculate Card Size ---
+        const maxCardThickness = this._canvasHeight * 0.20;
+        const cardHeight = maxCardThickness;
+        const cardWidth = cardHeight * this._cardRatio;
 
-        handLengthAvailable = this._canvasWidth * this._areaPercent;
-        maxCardThickness = this._canvasHeight * 0.20;
+        // --- 2. Calculate Available Spread Space ---
+        const screenLengthAvailable = isVertical ? this._canvasHeight : this._canvasWidth;
+        const handLengthAvailable = screenLengthAvailable * this._areaPercent;
 
-        // 2. Calculate Card Size
-        let cardWidth = 0;
-        let cardHeight = 0;
+        // --- Update Underlay ---
+        // We draw an ellipse. To make it closer to the edge, we shift the center 
+        // positive Y (downwards in local space), so the arc sits lower.
+        const underlayYOffset = cardHeight * 0.9;
 
-        cardHeight = maxCardThickness;
-        cardWidth = cardHeight * this._cardRatio;
+        this._underlay.clear();
+        this._underlay.ellipse(0, underlayYOffset, handLengthAvailable / 2, cardHeight * 1.25);
+        this._underlay.fill({ color: 0x000000, alpha: 0.25 });
 
-        // 3. Spacing Logic
-        const visiblePercent = 1 - this._overlapPercent;
-        const normalStep = cardWidth * visiblePercent;
-        const fullSpanIfNeeded = cardWidth + (count - 1) * normalStep;
+        if (count === 0) return;
+
+        // --- 3. Spacing Logic ---
+        const hoverSpread = cardWidth * this._hoverSpreadPercent;
+        const hoveredIndex = this._hoveredCard ? this._cards.indexOf(this._hoveredCard) : -1;
+        
+        let spreadAmount = 0;
+        if (hoveredIndex !== -1)
+        {
+            if (hoveredIndex > 0) spreadAmount += hoverSpread;
+            if (hoveredIndex < count - 1) spreadAmount += hoverSpread;
+        }
+
+        const maxSpan = handLengthAvailable - cardWidth;
+        const normalStep = cardWidth * (1 - this._overlapPercent);
+        const idealSpan = (count - 1) * normalStep + spreadAmount;
 
         let step = 0;
         let actualSpan = 0;
 
-        if (fullSpanIfNeeded <= handLengthAvailable)
+        if (idealSpan <= maxSpan)
         {
             step = normalStep;
-            actualSpan = fullSpanIfNeeded;
+            actualSpan = idealSpan;
         }
         else
         {
-            step = (handLengthAvailable - cardWidth) / (count - 1);
-            actualSpan = handLengthAvailable;
+            actualSpan = maxSpan;
+            if (count > 1)
+            {
+                step = Math.max(0, (maxSpan - spreadAmount) / (count - 1));
+            }
         }
 
-        const startOffset = -actualSpan / 2 + (cardWidth / 2);
-
-        // 4. Calculate Jump and Spread (Responsive)
-        // Move negative Y (up) relative to the hand container
+        let currentX = -actualSpan / 2;
         const jumpOffset = -(cardHeight * this._hoverJumpPercent);
-        
-        // Calculate the extra X spacing for cards adjacent to the hovered card
-        const hoverSpread = cardWidth * this._hoverSpreadPercent;
-        const hoveredIndex = this._hoveredCard ? this._cards.indexOf(this._hoveredCard) : -1;
 
         for (let i = 0; i < count; i++)
         {
@@ -187,39 +200,41 @@ export class Hand extends Container
             card.height = cardHeight;
             card.rotation = 0;
 
-            // Base X Position
-            let xPos = startOffset + (step * i);
-
-            // Apply Hover Spread (X Position)
+            // --- Layout Logic ---
+            let nextGap = step;
             if (hoveredIndex !== -1)
             {
-                if (i < hoveredIndex)
-                {
-                    // Push left cards further left
-                    xPos -= hoverSpread;
-                }
-                else if (i > hoveredIndex)
-                {
-                    // Push right cards further right
-                    xPos += hoverSpread;
-                }
-                // The hovered card itself stays at its calculated center
+                if (i === hoveredIndex - 1) nextGap += hoverSpread;
+                else if (i === hoveredIndex) nextGap += hoverSpread;
             }
 
-            card.x = xPos;
+            card.x = currentX;
 
-            // Y Position and Z-Index (Handling the Hover)
-            if (card === this._hoveredCard)
-            {
-                card.y = jumpOffset;
-                // If hovered, put it visually in front of its neighbors
-                card.zIndex = count + 1;
-            }
-            else
-            {
-                card.y = 0;
-                card.zIndex = i;
-            }
+            const isHovered = (card === this._hoveredCard);
+            const yOffset = isHovered ? jumpOffset : 0;
+            
+            card.y = yOffset;
+            card.zIndex = isHovered ? count + 1 : i;
+
+            // --- Hit Area Calculation ---
+            const bounds = card.getLocalBounds();
+            const scaleX = card.scale.x || 1; 
+            const scaleY = card.scale.y || 1;
+
+            const distToNext = (i === count - 1) ? cardWidth : nextGap;
+            const screenHitWidth = Math.min(cardWidth, distToNext);
+
+            const localHitWidth = screenHitWidth / scaleX;
+            const localYOffset = -yOffset / scaleY;
+
+            card.hitArea = new Rectangle(
+                bounds.x,
+                bounds.y + localYOffset,
+                localHitWidth,
+                bounds.height
+            );
+
+            currentX += nextGap;
         }
 
         this.sortChildren();

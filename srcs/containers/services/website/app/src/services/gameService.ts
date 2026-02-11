@@ -46,7 +46,8 @@ export class GameService
             canvas: canvas,
             width: canvas.clientWidth,
             height: canvas.clientHeight,
-            backgroundColor: "#2b2b2b",
+            backgroundColor: "#6a1067",
+            // backgroundAlpha: 0.1,
             resolution: window.devicePixelRatio || 1,
             autoDensity: true,
             antialias: true
@@ -93,7 +94,7 @@ export class GameService
         discardCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, CardValue.One), true);
         this._discard.setCard(discardCard);
 
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 7; i++) {
             const dowTopCard = this._cardPool.getCard();
             const dowLeftCard = this._cardPool.getCard();
             const dowRightCard = this._cardPool.getCard();
@@ -104,9 +105,17 @@ export class GameService
             this._leftOppHand.addCard(dowLeftCard);
             this._rightOppHand.addCard(dowRightCard);
         }
-        for (let i = 0; i < 25; i++) {
+        const values = [
+            CardValue.Zero, CardValue.One, CardValue.Two, CardValue.Three, CardValue.Four, 
+            CardValue.Five, CardValue.Six, CardValue.Seven, CardValue.Eight, CardValue.Nine, 
+            CardValue.PlusTwo, CardValue.Reverse, CardValue.Skipp
+        ];
+
+        for (let i = 0; i < 7; i++) {
             const upCard = this._cardPool.getCard();
-            upCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, CardValue.One), true);
+            const value = values[i % values.length];
+
+            upCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, value), true);
             this._playerHand.addCard(upCard);
         }
         // END OF DELETE

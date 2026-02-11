@@ -4,93 +4,101 @@ import { Page, Button } from "../ui";
 import { gameService } from "../services/gameService";
 
 function Game() {
-	const { playerName } = useContext(GameContext);
+    const { playerName } = useContext(GameContext);
 
-	const canvasRef = useRef(null);
-	const containerRef = useRef(null);
+    const canvasRef = useRef(null);
+    const containerRef = useRef(null);
 
-	const [portrait, setPortrait] = useState(false);
+    const [portrait, setPortrait] = useState(false);
 
-	useEffect(() => {
-		if (!canvasRef.current) return;
+    useEffect(() =>
+    {
+        if (!canvasRef.current) return;
 
-		gameService.init({ canvas: canvasRef.current });
-		console.log("Game mounted for", playerName);
-		gameService.start();
+        gameService.init({ canvas: canvasRef.current });
+        console.log("Game mounted for", playerName);
 
-		return () => gameService.destroy();
-	}, []);
+        return () => gameService.destroy();
+    }, []);
 
-	const enterFullscreen = () => {
-		console.log("Game unmounted");
-		const el = canvasRef.current;
-		if (!el) return;
+    const enterFullscreen = () =>
+    {
+        console.log("Game unmounted");
+        const el = canvasRef.current;
+        if (!el) return;
 
-		if (el.requestFullscreen) el.requestFullscreen();
-	};
+        if (el.requestFullscreen)
+        {
+            el.requestFullscreen();
+        }
+    };
 
-	useEffect(() => {
-		const check = () => {
-			const portrait =
-				window.matchMedia("(orientation: portrait)").matches;
-			const mobile =
-				window.matchMedia("(pointer: coarse)").matches;
+    useEffect(() =>
+    {
+        const check = () =>
+        {
+            const portrait = window.matchMedia("(orientation: portrait)").matches;
+            const mobile = window.matchMedia("(pointer: coarse)").matches;
 
-		setPortrait(portrait && mobile);
-		};
+            setPortrait(portrait && mobile);
+        };
 
-		check();
-		window.addEventListener("resize", check);
-		return () => window.removeEventListener("resize", check);
-	}, []);
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, []);
 
-	useEffect(() => {
-		const canvas = canvasRef.current;
-		const container = containerRef.current;
-		if (!canvas || !container) return;
+    useEffect(() =>
+    {
+        const canvas = canvasRef.current;
+        const container = containerRef.current;
+        if (!canvas || !container) return;
 
-		const resize = () => {
-			const { width, height } = container.getBoundingClientRect();
+        const resize = () =>
+        {
+            const { width, height } = container.getBoundingClientRect();
 
-			gameService.onResize?.(width, height);
-		};
+            gameService.onResize?.(width, height);
+        };
 
-		resize();
-		window.addEventListener("resize", resize);
-		return () => window.removeEventListener("resize", resize);
-	}, []);
+        resize();
+        window.addEventListener("resize", resize);
+        return () => window.removeEventListener("resize", resize);
+    }, []);
 
-	return (
+    return (
+        <Page className="h-screen overflow-hidden flex flex-col">
+            <div className="flex-1 w-full flex items-center justify-center p-4">
+                <div
+                    ref={containerRef}
+                    className="relative w-full max-w-7xl aspect-video shadow-2xl rounded-4xl"
+                >
+                    <canvas
+                        ref={canvasRef}
+                        className="block w-full h-full rounded-4xl overflow-hidden"
+                    />
 
-		<Page className="h-screen overflow-hidden">
-			<div className="w-full h-full flex items-center justify-center">
-				<div
-					ref={containerRef}
-					className="w-full h-full max-w-7xl aspect-video"
-				>
-					<canvas
-						ref={canvasRef}
-						className="w-full h-full bg-black"
-					/>
-					<Button
-						variant="fullscreen"
-						onClick={enterFullscreen}
-					>
-						⌞ ⌝
-					</Button>
-				</div>
-			</div>
+                    <div className="absolute bottom-4 left-4 z-10">
+                        <Button
+                            variant="fullscreen"
+                            onClick={enterFullscreen}
+                        >
+                            ⌞ ⌝
+                        </Button>
+                    </div>
+                </div>
+            </div>
 
-			{portrait && (
-				<div className="fixed inset-0 z-50 bg-black text-white flex flex-col items-center justify-center text-center p-6">
-					<p className="text-xl font-bold mb-4">
-						Rotate your device
-					</p>
-					<p>UwUNO is playable in landscape mode only.</p>
-				</div>
-			)}
-		</Page>
-	);
+            {portrait && (
+                <div className="fixed inset-0 z-50 bg-black text-white flex flex-col items-center justify-center text-center p-6">
+                    <p className="text-xl font-bold mb-4">
+                        Rotate your device
+                    </p>
+                    <p>UwUNO is playable in landscape mode only.</p>
+                </div>
+            )}
+        </Page>
+    );
 }
 
 export default Game;
