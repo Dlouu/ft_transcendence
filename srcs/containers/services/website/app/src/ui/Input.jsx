@@ -5,7 +5,7 @@ function Input({ value, variant = "main", onChange, maxLength, placeholder, type
 	
 	const variants = {
 		main: "w-full max-w mb-2",
-		oneline: "",
+		oneline: "w-full",
 	}
 
 	return (

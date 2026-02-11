@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
 import { Link } from "react-router-dom";
-import { Card, Page, Input, Button } from "../ui";
+import { Card, Page, Input, Button, Tooltip } from "../ui";
 import { useNotifications } from "../context/AlertContext";
 
 function Register() {
@@ -61,15 +61,18 @@ function Register() {
 				</p>
 
 				<form className="sm:text-right grid gap-3 grid-cols-1 sm:grid-cols-[auto_1fr]" onSubmit={handleSubmit}>
+
 					<label className="sm:p-2">
 						Username
 					</label>
-					<Input
-						placeholder={"letters, digits and _ -"}
-						variant="oneline"
-						value={playerName}
-						onChange={(e) => setPlayerName(e.target.value)}
-					/>
+					<Tooltip message = "characters allowed: letters, digits, '-' and '_'">
+						<Input
+							placeholder={"choose your username"}
+							variant="oneline"
+							value={playerName}
+							onChange={(e) => setPlayerName(e.target.value)}
+						/>
+					</Tooltip>
 
 					<label className="sm:p-2">
 						Email
@@ -84,13 +87,22 @@ function Register() {
 					<label className="sm:p-2">
 						Strong password
 					</label>
-					<Input
-						placeholder={"choose a password"}
-						variant="oneline"
-						value={password}
-						type="password"
-						onChange={(e) => setPassword(e.target.value)}
-					/>
+					
+					<Tooltip
+						message = {`
+							at least a lowercase, an uppercase,
+							a digit and a special character,
+							the length must be between 8 and 64 characters
+						`}
+					>
+						<Input
+							placeholder={"choose a password"}
+							variant="oneline"
+							value={password}
+							type="password"
+							onChange={(e) => setPassword(e.target.value)}
+						/>
+					</Tooltip>
 
 					<label className="sm:p-2">
 						Re-type password
