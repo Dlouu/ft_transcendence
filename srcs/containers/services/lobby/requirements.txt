@@ -7,4 +7,5 @@ mysqlclient == 2.2.7
 bcrypt == 5.0.0
 redis == 7.1.1
 jwt == 1.4.0
+Flask-SocketIO == 5.3.6
 watchdog

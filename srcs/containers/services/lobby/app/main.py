@@ -1,15 +1,11 @@
 from flask import Flask
-from lobby import lobby
+from lobby import lobby, socketio
 
 app = Flask(__name__)
+app.register_blueprint(lobby, url_prefix="/")
 
-app.register_blueprint(lobby, url_prefix='/')
+socketio.init_app(app)
 
 if __name__ == "__main__":
-    # Avoid double-process reloader so Ctrl+C exits once and logs are consistent.
-    app.run(debug=True, port=5002, use_reloader=True, host='0.0.0.0')
-'''
-Creation du lobby
-suppression du lobby
-suppression du lobby apres un certain temps
-'''
+    socketio.run(app, debug=True, port=5002, host="0.0.0.0", use_reloader=True, allow_unsafe_werkzeug=True)
+

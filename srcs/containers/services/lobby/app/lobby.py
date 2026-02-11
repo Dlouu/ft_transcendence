@@ -1,163 +1,111 @@
-from flask import Flask, render_template, Blueprint, request, redirect, url_for
-import random
-import string
-import os
+from flask import render_template, Blueprint, request, redirect, url_for, g
+import threading
+from flask_socketio import join_room, emit, SocketIO
+from functools import wraps
+
 
 lobby = Blueprint("lobby", __name__)
 
-# In-memory lobby store:
-# { "CODE": {"members": set([...])} }
-lobbies = {}
+socketio = SocketIO(cors_allowed_origins="*")
 
-# Optional Redis/JWT support: if REDIS_URL + deps are available, we'll
-# resolve user_id from the session token in Redis. Otherwise we fallback
-# to the provided user_id or token string.
-try:
-    import redis  # type: ignore
-except Exception:
-    redis = None
+lobbies = {}           # 4-characters room code -> {"players": int, "game_started": bool}
+socketid_lobby = {}    # sid -> code
+max_players  = 4
 
-try:
-    import jwt  # type: ignore
-except Exception:
-    jwt = None
-
-_redis = None
-if redis:
-    redis_url = os.getenv("REDIS_URL", "")
-    if redis_url:
-        try:
-            _redis = redis.from_url(redis_url, decode_responses=True)
-        except Exception:
-            _redis = None
-
+# Debugging
+@lobby.route("/debuglobbies", methods=["GET"])
+def get_lobbies():
+    return {"lobbies": lobbies, "socketid_lobby": socketid_lobby}
 
 @lobby.route("/")
 def home():
     return render_template("home.html")
 
-
-def unique_code():
-    return "".join(random.choice(string.ascii_lowercase + string.digits, k=4))
-
-
-def _normalize_code(value):
-    return value.strip().upper()
-
-
-def _decode_user_id_from_token(token):
-    if not _redis or not jwt:
-        return None
-    try:
-        data = _redis.hgetall(f"token:{token}")
-        if not data or "public" not in data:
-            return None
-        payload = jwt.decode(token, data["public"], algorithms=["RS256"])
-        return payload.get("user_id")
-    except Exception:
-        return None
-
-
-def _get_member_id():
-    # 1) Authorization header (Bearer <token>)
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        token = auth.split(" ", 1)[1].strip()
-        if token:
-            user_id = _decode_user_id_from_token(token)
-            return str(user_id).strip() if user_id else f"token:{token}"
-
-    # 2) Cookies (if your auth sets one)
-    cookie_uid = request.cookies.get("user_id") or request.cookies.get("lobby_member")
-    if cookie_uid:
-        return str(cookie_uid).strip()
-
-    # 3) JSON body
-    if request.is_json:
-        data = request.get_json(silent=True) or {}
-        user_id = data.get("user_id")
-        if user_id:
-            return str(user_id).strip()
-
-    # 4) Form / query
-    user_id = request.form.get("user_id") or request.args.get("user_id")
-    if user_id:
-        return str(user_id).strip()
-
-    return None
-
-
-def _get_lobby(code):
-    lobby_data = lobbies.get(code)
-    if lobby_data is None:
-        return None
-    lobby_data.setdefault("members", set())
-    return lobby_data
-
-
-# create a lobby
 @lobby.route("/create_lobby", methods=["POST"])
 def create_lobby():
-    room_name = _normalize_code(request.form.get("room_name", ""))
+    room_name = request.form.get("room_name", "").strip().upper()
+
     if not room_name:
         return "Room name is required", 601
-    # 4 characteres uniquements + alnum
     if room_name in lobbies:
         return "Room already exists", 602
-    member_id = _get_member_id()
-    if not member_id:
-        return "Missing authentication (provide Authorization or user_id).", 401
     if len(lobbies) >= 1679616:
-        return "No more rooms avalaible", 603
+        return "No more rooms available", 603
 
-    lobbies[room_name] = {"members": set([member_id])}
+    lobbies[room_name] = {"players": 0, "game_started": False}
+    lobby_removal(room_name, delay=10)
 
-    response = redirect(url_for("lobby.join_lobby", code=room_name))
-    response.set_cookie("lobby_member", member_id, httponly=True, samesite="Lax")
-    return response
+    return redirect(url_for("lobby.join_lobby", code=room_name))
 
 
-# joining lobby by code
 @lobby.route("/join_lobby", methods=["POST"])
 def join_lobby_post():
-    member_id = _get_member_id()
-    if not member_id:
-        return "Missing authentication (provide Authorization or user_id).", 401
-    user_code = _normalize_code(request.form.get("code", ""))
-    lobby_data = _get_lobby(user_code)
-    if not lobby_data:
-        return "wrong room code", 404
-    lobby_data["members"].add(member_id)
-    response = redirect(url_for("lobby.join_lobby", code=user_code))
-    response.set_cookie("lobby_member", member_id, httponly=True, samesite="Lax")
-    return response
+    user_code = request.form.get("code", "").strip().upper()
+    if user_code not in lobbies:
+        return "Room doesn't exist"
+    return redirect(url_for("lobby.join_lobby", code=user_code))
 
 
-# joining lobby after creation
 @lobby.route("/join_lobby", methods=["GET"])
 def join_lobby():
-    code = _normalize_code(request.args.get("code", ""))
-    if not code:
-        return "wrong room code", 404
-    lobby_data = _get_lobby(code)
-    if not lobby_data:
-        return "wrong room code", 404
-    member_id = _get_member_id()
-    if not member_id:
-        return "Missing authentication (provide Authorization or user_id).", 401
-    lobby_data["members"].add(member_id)
+    code = request.args.get("code", "").strip().upper()
+    if not code or code not in lobbies:
+        return "Wrong room code"
     return render_template("game.html", code=code)
 
 
+@socketio.on("join_lobby")
+def join_lobby_socket(data):
+    code = (data.get("code") or "").strip().upper()
+    if code not in lobbies:
+        emit("error", {"message": "Room doesn't exist"})
+        return
+
+    if request.sid in socketid_lobby: #good to know
+        emit("error", {"message": "Already in a room"})
+        return
+
+    if lobbies[code]["players"] >= max_players:
+        emit("room_full", {"message": "Room is full"})
+        return
+    
+    join_room(code)
+    socketid_lobby[request.sid] = code
+
+    lobbies[code]["players"] += 1
+
+    emit("count_update", {"count": lobbies[code]["players"]}, room=code)
+
+
+@socketio.on("disconnect")
+def on_disconnect():
+    sid = request.sid
+    code = socketid_lobby.pop(sid, None)
+    if not code:
+        return
+    if code not in lobbies:
+        return
+
+    lobbies[code]["players"] -= 1
+    emit("count_update", {"count": lobbies[code]["players"]}, room=code)
+
+
 def remove_lobby(code):
-    if code in lobbies:
-        lobbies.pop(code, None)
+    lobby_data = lobbies.get(code)
+    if not lobby_data:
+        return
+
+    if lobby_data["game_started"] == False:
+        socketio.emit("room_expired", {"message": "Lobby closed due to inactivity"}, room=code)
+    
+    lobbies.pop(code, None)
+
+    for sid, lobby_code in list(socketid_lobby.items()):
+        if lobby_code == code:
+            socketid_lobby.pop(sid, None)
 
 
-'''
-Pouvoir créer des lobbies, le lobbies peut être privé ou publique, le lobbie a un nombre maximum de joueur, le lobbie doit être supprimé au bout d'un certain temps
-
-lobby public ou prive
-max_joueur < 5
-si au bout de 10 mins le lobby n'est pas plein, il est supprimé
-'''
+def lobby_removal(code, delay=10):
+    timer = threading.Timer(delay, remove_lobby, args=[code])
+    timer.daemon = True
+    timer.start()

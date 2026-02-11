@@ -1,14 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login API</title>
+    <title>Lobby</title>
   </head>
   <body>
     <div class="game">
-      <h1> Nom de la room: {{code}}</h1>
-      <p> Premiere personne arrivee: </p>
+      <h1>Nom de la room : {{ code }}</h1>
+      <p>Joueurs connectés : <span id="player-count">0</span></p>
     </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const code = "{{ code }}";
+    const socket = io();
+
+    socket.on("connect", () => {
+      socket.emit("join_lobby", { code: code });
+    });
+
+    socket.on("count_update", (data) => {
+      document.getElementById("player-count").textContent = data.count;
+    });
+    socket.on("room_full", (data) => {
+    alert("Room is full. Returning to lobby.");
+    window.location.href = "/";
+    });
+
+    socket.on("room_expired", (data) => {
+    alert("Room expired. Returning to lobby.");
+    window.location.href = "/";
+    });
+
+  </script>
   </body>
 </html>
