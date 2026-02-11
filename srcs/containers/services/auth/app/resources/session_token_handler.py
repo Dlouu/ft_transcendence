@@ -1,7 +1,7 @@
 import jwt
 from flask import Blueprint, request
-from app.utils import session_token as st
-from app.utils.refresh_token import generate_refresh_token_rules, generate_refresh_token_from_rules, does_refresh_token_exist, generate_new_active_refresh_token
+from app.services import session_service as st
+from app.services import session_refresh_service as srs
 
 
 ns = Blueprint("TokenValidationHandler", __name__)
@@ -43,11 +43,11 @@ def update_token():
 		print(f"Unhandled error happened while trying to decode the user token ({e})", flush=True)
 		return {"message": "Failed to decode the token / unhandled error."}, 500
 
-	refresh_token_exist, is_last_one, tid = does_refresh_token_exist(payload["user_id"], request)
+	refresh_token_exist, is_last_one, tid = srs.sdoes_refresh_token_exist(payload["user_id"], request)
 	if not refresh_token_exist and not is_last_one:
 		return {"message": "No active or inactive refresh token found."}, 401
 	elif is_last_one:
-		generate_new_active_refresh_token(request, tid)
+		srs.generate_new_active_refresh_token(request, tid)
 
 	st.delete_session_token(token)
 	token, public, private, created_at = st.generate_session_token(payload["user_id"], tid, request.headers, request.remote_addr)

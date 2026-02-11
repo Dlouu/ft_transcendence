@@ -7,7 +7,7 @@ import os
 
 from app.schemas.card_gallery import card_gallery_schema
 from app.models.card_gallery import CardGallery
-from app.utils import session_token as st
+from app.services import session_service as st
 from app.extensions import s3, db
 
 ns = Namespace("bucket", description="S3 bucket operation")

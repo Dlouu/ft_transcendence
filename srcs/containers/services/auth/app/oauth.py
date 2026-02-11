@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from sqlalchemy import or_
 import requests, os, json, bcrypt
 
-from app.utils import session_token as st
-from app.utils import refresh_token as rt
+from app.services import session_service as st
+from app.services import session_refresh_service as rt
 from app.utils import user_check as uc
 from app.models.user import User
 from .extensions import db
@@ -114,7 +114,7 @@ def registration():
 	except ValueError as exc:
 		return {"message": str(exc)}, 400
 
-	if uc.email_exists(user.email):
+	if uc.does_email_exist(user.email):
 		return {"message": "Email already exists."}, 409
 	if uc.username_exists(user.username):
 		return {"message": "username already exists"}, 410

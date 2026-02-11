@@ -28,7 +28,7 @@ class UserSchema(SQLAlchemyAutoSchema):
 user_schema = UserSchema()
 
 class UserUpdateSchema(Schema):
-	email = fields.String(required=True)
-	username = fields.String(required=True)
+	email = fields.String(required=False)
+	username = fields.String(required=False)
 
 user_update_schema = UserUpdateSchema()

@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import request, g
 import requests
-from app.utils import session_token as st
+from app.services import session_service as st
 from jwt.exceptions import ExpiredSignatureError
 
 def update_session_token():

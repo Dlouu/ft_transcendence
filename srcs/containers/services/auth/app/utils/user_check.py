@@ -27,12 +27,18 @@ def load_user_payload(payload: dict) -> User:
 	except ValidationError as exc:
 		raise ValueError(exc.messages) from exc
 
-def email_exists(email: str) -> bool:
-	return db.session.query(User.id)\
-		.filter(User.email == email)\
-		.first() is not None
+def does_email_exist(email, exlude_id=None):
+	query = db.session.query(User.id).filter_by(email=email)
 
-def username_exists(username: str) -> bool:
-	return db.session.query(User.id)\
-		.filter(User.username == username)\
-		.first() is not None
+	if exlude_id is not None:
+		query = query.filter(User.id != exlude_id)
+
+	return query.first() is not None
+
+def username_exists(username, exlude_id=None):
+	query = db.session.query(User.id).filter_by(username=username)
+
+	if exlude_id is not None:
+		query = query.filter(User.id != exlude_id)
+
+	return query.first() is not None

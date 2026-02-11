@@ -3,7 +3,7 @@ from flask import request, g
 from app.models.user import User
 from app.extensions import db
 from app.schemas.user import user_registration_schema, user_login_schema, user_schema
-from app.utils import session_token as st
+from app.services import session_service as st
 from marshmallow import ValidationError
 from datetime import datetime, timezone
 import requests

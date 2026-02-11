@@ -4,7 +4,7 @@ import os
 
 from app.schemas.user import user_update_schema
 from app.models.user import User
-from app.utils.session_token import decode_session_token
+from app.services.session_service import decode_session_token
 from app.utils import user_check as uc
 from app.extensions import db
 
@@ -12,7 +12,6 @@ ns = Blueprint("User", __name__)
 
 @ns.route("/update_information", methods=["POST"])
 def update_information():
-	print("IN?", flush=True)
 	try:
 		payload = request.json.pop("payload")
 	except IndexError as e:
@@ -31,18 +30,25 @@ def update_information():
 		RAJOUTER UNE FONCTION POUR CHECK SI EMAIL ET OU USERNAME EXISTE DEJA EN EXCLUANT CELUI DE L'UTILISATEUR
 		LUI MEME
 	"""
-	if user.username != information["username"]:
+	if "username" in information and user.username != information["username"]:
 		min_len = int(os.getenv("AUTH_MIN_USERNAME_LENGTH", "3"))
 		max_len = int(os.getenv("AUTH_MAX_USERNAME_LENGTH", 10))
 		if not uc.is_username_valid(information["username"]):
 			return {"message": f"The username is not valid, only alphanumeric, _ and - characters are allowed. Length must be between {min_len} and {max_len}"}, 400
 
+		if uc.username_exists(information["username"]):
+			return {"message": "This username already exist."}, 400
+
 		user.username = information["username"]
 
-	if user.email != information["email"]:
+	if "email" in information and user.email != information["email"]:
 		if not uc.is_email_valid(information["email"]):
 			db.session.rollback()
 			return {"message": "The email is not valid."}, 400
+
+		if uc.does_email_exist(information["email"]):
+			db.session.rollback()
+			return {"message": "This email already exist."}, 400
 
 		user.email = information["email"]
 

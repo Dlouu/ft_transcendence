@@ -5,10 +5,9 @@ from flask import request, g
 import requests
 
 from app.schemas.user import user_update_schema
-from app.utils import session_token as st
 from app.models.user import User
 from app.extensions import db
-from app.utils import session_token as st
+from app.services import session_service as st
 
 ns = Namespace("User", description="User endpoints")
 
@@ -39,8 +38,8 @@ class Me(Resource):
 		return response, 200
 
 update_information_model = ns.model("UpdateInformationModel", {
-	"username": fields.String(required=True),
-	"email": fields.String(required=True)
+	"username": fields.String(required=False),
+	"email": fields.String(required=False)
 })
 
 @ns.route("/update_information")
@@ -54,15 +53,6 @@ class UpdateInformation(Resource):
 			return {"message": "The body isn't valid."}, 400
 
 		payload = g.token_payload
-		user = User.query.filter_by(user_id=payload["user_id"]).first()
-
-		if not user:
-			print(f"{request.path}: The user {payload["user_id"]} does not exist in the database, this isn't a normal error.", flush=True)
-			return {"message": "Something wrong while trying to update user's information."}, 400
-
-		if user.username != information["username"]:
-			user.username = information["username"]
-
 		request.json["payload"] = payload
 		try:
 			response = requests.post(
@@ -88,6 +78,15 @@ class UpdateInformation(Resource):
 		if response.status_code != 200:
 			print(f"{request.path}: The auth service was unable to update user information: ({json_response}).", flush=True)
 			return json_response, 400
+
+		user = User.query.filter_by(user_id=payload["user_id"]).first()
+
+		if not user:
+			print(f"{request.path}: The user {payload["user_id"]} does not exist in the database, this isn't a normal error.", flush=True)
+			return {"message": "Something wrong while trying to update user's information."}, 400
+
+		if "username" in information and user.username != information["username"]:
+			user.username = information["username"]
 
 		updated_at = datetime.now(timezone.utc)
 		user.updated_at = updated_at
