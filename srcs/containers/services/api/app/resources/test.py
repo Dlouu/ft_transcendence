@@ -33,14 +33,3 @@ class TestJWT(Resource):
 	@ns.jwt_required()
 	def get(self):
 		return {"message": "success", "data": [g.token_payload]}, 200
-
-
-@ns.route("/test_refresh_token")
-class TestRefreshToken(Resource):
-	def get(self):
-		response = requests.get(
-			"http://auth:5050/token_handler/test_refresh_token",
-			headers=request.headers,
-			timeout=5
-		)
-		return response.status_code

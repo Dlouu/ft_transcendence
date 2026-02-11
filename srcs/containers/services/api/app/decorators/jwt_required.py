@@ -1,22 +1,10 @@
-from functools import wraps
-from flask import request, g
-import requests
-from app.utils import session_token as st
 from jwt.exceptions import ExpiredSignatureError
+from flask import request, g
+from functools import wraps
+import requests
 
-def update_session_token():
-	try:
-		response = requests.get(
-			"http://auth:5055/token_handler/update",
-			headers=request.headers,
-			timeout=5
-		)
-		return response.json(), response.status_code
-	except requests.exceptions.ConnectionError as e:
-		print(f"Unable to communicate with the auth service for registration ({e})", flush=True)
-		return {"message": "Service currently unavailable."}, 503
-	except requests.exceptions.JSONDecodeError as e:
-		return {"message": "Unable to convert the response in json, an exception might have been raised in the auth service."}, 500
+from app.services import request_service as rs
+from app.services import session_service as st
 
 def jwt_required(self):
 	"""
@@ -30,26 +18,26 @@ def jwt_required(self):
 
 			if not auth_header or not auth_header.startswith("Bearer "):
 				print(f"Missing header or bearer for remote address {request.remote_addr}", flush=True)
-				return {"message": "Missing or invalid token."}, 401
+				return {"message": "No token provided."}, 401
 
 			token = auth_header.split(" ", 1)[1]
 
 			if not st.does_session_token_exist(token):
 				print(f"No session token found for remote address {request.remote_addr}", flush=True)
-				return {"message": "Missing or invalid token."}, 401
+				return {"message": "The token does not exist."}, 401
 
 			try:
 				payload = st.decode_session_token(token)
 				g.token = token
 				g.token_payload = payload
 			except ExpiredSignatureError:
-				response, code = update_session_token()
-				if code != 201:
-					print(f"An error occured in the auth service while generating a new session token / refresh token. Code: {code}, error: {response}", flush=True)
-					return {"message": "Missing or invalid token."}, code
+				response = rs.make_request("http://auth:5055/token_handler/update", "GET")
+				if response.status_code != 200:
+					print(f"An error occured in the auth service while generating a new session token / refresh token. Code: {response.status_code}, error: {response}", flush=True)
+					return response, response.status_code
 
-				g.x_new_token = response.get("token")
-				g.token = response.get("token")
+				g.x_new_token = response.json().get("token")
+				g.token = response.json().get("token")
 				g.token_payload = st.decode_session_token(g.token)
 			except Exception as e:
 				print(e, flush=True)

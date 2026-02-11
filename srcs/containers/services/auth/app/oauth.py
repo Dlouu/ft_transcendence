@@ -1,18 +1,14 @@
 from flask import Blueprint, render_template, request, redirect, jsonify
-from dotenv import load_dotenv
-import requests
-import os
-import json
-import bcrypt
-import string
-import re
 from sqlalchemy.exc import IntegrityError
+from dotenv import load_dotenv
 from sqlalchemy import or_
-import datetime
-from .user import User, email_exists, username_exists, load_user_payload
+import requests, os, json, bcrypt
+
+from app.services import session_service as st
+from app.services import session_refresh_service as rt
+from app.utils import user_check as uc
+from app.models.user import User
 from .extensions import db
-from app.utils import session_token as st
-from app.utils import refresh_token as rt
 
 load_dotenv()
 
@@ -87,108 +83,10 @@ def oauth42_callback():
 	if existing is not None:
 		return {"message": "Successful 42api login (already logged once previously)"}, 200
 	try:
-		user_payload = load_user_payload(data)
+		user_payload = uc.load_user_payload(data)
 		db.session.add(user_payload)
 		db.session.commit()
 	except Exception as exc:
 		db.session.rollback()
 		return str(exc), 500
 	return {"message": "Successful 42api login (first time login)."}
-
-@oauth.route("/registration", methods=["POST"])
-def registration():
-	data = request.get_json(silent=True)
-
-	if not re.fullmatch(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}", data.get("email")):
-		return {"message": "The email is not valid."}, 409
-
-	min_len = int(os.getenv("AUTH_MIN_USERNAME_LENGTH", "3"))
-	max_len = int(os.getenv("AUTH_MAX_USERNAME_LENGTH", "24"))
-	if not re.fullmatch(rf"^[A-Za-z0-9_-]{{{min_len},{max_len}}}$", data.get("username") or ""):
-		return {"message": f"The username is not valid, only alphanumeric, _ and - characters are allowed. Length must be between {min_len} and {max_len}"}, 400
-
-	min_len = int(os.getenv("AUTH_MIN_PASS_LENGTH"))
-	max_len = int(os.getenv("AUTH_MAX_PASS_LENGTH"))
-	password = data.get("password") or ""
-	if not re.fullmatch(rf"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{{{min_len},{max_len}}}$", password):
-		return {"message": f"Password is not valid, it must have at least one upper character, one lower, one digit, one special character and a length  between {min_len} and {max_len}"}, 400
-
-	try:
-		user = load_user_payload(data)
-	except ValueError as exc:
-		return {"message": str(exc)}, 400
-
-	if email_exists(user.email):
-		return {"message": "Email already exists."}, 409
-	if username_exists(user.username):
-		return {"message": "Username already exists"}, 410
-
-	try:
-		password_bytes = password.encode("utf-8")
-		password_hash = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
-		user.password = password_hash.decode("utf-8")
-		db.session.add(user)
-		db.session.commit()
-	except IntegrityError:
-		db.session.rollback()
-		return {"message": "Email already exists"}, 409
-	except Exception as exc:
-		db.session.rollback()
-		return {"message": str(exc)}, 500
-
-	success, tid = rt.initialize_new_refresh_token(user.id, request)
-	if not success:
-		db.session.delete(user)
-		db.session.commit()
-		return {"message": "failure when storing refresh token"}, 500
-
-	token, public, private, created_at = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
-	st.store_session_token(token, public, user.id)
-
-	response = {
-		"message": "success",
-		"id": user.id,
-		"token": token
-	}
-
-	return response, 201
-
-@oauth.route("/login", methods=["POST"])
-def login():
-	data = request.get_json(silent=True)
-	# if data is None:
-	# 	with open("test_login.json", "r") as f:
-	# 		data = json.load(f)
-	username_or_login = data.get("login_email")
-	password = data.get("password")
-	if not username_or_login or not password:
-		return {"message": f"Username/Email or password is missing."}, 400
-	user = User.query.filter(or_(User.email == username_or_login, User.username == username_or_login)).first()
-	if user is None:
-		return {"message": "Username/Email and password does not match."}, 400
-
-	try:
-		password_bytes = password.encode("utf-8")
-		password_hash = user.password.encode("utf-8")
-		if not bcrypt.checkpw(password_bytes, password_hash):
-			return {"message": "Username/Email and password does not match."}, 400
-	except ValueError as exc:
-		return {"message": "Something wrong happened when trying to login the user, if the problem persist contact an admin."}, 400
-
-	refresh_token_exist, is_last_one, tid = rt.does_refresh_token_exist(user.id, request)
-
-	if not refresh_token_exist and not is_last_one:
-		rt.initialize_new_refresh_token(user.id, request)
-	elif is_last_one:
-		rt.generate_new_active_refresh_token(request, tid)
-
-	token, public, private, created_at = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
-	st.store_session_token(token, public, user.id)
-
-	response = {
-		"message": "success",
-		"id": user.id,
-		"token": token
-	}
-
-	return response, 200
