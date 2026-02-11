@@ -24,7 +24,6 @@ def home():
 
 @oauth.route("/oauth/42", methods=["GET"])
 def oauth42():
-	print("biteeeeeeeee", flush=True)
 	client_id = os.getenv("TRANSCENDANCE_ID")
 	redirect_uri = os.getenv("TRANSCENDANCE_REDIRECTION")
 
@@ -41,7 +40,6 @@ def oauth42():
 
 @oauth.route("/oauth/42/callback")
 def oauth42_callback():
-	print("sexeeeeeeee", flush=True)
 	code = request.args.get("code")
 	if not code:
 		return "No code", 400
