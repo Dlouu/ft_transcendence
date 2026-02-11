@@ -2,10 +2,10 @@ from .extensions import db
 from flask import Flask
 import os
 
+from app.resources.authentification import ns as authentification_ns
 from app.resources.session_token_handler import ns as token_ns
 from app.resources.user import ns as user_ns
 from app.schedulers.refresh_token import init_schedulers
-from app.hashing import hashing
 from app.oauth import oauth
 
 def create_app():
@@ -19,10 +19,10 @@ def create_app():
 	db.init_app(app)
 	init_schedulers(app)
 
-	app.register_blueprint(hashing, url_prefix='/test')
-	app.register_blueprint(oauth, url_prefix='/')
+	app.register_blueprint(authentification_ns, url_prefix="/auth")
 	app.register_blueprint(token_ns, url_prefix="/token_handler")
 	app.register_blueprint(user_ns, url_prefix="/user")
+	app.register_blueprint(oauth, url_prefix='/')
 
 	return app
 

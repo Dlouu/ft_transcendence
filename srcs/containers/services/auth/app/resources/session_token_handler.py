@@ -43,7 +43,7 @@ def update_token():
 		print(f"Unhandled error happened while trying to decode the user token ({e})", flush=True)
 		return {"message": "Failed to decode the token / unhandled error."}, 500
 
-	refresh_token_exist, is_last_one, tid = srs.sdoes_refresh_token_exist(payload["user_id"], request)
+	refresh_token_exist, is_last_one, tid = srs.does_refresh_token_exist(payload["user_id"], request)
 	if not refresh_token_exist and not is_last_one:
 		return {"message": "No active or inactive refresh token found."}, 401
 	elif is_last_one:
@@ -58,4 +58,4 @@ def update_token():
 		"token": token,
 	}
 
-	return response, 201
+	return response, 200

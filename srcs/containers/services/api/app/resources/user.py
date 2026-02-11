@@ -8,6 +8,7 @@ from app.schemas.user import user_update_schema
 from app.models.user import User
 from app.extensions import db
 from app.services import session_service as st
+from app.services import request_service as rs
 
 ns = Namespace("User", description="User endpoints")
 
@@ -54,30 +55,11 @@ class UpdateInformation(Resource):
 
 		payload = g.token_payload
 		request.json["payload"] = payload
-		try:
-			response = requests.post(
-				"http://auth:5055/user/update_information",
-				json=request.json,
-				headers=request.headers,
-				cookies=request.cookies,
-				timeout=5
-			)
-		except requests.exceptions.ConnectionError as e:
-			print(f"{request.path}: Unable to communicate with the auth service to update user informations ({e})", flush=True)
-			return {"message": "Service currently unavailable."}, 503
-		except Exception as e:
-			print(f"{request.path}: WARNING: unhandled error happened in the update_information entrypoint ({e})", flush=True)
-			return {"message": "Failed to update user's data."}, 401
 
-		try:
-			json_response = response.json()
-		except requests.exceptions.JSONDecodeError as e:
-			print(f"{request.path}: Something went wrong while decoding the response to json, the auth service may have encountered an error and crashed.", flush=True)
-			return {"message": "Something wrong while trying to update user's information."}, 400
-
+		response = rs.make_request("http://auth:5055/user/update_information", "POST")
 		if response.status_code != 200:
-			print(f"{request.path}: The auth service was unable to update user information: ({json_response}).", flush=True)
-			return json_response, 400
+			print(f"{request.path}: The auth service was unable to update user information.", flush=True)
+			return response.json(), response.status_code
 
 		user = User.query.filter_by(user_id=payload["user_id"]).first()
 
@@ -95,3 +77,13 @@ class UpdateInformation(Resource):
 
 		return {"message": "success"}, 200
 
+update_password_model = ns.model("UpdatePasswordModel", {
+	"password": fields.String(required=True),
+	"new_password": fields.String(required=True)
+})
+
+@ns.route("/update_password")
+class UpdatePassword(Resource):
+	@ns.jwt_required()
+	def post(self):
+		pass
