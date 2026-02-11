@@ -120,13 +120,19 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 	}
 
 	return (
-		<div className="w-full aspect-88-136">
-			<div className="grid grid-cols-1">
+		<div className="w-full aspect-88-136 flex justify-center">
+			<div
+				className="relative"
+				style={{
+					width: WIDTH * scale,
+					height: HEIGHT * scale,
+				}}
+			>
 
 			{/* BACKGROUND */}
 				<canvas
 					ref={bgCanvasRef}
-					className="left-0 top-0 h-136 w-88 grid-colum-1 grid-row-1 z-2"
+					className="absolute left-0 top-0 z-2"
 					style={{
 						width: WIDTH * scale,
 						height: HEIGHT * scale,
@@ -137,7 +143,7 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 			{/* FOREGROUND */}
 				<canvas
 					ref={canvasRef}
-					className="left-0 top-0 h-136 w-88 grid-colum-1 grid-row-1 z-99"
+					className="absolute left-0 top-0 z-99"
 					onPointerDown={handlePointerDown}
 					onPointerMove={handlePointerMove}
 					onPointerUp={handlePointerUp}
