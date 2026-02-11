@@ -1,21 +1,5 @@
 import { WIDTH, HEIGHT, CHECKER_LIGHT, CHECKER_DARK } from './constants';
 
-export function restoreCheckerBoard(ctx, x, y, size) {
-	for (let dy = 0; dy < size; dy++) {
-		for (let dx = 0; dx < size; dx++) {
-			const px = x + dx;
-			const py = y + dy;
-
-			if (px < 0 || py < 0 || px >= WIDTH || py >= HEIGHT)
-				continue;
-
-			ctx.fillStyle =
-				(px + py) % 2 === 0 ? CHECKER_LIGHT : CHECKER_DARK;
-			ctx.fillRect(px, py, 1, 1);
-		}
-	}
-}
-
 export function drawCheckerBoard(ctx, width, height) {
 	for (let y = 0; y < height; y++) {
 		for (let x = 0; x < width; x++) {
@@ -30,10 +14,9 @@ export function drawPixel(ctx, x, y, brushSize, color, tool) {
 		return;
 
 	if (tool === "eraser") {
-		restoreCheckerBoard(ctx, x, y, brushSize);
+		ctx.clearRect(x, y, brushSize, brushSize);
 		return;
-	}
-
+}
 	ctx.fillStyle = color;
 	ctx.fillRect(x, y, brushSize, brushSize);
 }
@@ -60,4 +43,61 @@ export function drawLine(ctx, x0, y0, x1, y1, brushSize, color, tool) {
 			y0 += sy;
 		}
 	}
+}
+
+function hexToRgba(hex) {
+	const bigint = parseInt(hex.slice(1), 16);
+	return [
+		(bigint >> 16) & 255,
+		(bigint >> 8) & 255,
+		bigint & 255,
+		255,
+	];
+}
+
+export function floodFill(ctx, x, y, fillColor) {
+	const canvas = ctx.canvas;
+	const { width, height } = canvas;
+
+	const imageData = ctx.getImageData(0, 0, width, height);
+	const data = imageData.data;
+
+	const stack = [[x, y]];
+
+	const index = (x, y) => (y * width + x) * 4;
+
+	const targetIndex = index(x, y);
+	const targetColor = data.slice(targetIndex, targetIndex + 4);
+	const newColor = hexToRgba(fillColor);
+
+	if (
+		targetColor[0] === newColor[0] &&
+		targetColor[1] === newColor[1] &&
+		targetColor[2] === newColor[2]
+	) return;
+
+	while (stack.length) {
+		const [cx, cy] = stack.pop();
+		const i = index(cx, cy);
+
+		const currentColor = data.slice(i, i + 4);
+
+		if (
+			currentColor[0] === targetColor[0] &&
+			currentColor[1] === targetColor[1] &&
+			currentColor[2] === targetColor[2]
+		) {
+			data[i] = newColor[0];
+			data[i + 1] = newColor[1];
+			data[i + 2] = newColor[2];
+			data[i + 3] = 255;
+
+			if (cx > 0) stack.push([cx - 1, cy]);
+			if (cx < width - 1) stack.push([cx + 1, cy]);
+			if (cy > 0) stack.push([cx, cy - 1]);
+			if (cy < height - 1) stack.push([cx, cy + 1]);
+		}
+	}
+
+	ctx.putImageData(imageData, 0, 0);
 }

@@ -29,9 +29,9 @@ function ToolSelector({ tool, setTool }) {
 			<Tooltip message = "bucket">
 				<Button
 					variant="icon"
-					isActive={tool === "floodfill"}
-					onClick={() => setTool("floodfill")}
-					title="Flood Fill"
+					isActive={tool === "bucket"}
+					onClick={() => setTool("bucket")}
+					title="Bucket"
 				>
 					󰉦
 				</Button>

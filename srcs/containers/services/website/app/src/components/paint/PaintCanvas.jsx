@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { WIDTH, HEIGHT, MAX_HEIGHT_RATIO } from "./constants";
-import { drawCheckerBoard, drawLine, restoreCheckerBoard } from "./drawingUtils";
+import { drawCheckerBoard, drawLine, floodFill } from "./drawingUtils";
 import { useUndoRedo } from "./useUndoRedo";
 
 function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
@@ -8,6 +8,7 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 	const isDrawingRef = useRef(false);
 	const lastPosRef = useRef(null);
 	const pointerIdRef = useRef(null);
+	const bgCanvasRef = useRef(null);
 
 	const scale = Math.floor(
 		Math.min(
@@ -19,6 +20,16 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 	const { saveSnapshot, undo, redo } = useUndoRedo(ctxRef);
 
 	useEffect(() => {
+		const bgCanvas = bgCanvasRef.current;
+		const bgCtx = bgCanvas.getContext("2d");
+
+		bgCanvas.width = WIDTH;
+		bgCanvas.height = HEIGHT;
+
+		drawCheckerBoard(bgCtx, WIDTH, HEIGHT);
+	}, []);
+
+	useEffect(() => {
 		const canvas = canvasRef.current;
 		canvas.width = WIDTH;
 		canvas.height = HEIGHT;
@@ -26,8 +37,6 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 		const ctx = canvas.getContext("2d");
 		ctx.imageSmoothingEnabled = false;
 		ctxRef.current = ctx;
-	
-		drawCheckerBoard(ctx, WIDTH, HEIGHT);
 		
 		if (onUndoRedoReady) {
 			onUndoRedoReady({ undo, redo });
@@ -40,10 +49,10 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 
 		const ctx = ctxRef.current;
 
-		if (tool === "eraser") {
-			restoreCheckerBoard(ctx, x, y, brushSize);
-			return;
-		}
+	if (tool === "eraser") {
+		ctx.clearRect(x, y, brushSize, brushSize);
+		return;
+	}
 
 		ctx.fillStyle = color;
 		ctx.fillRect(x, y, brushSize, brushSize);
@@ -75,6 +84,16 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 	function handlePointerDown(e) {
 		e.preventDefault();
 		saveSnapshot();
+
+		const rect = canvasRef.current.getBoundingClientRect();
+		const x = Math.floor(((e.clientX - rect.left) / rect.width) * WIDTH);
+		const y = Math.floor(((e.clientY - rect.top) / rect.height) * HEIGHT);
+
+		if (tool === "bucket") {
+			floodFill(ctxRef.current, x, y, color);
+			return;
+		}
+
 		isDrawingRef.current = true;
 		pointerIdRef.current = e.pointerId;
 		canvasRef.current.setPointerCapture(e.pointerId);
@@ -102,9 +121,23 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 
 	return (
 		<div className="w-full aspect-88-136">
-			<div className="flex justify-center">
+			<div className="grid grid-cols-1">
+
+			{/* BACKGROUND */}
+				<canvas
+					ref={bgCanvasRef}
+					className="left-0 top-0 h-136 w-88 grid-colum-1 grid-row-1 z-2"
+					style={{
+						width: WIDTH * scale,
+						height: HEIGHT * scale,
+						imageRendering: "pixelated",
+					}}
+				/>
+
+			{/* FOREGROUND */}
 				<canvas
 					ref={canvasRef}
+					className="left-0 top-0 h-136 w-88 grid-colum-1 grid-row-1 z-99"
 					onPointerDown={handlePointerDown}
 					onPointerMove={handlePointerMove}
 					onPointerUp={handlePointerUp}
