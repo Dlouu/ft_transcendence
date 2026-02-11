@@ -112,19 +112,6 @@ services:
       - user_db_data:/var/lib/mysql
     networks:
       - user_db_network
-  s3_bucket_db:
-    container_name: s3_bucket_db
-    build: ./containers/databases/s3_bucket_db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpwd
-      MYSQL_DATABASE: user_obj_links
-      MYSQL_USER: s3_bucket_user
-      MYSQL_PASSWORD: user_pwd
-    volumes:
-      - s3_bucket_db_data:/var/lib/mysql
-    networks:
-      - s3_bucket_network
 
 volumes:
   nginx_data:
@@ -142,12 +129,6 @@ volumes:
       type: none
       o: bind
       device: ${VOLUME_PATH}/user_db_volume
-  s3_bucket_db_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${VOLUME_PATH}/s3_bucket_db_volume
 
 networks:
   mariadb_network:
@@ -163,6 +144,4 @@ networks:
   auth_db_network:
     driver: bridge
   user_db_network:
-    driver: bridge
-  s3_bucket_network:
     driver: bridge
