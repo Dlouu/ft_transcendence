@@ -95,7 +95,7 @@ class UpdateProfilePicture(Resource):
 		if not user:
 			return {"message": f"No user found with the id {user_id}, contact an admin if the problem persist."}, 401
 
-		file_ext = image_file.rsplit(".", 1)[-1]
+		file_ext = image_file.filename.rsplit(".", 1)[-1]
 		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
 
 		try:
