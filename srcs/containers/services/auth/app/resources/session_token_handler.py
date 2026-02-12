@@ -30,7 +30,7 @@ def update_token():
 	token = session_token.split(" ", 1)[1]
 
 	if not st.does_session_token_exist(token):
-		return {"message": "Missing token in the cache."}, 401
+		return {"message": "The token does not exist."}, 401
 
 	payload = None
 	try:

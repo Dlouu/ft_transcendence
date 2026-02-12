@@ -31,10 +31,10 @@ def jwt_required(self):
 				g.token = token
 				g.token_payload = payload
 			except ExpiredSignatureError:
-				response = rs.make_request("http://auth:5055/token_handler/update", "GET")
+				response = rs.make_request("/token_handler/update", "GET")
 				if response.status_code != 200:
-					print(f"An error occured in the auth service while generating a new session token / refresh token. Code: {response.status_code}, error: {response}", flush=True)
-					return response, response.status_code
+					print(f"An error occured in the auth service while generating a new session token / refresh token. Code: {response.status_code}, error: {response.json()}", flush=True)
+					return response.json(), response.status_code
 
 				g.x_new_token = response.json().get("token")
 				g.token = response.json().get("token")

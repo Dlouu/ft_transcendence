@@ -42,7 +42,7 @@ class UserRegistration(Resource):
 		except ValidationError as err:
 			return {"message": "One or more fields are missing"}, 400
 
-		response = rs.make_request("http://auth:5055/auth/registration", "POST")
+		response = rs.make_request("/auth/registration", "POST")
 		json_response = response.json()
 
 		if (response.status_code != 201):
@@ -90,7 +90,7 @@ class UserLogin(Resource):
 		except ValidationError as err:
 			return {"message": "The body format isn't valid."}, 400
 
-		response = rs.make_request("http://auth:5055/auth/login", "POST")
+		response = rs.make_request("/auth/login", "POST")
 		json_response = response.json()
 
 		if response.status_code != 200:

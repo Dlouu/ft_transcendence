@@ -7,7 +7,7 @@ def me(user_id):
 	if not user:
 		return {"message": f"No user found with the id {user_id}."}, 404
 
-	response = rs.make_request(f"http://auth:5055/user/email/{user_id}", "GET")
+	response = rs.make_request(f"/user/email/{user_id}", "GET")
 
 	if response.status_code != 200:
 		return response.json(), response.status_code

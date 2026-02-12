@@ -39,3 +39,7 @@ class PasswordUpdateSchema(Schema):
 
 password_update_schema = PasswordUpdateSchema()
 
+class DeleteAccountSchema(Schema):
+	password = fields.String(required=True)
+
+delete_account_schema = DeleteAccountSchema()

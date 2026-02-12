@@ -48,11 +48,6 @@ class Upload(Resource):
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
 		s3_url = f"card_gallery/{payload["user_id"]}/{uuid4()}.{file_ext}"
 
-		print(s3_url, flush=True)
-
-		# if True:
-		# 	return {"message": "bypass"}, 200
-
 		try:
 			image_db_obj = card_gallery_schema.load({"user_id": payload["user_id"], "img_url": s3_url})
 			db.session.add(image_db_obj)

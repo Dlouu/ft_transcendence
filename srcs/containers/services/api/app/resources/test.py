@@ -32,4 +32,8 @@ class TestJWT(Resource):
 	@ns.doc(security="BearerAuth")
 	@ns.jwt_required()
 	def get(self):
+		print("HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", flush=True)
+		if not g.token_payload:
+			return {"message": "Unable to validate the token."}, 401
+
 		return {"message": "success", "data": [g.token_payload]}, 200
