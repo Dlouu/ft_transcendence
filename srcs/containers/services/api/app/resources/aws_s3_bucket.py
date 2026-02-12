@@ -43,28 +43,28 @@ class Upload(Resource):
 			print(f"A problem occured while parsing data ({e})", flush=True)
 			return {"message": "Bad request"}, 400
 
-		payload = g.token_payload
+		user_id = g.token_payload["user_id"]
 
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
-		s3_url = f"card_gallery/{payload["user_id"]}/{uuid4()}.{file_ext}"
+		s3_url = f"card_gallery/{user_id}/{uuid4()}.{file_ext}"
 
 		try:
-			image_db_obj = card_gallery_schema.load({"user_id": payload["user_id"], "img_url": s3_url})
+			image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
 			db.session.add(image_db_obj)
 		except ValidationError as e:
 			db.session.rollback()
-			print(f"Something wrong happened while creating image database's object for user id {payload["user_id"]} ({g.token}), the image '{image_file.filename}' will not be uploaded.", flush=True)
+			print(f"Something wrong happened while creating image database's object for user id {user_id} ({g.token}), the image '{image_file.filename}' will not be uploaded.", flush=True)
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 		except Exception as e:
 			db.session.rollback()
-			print(f"Unhandled error happened while creating image database's object for user id {payload["user_id"]} ({g.token}), handle this error as soons as possible ({e}).", flush=True)
+			print(f"Unhandled error happened while creating image database's object for user id {user_id} ({g.token}), handle this error as soons as possible ({e}).", flush=True)
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 
 		try:
 			s3.upload_fileobj(image_file, os.getenv("S3_BUCKET_NAME", ""), s3_url, ExtraArgs={"ContentType": image_file.content_type})
 		except Exception as e:
 			db.session.rollback()
-			print(f"Something wrong happened while uploadtingthe image to the s3 bucket for user id {payload["user_id"]} ({g.token}), resolve this issue as soon as possible ({e})", flush=True)
+			print(f"Something wrong happened while uploadtingthe image to the s3 bucket for user id {user_id} ({g.token}), resolve this issue as soon as possible ({e})", flush=True)
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 
 		db.session.commit()

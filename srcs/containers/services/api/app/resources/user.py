@@ -1,4 +1,5 @@
-from flask_restx import Namespace, Resource, fields
+from flask_restx import Namespace, Resource, fields, reqparse
+from werkzeug.datastructures import FileStorage
 from datetime import datetime, timezone
 from marshmallow import ValidationError
 from sqlalchemy.orm import joinedload
@@ -62,6 +63,53 @@ class UpdateInformation(Resource):
 		db.session.commit()
 
 		return {"message": "success"}, 200
+
+updade_profile_picture_model = reqparse.RequestParser()
+updade_profile_picture_model.add_argument(
+	"image",
+	type=FileStorage,
+	location="files",
+	required=True,
+	help="New profile picture."
+)
+
+@ns.route("/update_profile_picture")
+class UpdateProfilePicture(Resource):
+	@ns.jwt_required()
+	@ns.expect(updade_profile_picture_model)
+	@ns.s3_bucket_health_check()
+	def post(self):
+		try:
+			args = updade_profile_picture_model.parse_args()
+			image_file = args["image"]
+
+			if image_file.content_type not in {"image/jpeg", "image/png"}:
+				return {"message": "File format not supported."}, 400
+		except Exception as e:
+			print(f"{request.path}: A problem occured while parsing data: {e}", flush=True)
+
+		user_id = g.token_payload["user_id"]
+
+		user = User.query.filter_by(user_id=user_id).first()
+
+		if not user:
+			return {"message": f"No user found with the id {user_id}, contact an admin if the problem persist."}, 401
+
+		file_ext = image_file.rsplit(".", 1)[-1]
+		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
+
+		try:
+			s3.upload_fileobj(image_file, os.getenv("S3_BUCKET_NAME", ""), s3_url, ExtraArgs={"ContentType": image_file.content_type})
+		except Exception as e:
+			print(f"{request.path}: Something wrong happened while uploadign the profile picture to the s3 bucket for user id {user_id}. ({e})", flush=True)
+			return {"message": "Failed to upload the user's profile picture."}, 400
+
+		user.profile_picture_url = s3_url
+
+		db.session.commit()
+
+		return {"message": "success"}, 200
+
 
 update_password_model = ns.model("UpdatePasswordModel", {
 	"password": fields.String(required=True),

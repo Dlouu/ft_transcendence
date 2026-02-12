@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
 from datetime import datetime, timezone
 from flask import request, g
-import requests
+import os
 
 from app.schemas.user import user_registration_schema, user_login_schema, user_schema
 from app.services import request_service as rs
@@ -49,7 +49,10 @@ class UserRegistration(Resource):
 			return json_response, response.status_code
 
 		try:
-			user_payload = {"username": auth_data["username"], "user_id": json_response["id"]}
+			user_payload = {
+				"username": auth_data["username"],
+				"user_id": json_response["id"],
+				"profile_picture_url": os.getenv("DEFAULT_IMG_PATH")+"/default_profile_picture.jpg"}
 			user = user_schema.load(user_payload)
 			db.session.add(user)
 			db.session.commit()

@@ -5,6 +5,7 @@ from marshmallow import fields, Schema
 class UserSchema(ma.SQLAlchemyAutoSchema):
 	username = fields.String(required=True)
 	user_id = fields.Integer(required=True)
+	profile_picture_url = fields.String(required=True)
 	class Meta:
 		model = User
 		load_instance = True
