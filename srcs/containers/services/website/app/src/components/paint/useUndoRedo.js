@@ -1,9 +1,23 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { WIDTH, HEIGHT } from './constants';
 
 export function useUndoRedo(ctxRef) {
 	const undoStack = useRef([]);
 	const redoStack = useRef([]);
+
+	function handleKey(e)
+	{
+		if (e.key === "z" && e.ctrlKey && e.repeat === false)
+			undo();
+		else if (e.key === "y" && e.ctrlKey && e.repeat === false)
+			redo();
+	}
+
+	useEffect(() => {
+		document.addEventListener("keydown", handleKey);
+
+		return () => {document.removeEventListener("keydown", handleKey)}
+	}, []);
 
 	const saveSnapshot = () => {
 		if (!ctxRef.current) return;

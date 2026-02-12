@@ -45,6 +45,24 @@ export function drawLine(ctx, x0, y0, x1, y1, brushSize, color, tool) {
 	}
 }
 
+function rgbToHex(r, g, b) {
+	return '#' + [r, g, b]
+		.map(x => {
+			const hex = x.toString(16);
+			return hex.length === 1 ? '0' + hex : hex;
+		})
+		.join('')
+		.toUpperCase();
+}
+
+export function selectColor(ctx, x, y, setColor) {
+	const imageData = ctx.getImageData(x, y, 1, 1);
+	const data = imageData.data;
+	
+	const hex = rgbToHex(data[0], data[1], data[2]);
+	setColor(hex);
+}
+
 function hexToRgba(hex) {
 	const bigint = parseInt(hex.slice(1), 16);
 	return [
@@ -73,7 +91,8 @@ export function floodFill(ctx, x, y, fillColor) {
 	if (
 		targetColor[0] === newColor[0] &&
 		targetColor[1] === newColor[1] &&
-		targetColor[2] === newColor[2]
+		targetColor[2] === newColor[2] &&
+		targetColor[3] === newColor[3]
 	) return;
 
 	while (stack.length) {
@@ -85,7 +104,8 @@ export function floodFill(ctx, x, y, fillColor) {
 		if (
 			currentColor[0] === targetColor[0] &&
 			currentColor[1] === targetColor[1] &&
-			currentColor[2] === targetColor[2]
+			currentColor[2] === targetColor[2] &&
+			currentColor[3] === targetColor[3]
 		) {
 			data[i] = newColor[0];
 			data[i + 1] = newColor[1];

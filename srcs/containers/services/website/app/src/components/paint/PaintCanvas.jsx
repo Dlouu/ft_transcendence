@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 import { WIDTH, HEIGHT, MAX_HEIGHT_RATIO } from "./constants";
-import { drawCheckerBoard, drawLine, floodFill } from "./drawingUtils";
+import { drawCheckerBoard, drawLine, floodFill, selectColor } from "./drawingUtils";
 import { useUndoRedo } from "./useUndoRedo";
 
-function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
+function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onUndoRedoReady }) {
 	const ctxRef = useRef(null);
 	const isDrawingRef = useRef(false);
 	const lastPosRef = useRef(null);
@@ -91,6 +91,12 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 
 		if (tool === "bucket") {
 			floodFill(ctxRef.current, x, y, color);
+			return;
+		}
+
+		if (tool === "pipette") {
+			selectColor(ctxRef.current, x, y, setColor);
+			setTool("pen");
 			return;
 		}
 

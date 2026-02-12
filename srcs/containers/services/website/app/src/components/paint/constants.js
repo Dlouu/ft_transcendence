@@ -5,10 +5,7 @@ export const MAX_HEIGHT_RATIO = 0.7;
 export const COLORS = [
 	"#000000",
 	"#ffffff",
-	"#ff0000",
-	"#00ff00",
-	"#0000ff",
-	"#ffff00",
+	"#8a3887",
 ];
 
 export const BRUSH_SIZES = [1, 2, 3, 4];
