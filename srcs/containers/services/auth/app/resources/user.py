@@ -17,7 +17,7 @@ def update_information():
 	try:
 		data = user_schema.user_update_schema.load(request.json)
 	except ValidationError as e:
-		return {"message": "The body isn't valid."}, 400
+		return {"message": "The body is no valid."}, 400
 
 	user = User.query.filter_by(id=data["user_id"]).first()
 
@@ -54,7 +54,7 @@ def UpdatePassword():
 	try:
 		data = user_schema.password_update_schema.load(request.json)
 	except ValidationError:
-		return {"message": "The body isn't valid."}, 400
+		return {"message": "The body is no valid."}, 400
 
 	user = User.query.filter_by(id=data["user_id"]).first()
 
@@ -80,7 +80,7 @@ def delete_account():
 	try:
 		data = user_schema.delete_account_schema.load(request.json)
 	except ValidationError:
-		return {"message": "The body isn't valid."}, 400
+		return {"message": "The body is no valid."}, 400
 
 	user = User.query.filter_by(id=data["user_id"]).first()
 

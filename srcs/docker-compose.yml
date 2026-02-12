@@ -39,6 +39,7 @@ services:
       - .secrets
     environment:
       DEFAULT_IMG_PATH: default
+      DEFAULT_PROFILE_PICTURE: default_profile_picture.jpg
       REDIS_URL: redis://redis:6379/0
       CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
       USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data

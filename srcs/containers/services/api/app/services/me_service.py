@@ -3,6 +3,7 @@ import os
 from app.services import request_service as rs
 from app.models.user import User
 from app.extensions import s3
+from app.services import s3_bucket_service as s3s
 
 def me(user_id):
 	user = User.query.filter_by(user_id=user_id).first()
@@ -15,12 +16,8 @@ def me(user_id):
 	if response.status_code != 200:
 		return response.json(), response.status_code
 
-	profile_picture_url = s3.generate_presigned_url(
-		ClientMethod="get_object",
-		Params={"Bucket": os.getenv("S3_BUCKET_NAME"), "Key": user.profile_picture_url},
-		ExpiresIn = 3600,
-	)
-
+	profile_picture_url = s3s.get_resource_url(user.profile_picture_url)
+	print(user.profile_picture_url, flush=True)
 	return {
 		"message": "success",
 		"user_id": user_id,

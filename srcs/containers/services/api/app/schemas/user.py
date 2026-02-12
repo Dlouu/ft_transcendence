@@ -44,3 +44,8 @@ class DeleteAccountSchema(Schema):
 	password = fields.String(required=True)
 
 delete_account_schema = DeleteAccountSchema()
+
+class DeleteCardImageSchema(Schema):
+	card_id = fields.Integer(required=True)
+
+delete_card_image_schema = DeleteCardImageSchema()
