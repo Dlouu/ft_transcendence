@@ -24,9 +24,9 @@ try:
 	AWS_REGION = os.getenv("AWS_REGION", "")
 	s3 = boto3.client("s3", region_name=AWS_REGION)
 
-	image_name = "default_profile_picture.jpg"
+	image_name = os.getenv("DEFAULT_PROFILE_PICTURE", "")
 	bucket_name = os.getenv("S3_BUCKET_NAME", "")
-	s3_key = os.getenv("DEFAULT_IMG_PATH")+"/"+image_name
+	s3_key = os.getenv("DEFAULT_IMG_PATH") + "/" + image_name
 
 	try:
 		s3.head_object(Bucket=bucket_name, Key=s3_key)

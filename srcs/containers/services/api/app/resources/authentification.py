@@ -52,7 +52,7 @@ class UserRegistration(Resource):
 			user_payload = {
 				"username": auth_data["username"],
 				"user_id": json_response["id"],
-				"profile_picture_url": os.getenv("DEFAULT_IMG_PATH")+"/default_profile_picture.jpg"}
+				"profile_picture_url": os.getenv("DEFAULT_IMG_PATH")+"/"+os.getenv("DEFAULT_PROFILE_PICTURE", "")}
 			user = user_schema.load(user_payload)
 			db.session.add(user)
 			db.session.commit()

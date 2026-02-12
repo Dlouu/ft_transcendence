@@ -95,6 +95,12 @@ class UpdateProfilePicture(Resource):
 		if not user:
 			return {"message": f"No user found with the id {user_id}, contact an admin if the problem persist."}, 401
 
+		bucket_name = os.getenv("S3_BUCKET_NAME", "")
+		response = s3.list_objects_v2(Bucket=bucket_name, Prefix=f"profile_picture/{user_id}/")
+
+		for obj in response["Contents"]:
+			s3.delete_object(Bucket=bucket_name, Key=obj["Key"])
+
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
 		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
 
@@ -166,10 +172,17 @@ class DeleteAccount(Resource):
 				deleted_username = str(uuid4()).split("-", 1)[0]
 
 			user.username = "deleted_user_" + str(deleted_username)
+			user.profile_picture_url = os.getenv("DEFAULT_IMG_PATH") + "/" + os.getenv("DEFAULT_PROFILE_PICTURE", "")
+
+			bucket_name = os.getenv("S3_BUCKET_NAME", "")
+			response = s3.list_objects_v2(Bucket=bucket_name, Prefix=f"card_gallery/{user_id}/")
+
+			for obj in response["Contents"]:
+				s3.delete_object(Bucket=bucket_name, Key=obj["Key"])
 
 			for row in user.cards:
 				try:
-					s3.delete_object(Bucket=os.getenv("S3_BUCKET_NAME", ""), Key=row.img_url)
+					s3.delete_object(Bucket=bucket_name, Key=row.img_url)
 				except Exception as e:
 					print(f"{request.path}: Unhandled error happened: {e}")
 
