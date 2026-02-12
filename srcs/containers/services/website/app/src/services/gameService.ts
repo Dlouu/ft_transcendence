@@ -46,8 +46,8 @@ export class GameService
             canvas: canvas,
             width: canvas.clientWidth,
             height: canvas.clientHeight,
-            backgroundColor: "#6a1067",
-            // backgroundAlpha: 0.1,
+            backgroundColor: "#291c3d",
+            // backgroundAlpha: 0.3,
             resolution: window.devicePixelRatio || 1,
             autoDensity: true,
             antialias: true

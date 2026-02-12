@@ -11,8 +11,10 @@ services:
 
   game:
     volumes:
-      - ./containers/services/game/app:/app/app
-    # command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
+      - ./containers/services/game/app:/app
+    command: npm run start:dev
+    ports:
+      - "3000:3000"
 
   website:
     volumes:
