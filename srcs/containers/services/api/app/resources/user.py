@@ -175,8 +175,12 @@ class DeleteAccount(Resource):
 			user.profile_picture_url = os.getenv("DEFAULT_IMG_PATH") + "/" + os.getenv("DEFAULT_PROFILE_PICTURE", "")
 
 			bucket_name = os.getenv("S3_BUCKET_NAME", "")
-			response = s3.list_objects_v2(Bucket=bucket_name, Prefix=f"card_gallery/{user_id}/")
 
+			response = s3.list_objects_v2(Bucket=bucket_name, Prefix=f"card_gallery/{user_id}/")
+			for obj in response["Contents"]:
+				s3.delete_object(Bucket=bucket_name, Key=obj["Key"])
+
+			response = s3.list_objects_v2(Bucket=bucket_name, Prefix=f"profile_picture/{user_id}/")
 			for obj in response["Contents"]:
 				s3.delete_object(Bucket=bucket_name, Key=obj["Key"])
 
