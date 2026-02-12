@@ -70,7 +70,7 @@ class UpdatePassword(Resource):
 	@ns.jwt_required()
 	@ns.expect(update_password_model)
 	def post(self):
-		try: #test
+		try:
 			information = su.password_update_schema.load(request.json)
 		except ValidationError:
 			return {"message": "The body isn't valid."}, 400

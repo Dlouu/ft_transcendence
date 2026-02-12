@@ -26,10 +26,6 @@ def update_information():
 	if not user:
 		return {"message": "The user can't be found in the auth database."}, 401
 
-	"""
-		RAJOUTER UNE FONCTION POUR CHECK SI EMAIL ET OU USERNAME EXISTE DEJA EN EXCLUANT CELUI DE L'UTILISATEUR
-		LUI MEME
-	"""
 	if "username" in information and user.username != information["username"]:
 		min_len = int(os.getenv("AUTH_MIN_USERNAME_LENGTH", "3"))
 		max_len = int(os.getenv("AUTH_MAX_USERNAME_LENGTH", 10))
