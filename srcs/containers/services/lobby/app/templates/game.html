@@ -1,20 +1,26 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lobby</title>
-  </head>
-  <body>
-    <div class="game">
-      <h1>Nom de la room : {{ code }}</h1>
-      <p>Joueurs connectés : <span id="player-count">0</span></p>
-    </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lobby</title>
+</head>
+<body>
+  <div class="game">
+    <h1>Nom de la room : {{ code }}</h1>
+    <p>Joueurs connectés : <span id="player-count">0</span></p>
+
+    <ul id="player-list"></ul>
+
+    <button id="bouton_ready">Ready?</button>
+  </div>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     const code = "{{ code }}";
     const socket = io();
+
+    const button_ready = document.getElementById("bouton_ready");
 
     socket.on("connect", () => {
       socket.emit("join_lobby", { code: code });
@@ -23,16 +29,37 @@
     socket.on("count_update", (data) => {
       document.getElementById("player-count").textContent = data.count;
     });
-    socket.on("room_full", (data) => {
-    alert("Room is full. Returning to lobby.");
-    window.location.href = "/";
+
+    socket.on("player_list", (data) => {
+      const list = document.getElementById("player-list");
+      list.innerHTML = "";
+
+      data.players.forEach((player) => {
+        const li = document.createElement("li");
+        const isReady = data.ready.includes(player);
+        li.textContent = player + (isReady ? " ✅" : " ❌");
+        list.appendChild(li);
+      });
     });
 
-    socket.on("room_expired", (data) => {
-    alert("Room expired. Returning to lobby.");
-    window.location.href = "/";
+    button_ready.addEventListener("click", () => {
+      socket.emit("player_ready");
     });
 
+    socket.on("room_full", () => {
+      alert("Room is full. Returning to lobby.");
+      window.location.href = "/";
+    });
+
+    socket.on("room_expired", () => {
+      alert("Room expired. Returning to lobby.");
+      window.location.href = "/";
+    });
+
+    socket.on("game_start", () => {
+      alert("game is starting!!!!");
+      window.location.href = `/game/${code}`;
+    });
   </script>
-  </body>
+</body>
 </html>
