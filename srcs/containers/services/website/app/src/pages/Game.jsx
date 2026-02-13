@@ -15,7 +15,7 @@ function Game() {
     {
         if (!canvasRef.current) return;
 
-        gameService.init({ canvas: canvasRef.current });
+        gameService.init({ canvas: canvasRef.current, playerId: playerName });
         console.log("Game mounted for", playerName);
 
         return () => gameService.destroy();

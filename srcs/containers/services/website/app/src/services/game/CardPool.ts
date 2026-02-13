@@ -67,4 +67,17 @@ export class CardPool
             this._availableCards.push(card);
         }
     }
+
+    public destroy(): void
+    {
+        this.returnAll();
+
+        for (const card of this._availableCards)
+        {
+            card.destroy({ children: true });
+        }
+
+        this._availableCards = [];
+        this._activeCards = [];
+    }
 }

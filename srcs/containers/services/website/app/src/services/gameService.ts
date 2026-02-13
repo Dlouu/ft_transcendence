@@ -1,5 +1,7 @@
 import { Application, Assets, Graphics, Sprite, Texture } from 'pixi.js';
+import { io, Socket } from 'socket.io-client';
 import { Hand, HandRotation } from './game/Hand';
+import { UnoCard } from './game/UnoCard';
 import { CardPool } from './game/CardPool';
 import { AssetsManager, CardSet, CardsTheme, CardValue } from './game/AssetsManager';
 import { CardPile } from './game/CardPile';
@@ -7,11 +9,13 @@ import { CardPile } from './game/CardPile';
 interface IGameInitOptions
 {
     canvas: HTMLCanvasElement;
+    playerId: string;
 }
 
 export class GameService
 {
     private app: Application | null = null;
+    private socket: Socket | null = null;
 
     private _isInitialized: boolean = false;
 
@@ -32,7 +36,7 @@ export class GameService
         this._isInitialized = false;
     }
 
-    public async init({ canvas }: IGameInitOptions): Promise<void>
+    public async init({ canvas, playerId }: IGameInitOptions): Promise<void>
     {
         if (!canvas)
         {
@@ -53,9 +57,9 @@ export class GameService
             antialias: true
         });
 
-        this._assetsMangr = new AssetsManager();
+        this.initSocket(playerId);
 
-        this._cardPool = new CardPool(this.app.stage);
+        this._assetsMangr = new AssetsManager();
 
         await this._assetsMangr.loadTheme(CardsTheme.Uwu);
         await this._assetsMangr.loadCardBacks(["uwu"]);
@@ -72,8 +76,37 @@ export class GameService
         this._isInitialized = true;
 
         this.onResize(canvas.clientWidth, canvas.clientHeight);
+    }
 
-        this.start();
+    public initSocket(playerId: string): void
+    {
+        const socketOptions = {
+            query: {
+                playerId: playerId
+            },
+            transports: ['websocket']
+        };
+
+        this.socket = io('http://localhost:3000', socketOptions);
+
+        this.socket.on('connect', () =>
+        {
+            console.log('GameService: Socket connected', this.socket?.id);
+        });
+
+        this.socket.on('connect_error', (err) =>
+        {
+            console.error('GameService: Connection error', err);
+            window.location.href = '/';
+        });
+
+        this.socket.on('disconnect', (reason) =>
+        {
+            if (reason === 'io server disconnect')
+            {
+                window.location.href = '/';
+            }
+        });
     }
 
     /**
@@ -138,20 +171,6 @@ export class GameService
         // Example: socket.emit('playerMove', ...)
     }
 
-    // private async drawExampleCardFromSprite(): Promise<void>
-    // {
-    //     if (!this.app) return;
-    //     // Create a card graphic
-    //     const card = new Sprite(this._textures[0]);
-
-    //     // Position in center
-    //     card.x = this.app.screen.width / 2 - 50;
-    //     card.y = this.app.screen.height / 2 - 75;
-
-    //     // Add to stage
-    //     this.app.stage.addChild(card);
-    // }
-
     /**
      * Handle window resizing.
      * Called from the React component.
@@ -164,8 +183,13 @@ export class GameService
 
         // this.app.renderer.resize(width, height);
 
-        const w = this.app.screen.width;
-        const h = this.app.screen.height;
+        // TO DELETE ONE OF THEM
+        // const w = this.app.screen.width;
+        // const h = this.app.screen.height;
+
+        const w = width;
+        const h = height;
+        // END OF DELETE
 
         // ===== HANDS =====
 
@@ -209,13 +233,59 @@ export class GameService
      */
     public destroy(): void
     {
+        if (this.socket)
+        {
+            this.socket.disconnect();
+            this.socket = null;
+        }
+
         if (this.app)
         {
+            // Remove persistent components from the stage so they aren't destroyed
+            if (this._playerHand) this.app.stage.removeChild(this._playerHand);
+            if (this._topOppHand) this.app.stage.removeChild(this._topOppHand);
+            if (this._leftOppHand) this.app.stage.removeChild(this._leftOppHand);
+            if (this._rightOppHand) this.app.stage.removeChild(this._rightOppHand);
+            if (this._deck) this.app.stage.removeChild(this._deck);
+            if (this._discard) this.app.stage.removeChild(this._discard);
+
+            // Clear Hands
+            this._cleanupHand(this._playerHand);
+            this._cleanupHand(this._topOppHand);
+            this._cleanupHand(this._leftOppHand);
+            this._cleanupHand(this._rightOppHand);
+
+            // Clear Piles
+            this._cleanupPile(this._deck);
+            this._cleanupPile(this._discard);
+
+            if (this._cardPool)
+            {
+                this._cardPool.destroy();
+            }
+
             this.app.destroy({ removeView: false }, { children: true });
             this.app = null;
         }
         
         this._isInitialized = false;
+    }
+
+    private _cleanupHand(hand: Hand): void
+    {
+        const cards = hand.children.filter((c) => c instanceof UnoCard) as UnoCard[];
+        cards.forEach((c) => {
+            hand.removeCard(c);
+        });
+    }
+
+    private _cleanupPile(pile: CardPile): void 
+    {
+        const card = pile.card;
+        if (card)
+        {
+            pile.setCard(null);
+        }
     }
 }
 
