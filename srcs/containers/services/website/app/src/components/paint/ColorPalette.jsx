@@ -1,9 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Tooltip } from '../../ui';
 import { COLORS } from './constants';
+import { selectColor } from "./drawingUtils";
 import ToolSelector from "./ToolSelector";
 
 function ColorPalette({ color, setColor, tool, setTool }) {
+
 	const [palette, setPalette] = useState(COLORS);
 	const colorInputRefs = useRef({});
 
@@ -12,6 +14,39 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 		prev.map((c, i) => (i === index ? newColor : c))
 		);
 	};
+
+	const handleKey = useCallback(
+		(e) => {
+			if (e.repeat) return;
+			if (e.key === "b" || e.key === "=")
+				setTool("pipette");
+
+			if (!/^[1-9]$/.test(e.key)) return;
+
+			const key = Number(e.key);
+			let index = -1;
+
+			
+			if (key >= 1 && key <= 3) {
+				index = key - 1; // Keys 1-3 → colors 0-2
+			} else if (key >= 4 && key <= 9) {
+				index = COLORS.length + (key - 4); // Keys 4-9 → custom colors 0-5
+			}
+
+			if (index >= 0 && index < palette.length) {
+				setColor(palette[index]);
+			}
+		},
+		[palette, setColor]
+	);
+
+	useEffect(() => {
+		document.addEventListener("keydown", handleKey);
+
+		return () => {
+			document.removeEventListener("keydown", handleKey);
+		};
+	}, [handleKey]);
 
 	const baseColors = palette.slice(0, COLORS.length);
 	const customColors = palette.slice(COLORS.length);
@@ -27,16 +62,16 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 					value={color}
 					onChange={(e) => setColor(e.target.value)}
 					className="sm:w-8 w-6 sm:h-8 h-6 border rounded border-gray-400 hover:opacity-80 transition cursor-pointer"
-					title="Couleur personnalisée"
+					title="Custom color"
 				/>
 
 			{/* Pipette */}
-				<Tooltip message="color picker">
+				<Tooltip message="color picker [B] [=]">
 					<Button
 						variant="icon"
 						isActive={tool === "pipette"}
 						onClick={() => setTool("pipette")}
-						title="Pipette"
+						title="Color picker"
 					>
 						󰈊
 					</Button>
@@ -70,17 +105,17 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 				))}
 
 			{/* Add button */}
-				{customColors.length < 6 &&
+				<Tooltip message="add color, switch with [1]~[9]">
 					<Button
-						variant="icon"
+						variant={customColors.length > 5 ? "iconDisabled" : "icon"}
 						onClick={() => setPalette([...palette, color])}
 						className="w-6 h-6 border rounded text-xs"
-						title="Ajouter une couleur"
+						title="Add color"
+						disabled={customColors.length > 5}
 					>
 						+
 					</Button>
-				}
-
+				</Tooltip>
 			</div>
 
 		{/* Custom added colors */}

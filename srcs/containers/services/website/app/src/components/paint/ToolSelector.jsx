@@ -3,15 +3,14 @@ import { Button, Tooltip } from "../../ui";
 
 function ToolSelector({ tool, setTool }) {
 
-	function handleKey(e)
-	{
-		if (e.key === "z" && e.repeat === false)
+	function handleKey(e) {
+		if ((e.key === "z" || e.key === ".") && e.repeat === false)
 			setTool("pen");
-		else if (e.key === "x" && e.repeat === false)
+		else if ((e.key === "x" || e.key === "0")  && e.repeat === false)
 			setTool("eraser");
-		else if (e.key === "c" && e.repeat === false)
+		else if ((e.key === "c" || e.key === "*")  && e.repeat === false)
 			setTool("bucket");
-		else if (e.key === "v" && e.repeat === false)
+		else if ((e.key === "v" || e.key === "/")  && e.repeat === false)
 			setTool("stroke");
 	}
 
@@ -23,7 +22,7 @@ function ToolSelector({ tool, setTool }) {
 
 	return (
 		<div className="flex gap-1">
-			<Tooltip message = "pen key:Z">
+			<Tooltip message = "pen [Z] [.]">
 				<Button
 					variant="icon"
 					isActive={tool === "pen"}
@@ -34,7 +33,7 @@ function ToolSelector({ tool, setTool }) {
 				</Button>
 			</Tooltip>
 
-			<Tooltip message = "eraser key:X">
+			<Tooltip message = "eraser [X] [0]">
 				<Button
 					variant="icon"
 					isActive={tool === "eraser"}
@@ -45,7 +44,7 @@ function ToolSelector({ tool, setTool }) {
 				</Button>
 			</Tooltip>
 
-			<Tooltip message = "bucket key:C">
+			<Tooltip message = "bucket [C] [*]">
 				<Button
 					variant="icon"
 					isActive={tool === "bucket"}
@@ -56,7 +55,7 @@ function ToolSelector({ tool, setTool }) {
 				</Button>
 			</Tooltip>
 
-			<Tooltip message = "stroke key:V">
+			<Tooltip message = "stroke [V] [/]">
 				<Button
 					variant="icon"
 					isActive={tool === "stroke"}

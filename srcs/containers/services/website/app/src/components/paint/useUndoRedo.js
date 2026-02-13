@@ -5,8 +5,7 @@ export function useUndoRedo(ctxRef) {
 	const undoStack = useRef([]);
 	const redoStack = useRef([]);
 
-	function handleKey(e)
-	{
+	function handleKey(e) {
 		if (e.key === "z" && e.ctrlKey && e.repeat === false)
 			undo();
 		else if (e.key === "y" && e.ctrlKey && e.repeat === false)
