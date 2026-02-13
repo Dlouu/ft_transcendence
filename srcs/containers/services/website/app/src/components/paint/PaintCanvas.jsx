@@ -10,6 +10,8 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 	const lastPosRef = useRef(null);
 	const pointerIdRef = useRef(null);
 	const bgCanvasRef = useRef(null);
+	const previewCanvasRef = useRef(null);
+	const previewCtxRef = useRef(null);
 	const previewImageRef = useRef(null);
 
 	const scale = Math.floor(
@@ -23,12 +25,25 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 
 	useEffect(() => {
 		const bgCanvas = bgCanvasRef.current;
-		const bgCtx = bgCanvas.getContext("2d");
 
 		bgCanvas.width = WIDTH;
 		bgCanvas.height = HEIGHT;
 
+		const bgCtx = bgCanvas.getContext("2d");
 		drawCheckerBoard(bgCtx, WIDTH, HEIGHT);
+
+	}, []);
+
+	useEffect(() => {
+		const previewCanvas = previewCanvasRef.current;
+
+		previewCanvas.width = WIDTH;
+		previewCanvas.height = HEIGHT;
+
+		const previewCtx = previewCanvas.getContext("2d");
+		previewCtx.imageSmoothingEnabled = false;
+		previewCtxRef.current = previewCtx;
+
 	}, []);
 
 	useEffect(() => {
@@ -44,6 +59,30 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 			onUndoRedoReady({ undo, redo });
 		}
 	}, [onUndoRedoReady]);
+
+	function clearPreview() {
+		const ctx = previewCtxRef.current;
+		if (!ctx)
+			return;
+		ctx.clearRect(0, 0, WIDTH, HEIGHT);
+	}
+
+	function drawPreview(x, y) {
+		const ctx = previewCtxRef.current;
+		if (!ctx)
+			return;
+
+		ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+		if (tool === "bucket" || tool === "pipette")
+			return;
+
+		ctx.save();
+		ctx.imageSmoothingEnabled = true;
+		ctx.fillStyle = tool === "eraser" ? "rgba(0,0,0,0.2)" : color;
+		ctx.fillRect(x, y, brushSize, brushSize);
+		ctx.restore();
+	}
 
 	function drawPixel(x, y) {
 		if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT)
@@ -102,6 +141,7 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 
 	function handlePointerDown(e) {
 		e.preventDefault();
+		clearPreview();
 		saveSnapshot();
 		const { x, y } = getCoords(e);
 
@@ -133,8 +173,11 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 	}
 
 	function handlePointerMove(e) {
-		if (!isDrawingRef.current)
+		const { x, y } = getCoords(e);
+		if (!isDrawingRef.current) {
+			drawPreview(x, y);
 			return;
+		}
 		drawAtEvent(e);
 	}
 
@@ -147,10 +190,17 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 		pointerIdRef.current = null;
 		startPosRef.current = null;
 		previewImageRef.current = null;
+		clearPreview();
 	}
 
 	function handlePointerCancel(e) {
 		handlePointerUp(e);
+	}
+
+	function handlePointerLeave() {
+		if (!isDrawingRef.current) {
+			clearPreview();
+		}
 	}
 
 	return (
@@ -174,14 +224,26 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 					}}
 				/>
 
+			{/* PREVIEW */}
+				<canvas
+					ref={previewCanvasRef}
+					className="absolute left-0 top-0 z-99 pointer-events-none"
+					style={{
+						width: WIDTH * scale,
+						height: HEIGHT * scale,
+						imageRendering: "pixelated",
+					}}
+				/>
+
 			{/* FOREGROUND */}
 				<canvas
 					ref={canvasRef}
-					className="absolute left-0 top-0 z-99"
+					className="absolute left-0 top-0 z-3"
 					onPointerDown={handlePointerDown}
 					onPointerMove={handlePointerMove}
 					onPointerUp={handlePointerUp}
 					onPointerCancel={handlePointerCancel}
+					onPointerLeave={handlePointerLeave}
 					style={{
 						width: WIDTH * scale,
 						height: HEIGHT * scale,
