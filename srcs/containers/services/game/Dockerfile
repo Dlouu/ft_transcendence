@@ -1,9 +1,14 @@
-FROM alpine:3.19
+FROM node:20-alpine
 
-RUN apk add --no-cache bash
+WORKDIR /app
 
-COPY ./tools/script.sh /
+RUN apk add --no-cache bash libc6-compat
 
-RUN chmod +x /script.sh
+COPY app/package.json app/package-lock.json ./
 
-CMD [ "/script.sh" ]
+RUN npm install
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start:dev"]
+

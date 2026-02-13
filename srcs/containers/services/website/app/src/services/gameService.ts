@@ -1,30 +1,42 @@
-import { Application, Assets, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
-import uwuBack from '../gallery/UwU-back.png';
+import { Application, Assets, Graphics, Sprite, Texture } from 'pixi.js';
+import { io, Socket } from 'socket.io-client';
+import { Hand, HandRotation } from './game/Hand';
+import { UnoCard } from './game/UnoCard';
+import { CardPool } from './game/CardPool';
+import { AssetsManager, CardSet, CardsTheme, CardValue } from './game/AssetsManager';
+import { CardPile } from './game/CardPile';
 
 interface IGameInitOptions
 {
     canvas: HTMLCanvasElement;
+    playerId: string;
 }
 
 export class GameService
 {
     private app: Application | null = null;
+    private socket: Socket | null = null;
 
-    private isInitialized: boolean = false;
+    private _isInitialized: boolean = false;
 
-    private theme: any | null = null;
-    private texture: any | null = null;
+    private _playerHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Bottom, true);
+    private _topOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Top);
+    private _leftOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Left);
+    private _rightOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Right);
+
+    private _deck: CardPile = new CardPile(null, true, true);
+    private _discard: CardPile = new CardPile(null, true, false);
+
+    private _cardPool!: CardPool;
+    private _assetsMangr!: AssetsManager;
 
     constructor()
     {
         this.app = null;
-        this.isInitialized = false;
+        this._isInitialized = false;
     }
 
-    /**
-     * Initializes the Pixi Application with the canvas provided by React.
-     */
-    public async init({ canvas }: IGameInitOptions): Promise<void>
+    public async init({ canvas, playerId }: IGameInitOptions): Promise<void>
     {
         if (!canvas)
         {
@@ -38,20 +50,63 @@ export class GameService
             canvas: canvas,
             width: canvas.clientWidth,
             height: canvas.clientHeight,
-            backgroundColor: "#2b2b2b",
+            backgroundColor: "#291c3d",
+            // backgroundAlpha: 0.3,
             resolution: window.devicePixelRatio || 1,
             autoDensity: true,
             antialias: true
         });
 
-        this.isInitialized = true;
+        this.initSocket(playerId);
 
-        this.start();
+        this._assetsMangr = new AssetsManager();
+
+        await this._assetsMangr.loadTheme(CardsTheme.Uwu);
+        await this._assetsMangr.loadCardBacks(["uwu"]);
+
+        this._cardPool = new CardPool(this.app.stage);
+
+        this.app.stage.addChild(this._playerHand, 
+                                this._topOppHand,
+                                this._leftOppHand,
+                                this._rightOppHand,
+                                this._deck,
+                                this._discard);
+
+        this._isInitialized = true;
+
+        this.onResize(canvas.clientWidth, canvas.clientHeight);
     }
 
-    private async preloadGameAssets(): Promise<void>
+    public initSocket(playerId: string): void
     {
+        const socketOptions = {
+            query: {
+                playerId: playerId
+            },
+            transports: ['websocket']
+        };
 
+        this.socket = io('http://localhost:3000', socketOptions);
+
+        this.socket.on('connect', () =>
+        {
+            console.log('GameService: Socket connected', this.socket?.id);
+        });
+
+        this.socket.on('connect_error', (err) =>
+        {
+            console.error('GameService: Connection error', err);
+            window.location.href = '/';
+        });
+
+        this.socket.on('disconnect', (reason) =>
+        {
+            if (reason === 'io server disconnect')
+            {
+                window.location.href = '/';
+            }
+        });
     }
 
     /**
@@ -59,10 +114,44 @@ export class GameService
      */
     public start(): void
     {
-        if (!this.app || !this.isInitialized) return;
+        if (!this.app || !this._isInitialized) return;
 
         // Example: Add a simple "Card" to the stage
-        this.drawExampleCardFromSprite();
+        // this.drawExampleCardFromSprite();
+
+        // TO DELETE, JUST FOR TEST
+        const deckCard = this._cardPool.getCard();
+        deckCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
+        this._deck.setCard(deckCard);
+        const discardCard = this._cardPool.getCard();
+        discardCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, CardValue.One), true);
+        this._discard.setCard(discardCard);
+
+        for (let i = 0; i < 7; i++) {
+            const dowTopCard = this._cardPool.getCard();
+            const dowLeftCard = this._cardPool.getCard();
+            const dowRightCard = this._cardPool.getCard();
+            dowTopCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
+            dowLeftCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
+            dowRightCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
+            this._topOppHand.addCard(dowTopCard);
+            this._leftOppHand.addCard(dowLeftCard);
+            this._rightOppHand.addCard(dowRightCard);
+        }
+        const values = [
+            CardValue.Zero, CardValue.One, CardValue.Two, CardValue.Three, CardValue.Four, 
+            CardValue.Five, CardValue.Six, CardValue.Seven, CardValue.Eight, CardValue.Nine, 
+            CardValue.PlusTwo, CardValue.Reverse, CardValue.Skipp
+        ];
+
+        for (let i = 0; i < 7; i++) {
+            const upCard = this._cardPool.getCard();
+            const value = values[i % values.length];
+
+            upCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, value), true);
+            this._playerHand.addCard(upCard);
+        }
+        // END OF DELETE
 
         // Pixi handles the loop automatically via app.ticker
         // You can add your own update logic here:
@@ -74,51 +163,12 @@ export class GameService
 
     /**
      * Main Game Loop
-     * @param dt Delta time from Pixi Ticker
+     * @param _dt Delta time from Pixi Ticker
      */
-    private update(dt: number): void
+    private update(_dt: number): void
     {
         // Add your game logic here
         // Example: socket.emit('playerMove', ...)
-    }
-
-    /**
-     * Example function to draw something using Pixi
-     */
-    private drawExampleCard(): void
-    {
-        if (!this.app) return;
-
-        // Create a card graphic
-        const card = new Graphics();
-        
-        // Draw Card Body (Yellow)
-        card.roundRect(0, 0, 100, 150, 10);
-        card.fill("#4A4A4A"); // Gold/Yellow
-        
-        // Add a border
-        card.stroke({ width: 4, color: 0xFFFFFF });
-
-        // Position in center
-        card.x = this.app.screen.width / 2 - 50;
-        card.y = this.app.screen.height / 2 - 75;
-
-        // Add to stage
-        this.app.stage.addChild(card);
-    }
-
-    private async drawExampleCardFromSprite(): Promise<void>
-    {
-        if (!this.app) return;
-        // Create a card graphic
-        const card = new Sprite(this.texture);
-
-        // Position in center
-        card.x = this.app.screen.width / 2 - 50;
-        card.y = this.app.screen.height / 2 - 75;
-
-        // Add to stage
-        this.app.stage.addChild(card);
     }
 
     /**
@@ -127,15 +177,55 @@ export class GameService
      */
     public onResize(width: number, height: number): void
     {
-        if (!this.app || !this.isInitialized) return;
+        if (!this.app || !this._isInitialized) return;
 
-        console.log("Width : " + width + " | Height : " + height)
+        // console.log("Width : " + width + " | Height : " + height)
 
-        // Tell Pixi renderer to resize
-        this.app.renderer.resize(width, height);
+        // this.app.renderer.resize(width, height);
 
-        // Optional: Re-center elements after resize
-        // this.recalculateLayout();
+        // TO DELETE ONE OF THEM
+        // const w = this.app.screen.width;
+        // const h = this.app.screen.height;
+
+        const w = width;
+        const h = height;
+        // END OF DELETE
+
+        // ===== HANDS =====
+
+        // Player Hand
+        this._playerHand.position.set(w / 2, h * 0.875); 
+        this._playerHand.resize(w, h);
+        this._playerHand.setVisible(true);
+
+        // Top Opponent
+        this._topOppHand.position.set(w / 2, h * 0.125);
+        this._topOppHand.resize(w, h);
+        this._topOppHand.setVisible(true);
+
+        // Left Opponent
+        this._leftOppHand.position.set(w * 0.07, h / 2);
+        this._leftOppHand.resize(w, h);
+        this._leftOppHand.setVisible(true);
+
+        // Right Opponent
+        this._rightOppHand.position.set(w * 0.93, h / 2);
+        this._rightOppHand.resize(w, h);
+        this._rightOppHand.setVisible(true);
+
+        // ===== CARD PILES =====
+
+        let pilesOffset: number = w / 9;
+
+        // Deck
+        this._deck.position.set((w / 2) - pilesOffset, h / 2);
+        this._deck.resize(w, h);
+        this._deck.setVisible(true);
+
+        // Discard
+        this._discard.position.set((w / 2) + pilesOffset, h / 2);
+        this._discard.resize(w, h);
+        this._discard.setVisible(true);
     }
 
     /**
@@ -143,15 +233,59 @@ export class GameService
      */
     public destroy(): void
     {
+        if (this.socket)
+        {
+            this.socket.disconnect();
+            this.socket = null;
+        }
+
         if (this.app)
         {
-            // Destroy the application, but KEEP the canvas (false)
-            // because React controls the DOM element.
+            // Remove persistent components from the stage so they aren't destroyed
+            if (this._playerHand) this.app.stage.removeChild(this._playerHand);
+            if (this._topOppHand) this.app.stage.removeChild(this._topOppHand);
+            if (this._leftOppHand) this.app.stage.removeChild(this._leftOppHand);
+            if (this._rightOppHand) this.app.stage.removeChild(this._rightOppHand);
+            if (this._deck) this.app.stage.removeChild(this._deck);
+            if (this._discard) this.app.stage.removeChild(this._discard);
+
+            // Clear Hands
+            this._cleanupHand(this._playerHand);
+            this._cleanupHand(this._topOppHand);
+            this._cleanupHand(this._leftOppHand);
+            this._cleanupHand(this._rightOppHand);
+
+            // Clear Piles
+            this._cleanupPile(this._deck);
+            this._cleanupPile(this._discard);
+
+            if (this._cardPool)
+            {
+                this._cardPool.destroy();
+            }
+
             this.app.destroy({ removeView: false }, { children: true });
             this.app = null;
         }
         
-        this.isInitialized = false;
+        this._isInitialized = false;
+    }
+
+    private _cleanupHand(hand: Hand): void
+    {
+        const cards = hand.children.filter((c) => c instanceof UnoCard) as UnoCard[];
+        cards.forEach((c) => {
+            hand.removeCard(c);
+        });
+    }
+
+    private _cleanupPile(pile: CardPile): void 
+    {
+        const card = pile.card;
+        if (card)
+        {
+            pile.setCard(null);
+        }
     }
 }
 

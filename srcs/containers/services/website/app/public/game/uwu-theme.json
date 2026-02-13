@@ -1,6 +1,6 @@
 {
   "frames": {
-    "lila-0.png": {
+    "set_one-0.png": {
       "frame": {
         "x": 1,
         "y": 1,
@@ -24,7 +24,7 @@
         "y": 0.5
       }
     },
-    "lila-1.png": {
+    "set_one-1.png": {
       "frame": {
         "x": 1,
         "y": 139,
@@ -48,7 +48,7 @@
         "y": 0.5
       }
     },
-    "lila-2.png": {
+    "set_one-2.png": {
       "frame": {
         "x": 1,
         "y": 277,
@@ -72,7 +72,7 @@
         "y": 0.5
       }
     },
-    "lila-3.png": {
+    "set_one-3.png": {
       "frame": {
         "x": 1,
         "y": 415,
@@ -96,7 +96,7 @@
         "y": 0.5
       }
     },
-    "lila-4.png": {
+    "set_one-4.png": {
       "frame": {
         "x": 1,
         "y": 553,
@@ -120,7 +120,7 @@
         "y": 0.5
       }
     },
-    "lila-5.png": {
+    "set_one-5.png": {
       "frame": {
         "x": 1,
         "y": 691,
@@ -144,7 +144,7 @@
         "y": 0.5
       }
     },
-    "lila-6.png": {
+    "set_one-6.png": {
       "frame": {
         "x": 1,
         "y": 829,
@@ -168,7 +168,7 @@
         "y": 0.5
       }
     },
-    "lila-7.png": {
+    "set_one-7.png": {
       "frame": {
         "x": 1,
         "y": 967,
@@ -192,7 +192,7 @@
         "y": 0.5
       }
     },
-    "lila-8.png": {
+    "set_one-8.png": {
       "frame": {
         "x": 1,
         "y": 1105,
@@ -216,7 +216,7 @@
         "y": 0.5
       }
     },
-    "lila-9.png": {
+    "set_one-9.png": {
       "frame": {
         "x": 1,
         "y": 1243,
@@ -240,7 +240,7 @@
         "y": 0.5
       }
     },
-    "lila-plus2.png": {
+    "set_one-plus2.png": {
       "frame": {
         "x": 1,
         "y": 1381,
@@ -264,7 +264,7 @@
         "y": 0.5
       }
     },
-    "lila-reverse.png": {
+    "set_one-reverse.png": {
       "frame": {
         "x": 1,
         "y": 1519,
@@ -288,7 +288,7 @@
         "y": 0.5
       }
     },
-    "lila-stop.png": {
+    "set_one-skip.png": {
       "frame": {
         "x": 1,
         "y": 1657,
