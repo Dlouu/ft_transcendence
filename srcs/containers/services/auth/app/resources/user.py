@@ -13,7 +13,18 @@ ns = Blueprint("User", __name__)
 
 @ns.route("/update_information", methods=["POST"])
 def update_information():
-	print(request.json, flush=True)
+	"""
+	Endpoint to update the user email.
+
+	API:
+		Method: POST
+		Endpoint: /user/update_information
+
+	Response:
+		200: Email updated.
+		400: Invalid body, values are missing or invalid.
+		401: The user dont exist in the credential database.
+	"""
 	try:
 		data = user_schema.user_update_schema.load(request.json)
 	except ValidationError as e:
@@ -51,6 +62,19 @@ def update_information():
 
 @ns.route("/update_password", methods=["POST"])
 def UpdatePassword():
+	"""
+	Update the user password.
+
+	API:
+		Method: POST
+		Endpoint: /user/update_password
+
+	Response:
+		200: Password updated.
+		400: Body is not valid.
+		400: The new password is not valid.
+		404: The user don't exist in the credential database.
+	"""
 	try:
 		data = user_schema.password_update_schema.load(request.json)
 	except ValidationError:
@@ -65,7 +89,7 @@ def UpdatePassword():
 		return {"message": "The password does not match the one defined by the user."}, 401
 
 	if not uc.is_password_valid(data["new_password"]):
-		return {"message": "The new password is not valid."}, 401
+		return {"message": "The new password is not valid."}, 400
 
 	password_hash = bcrypt.hashpw(data["new_password"].encode("utf-8"), bcrypt.gensalt())
 
@@ -76,7 +100,19 @@ def UpdatePassword():
 
 @ns.route("/delete_account", methods=["POST"])
 def delete_account():
-	print(request.json, flush=True)
+	"""
+	Delete a user account.
+
+	API:
+		Method: POST
+		Endpoint: /user/delete_account
+
+	Response:
+		200: Account have been deleted.
+		400: The body isn't valid.
+		401: The verification password does not match the actual password of the user.
+		404: The user can't be found in the credential database.
+	"""
 	try:
 		data = user_schema.delete_account_schema.load(request.json)
 	except ValidationError:
@@ -110,6 +146,17 @@ def delete_account():
 
 @ns.route("/email/<user_id>", methods=["GET"])
 def get_user_email(user_id):
+	"""
+	Return the email address of a given user_id.
+
+	API:
+		Method: GET
+		Endpoint: /user/email/<user_id>
+
+	Response:
+		200: Email found and returned in the response body.
+		404: No email found for the given user id.
+	"""
 	user = User.query.filter_by(id=user_id).first()
 
 	if not user:

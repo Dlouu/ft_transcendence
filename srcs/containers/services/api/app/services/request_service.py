@@ -10,6 +10,16 @@ def make_custom_response(bad_response, code, content):
 	return response
 
 def make_request(url, method):
+	"""
+	Request wrapper for the API to centralize all the check and avoid redundance.
+
+	param:
+		url: The endpoint you want to access
+		method: The type of request
+
+	return:
+		a request Response data type.
+	"""
 	response = requests.Response()
 	try:
 		response = requests.request(
