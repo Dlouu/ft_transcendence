@@ -31,15 +31,22 @@ function Login() {
 					"password": password
 				}),
 			})
-			const answer = await request.json();
+			const contentType = request.headers.get("content-type") || "";
+			const answer = contentType.includes("application/json")
+				? await request.json()
+				: await request.text();
 			if (request.ok) {
 				handleLogin();
-			}
-			else {
-				notify(answer.message, "error");
+			} else {
+				const message =
+					typeof answer === "string"
+						? answer
+						: answer?.message || "Login failed";
+				notify(message, "error");
 			}
 		} catch (error) {
 			console.log(error);
+			notify("Login failed", "error");
 		}
 	};
 
