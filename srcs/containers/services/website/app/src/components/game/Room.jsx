@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "../ui";
+import { Button } from "../../ui";
 import DeckSelector from "./DeckSelector";
 import PlayerList from "./PlayerList";
 

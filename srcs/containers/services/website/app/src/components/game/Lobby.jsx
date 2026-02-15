@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Input } from "../ui";
+import { Button, Input } from "../../ui";
 
 function Lobby({ onCreate, onJoin }) {
 	const [code, setCode] = useState("");
