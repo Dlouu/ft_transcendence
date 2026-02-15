@@ -145,6 +145,13 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 		saveSnapshot();
 		const { x, y } = getCoords(e);
 
+		if (e.button === 2) {
+			if (tool !== "pipette") {
+				setTool("pipette");
+			}
+			return;
+		}
+
 		if (tool === "bucket") {
 			floodFill(ctxRef.current, x, y, color);
 			return;
@@ -217,6 +224,7 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 				<canvas
 					ref={bgCanvasRef}
 					className="absolute left-0 top-0 z-2"
+					onContextMenu={(e) => e.preventDefault()}
 					style={{
 						width: WIDTH * scale,
 						height: HEIGHT * scale,
@@ -228,6 +236,7 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 				<canvas
 					ref={previewCanvasRef}
 					className="absolute left-0 top-0 z-99 pointer-events-none"
+					onContextMenu={(e) => e.preventDefault()}
 					style={{
 						width: WIDTH * scale,
 						height: HEIGHT * scale,
@@ -244,6 +253,7 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 					onPointerUp={handlePointerUp}
 					onPointerCancel={handlePointerCancel}
 					onPointerLeave={handlePointerLeave}
+					onContextMenu={(e) => e.preventDefault()}
 					style={{
 						width: WIDTH * scale,
 						height: HEIGHT * scale,
