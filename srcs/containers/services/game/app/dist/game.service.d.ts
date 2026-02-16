@@ -1,0 +1,35 @@
+import { CreateGameDto } from "./dto/create-game.dto";
+import { Game } from "./domain/UnoGame";
+import { UnoPlayer } from "./domain/UnoPlayer";
+import { Card } from "./domain/UnoCard";
+import { Server, Socket } from 'socket.io';
+export declare class GameService {
+    private io?;
+    private games;
+    setServer(io: Server): void;
+    join(playerId: string, game: Game, socket: Socket): void;
+    rejoin(player: UnoPlayer | null): void;
+    findPlayerInGame(game: Game, playerId: string): UnoPlayer | null;
+    tryStart(game: Game): void;
+    leave(playerName: string): Game | null;
+    deleteGame(game: Game): void;
+    startGame(game: Game): void;
+    findGameByPlayer(playerName: string): Game | undefined;
+    create(createGameDto: CreateGameDto): Game;
+    getGameByName(name: string): Game | undefined;
+    randomizePlayerOrder(game: Game): void;
+    createDeck(): Card[];
+    shuffleDeck(deck: Card[]): Card[];
+    discardToDeck(game: Game): void;
+    printDeck(game: Game): void;
+    printHands(game: Game): void;
+    startDeal(game: Game): void;
+    shoutUno(playerName: string): void;
+    passTurn(gameId: string, playerName: string): void;
+    drawCard(gameId: string, playerName: string): void;
+    playCard(playerName: string): void;
+    private doesPlayerHaveCard;
+    private isPlayersTurn;
+    private reverseTurnOrder;
+    private goToNextPlayerIndex;
+}

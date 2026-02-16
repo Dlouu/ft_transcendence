@@ -12,6 +12,8 @@ services:
   game:
     volumes:
       - ./containers/services/game/app:/app
+      - /app/src/dto
+      - ./containers/utils/game_dto:/app/src/dto
     command: npm run start:dev
     ports:
       - "3000:3000"
@@ -20,4 +22,6 @@ services:
     volumes:
       - ./containers/services/website/app:/app
       - /app/node_modules
+      - /app/src/services/game/dto
+      - ./containers/utils/game_dto:/app/src/services/game/dto
     command: npm run dev
