@@ -23,7 +23,6 @@ all: build run
 build:
 	@mkdir -p $(PWD)/srcs/volumes/auth_db_volume
 	@mkdir -p $(PWD)/srcs/volumes/user_db_volume
-	@mkdir -p $(PWD)/srcs/volumes/s3_bucket_db_volume
 	$(COMPOSE) build $(DOCK)
 
 run:

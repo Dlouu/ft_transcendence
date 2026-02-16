@@ -32,15 +32,8 @@ class TestJWT(Resource):
 	@ns.doc(security="BearerAuth")
 	@ns.jwt_required()
 	def get(self):
+		print("HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", flush=True)
+		if not g.token_payload:
+			return {"message": "Unable to validate the token."}, 401
+
 		return {"message": "success", "data": [g.token_payload]}, 200
-
-
-@ns.route("/test_refresh_token")
-class TestRefreshToken(Resource):
-	def get(self):
-		response = requests.get(
-			"http://auth:5050/token_handler/test_refresh_token",
-			headers=request.headers,
-			timeout=5
-		)
-		return response.status_code

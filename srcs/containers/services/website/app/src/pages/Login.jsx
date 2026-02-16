@@ -20,7 +20,7 @@ function Login() {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
-			const request = await fetch("/api/users/login", {
+			const request = await fetch("/api/auth/login", {
 				headers: {
 					'Accept': 'application/json',
 					'Content-Type': 'application/json'

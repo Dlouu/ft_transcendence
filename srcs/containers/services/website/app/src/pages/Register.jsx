@@ -22,7 +22,7 @@ function Register() {
 		const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
-			const request = await fetch("/api/users/registration", {
+			const request = await fetch("/api/auth/registration", {
 				headers: {
 					'Accept': 'application/json',
 					'Content-Type': 'application/json'
