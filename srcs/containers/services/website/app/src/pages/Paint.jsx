@@ -6,7 +6,7 @@ import PaintToolbar from "../components/paint/PaintToolbar";
 function Paint() {
 	const canvasRef = useRef(null);
 
-	const [tool, setTool] = useState("brush");
+	const [tool, setTool] = useState("pen");
 	const [color, setColor] = useState("#000000");
 	const [brushSize, setBrushSize] = useState(1);
 	const [undoRedo, setUndoRedo] = useState({ undo: null, redo: null });
@@ -16,8 +16,10 @@ function Paint() {
 			<Card big>
 				<PaintCanvas
 					canvasRef={canvasRef}
-					tool={tool}
 					color={color}
+					setColor={setColor}
+					tool={tool}
+					setTool={setTool}
 					brushSize={brushSize}
 					onUndoRedoReady={setUndoRedo}
 				/>

@@ -1,13 +1,9 @@
 import { Card, Page } from "../ui";
-import GameSetup from "../components/GameSetup";
+import GameSetup from "../components/game/GameSetup";
 
 function Home() {
 	const handleStart = (setup) => {
 		console.log("START GAME", setup);
-
-		// plus tard :
-		// socket.emit("create_game", setup)
-		// navigate(`/game/${gameId}`)
 	};
 
 	return (

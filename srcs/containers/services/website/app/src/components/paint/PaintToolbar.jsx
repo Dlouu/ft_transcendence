@@ -16,8 +16,6 @@ function PaintToolbar({
 	canvasRef
 }) {
 
-
-
 	return (
 		<>
 			<div className="flex flex-row justify-center gap-1 py-1">
@@ -31,15 +29,10 @@ function PaintToolbar({
 			</div>
 
 			<div className="flex flex-row justify-center gap-1 py-1">
-				<ColorPalette color={color} setColor={setColor} />
+				<ColorPalette color={color} setColor={setColor} tool={tool} setTool={setTool} />
 			</div>
 		</>
 	);
 }
 
 export default PaintToolbar;
-
-//choisir les picto
-//https://pictogrammers.com/library/mdi/
-
-//ctrl Z/Y

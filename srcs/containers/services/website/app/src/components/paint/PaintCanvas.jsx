@@ -1,13 +1,18 @@
 import { useEffect, useRef } from "react";
 import { WIDTH, HEIGHT, MAX_HEIGHT_RATIO } from "./constants";
-import { drawCheckerBoard, drawLine, restoreCheckerBoard } from "./drawingUtils";
+import { drawCheckerBoard, drawLine, floodFill, selectColor } from "./drawingUtils";
 import { useUndoRedo } from "./useUndoRedo";
 
-function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
+function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onUndoRedoReady }) {
 	const ctxRef = useRef(null);
 	const isDrawingRef = useRef(false);
+	const startPosRef = useRef(null);
 	const lastPosRef = useRef(null);
 	const pointerIdRef = useRef(null);
+	const bgCanvasRef = useRef(null);
+	const previewCanvasRef = useRef(null);
+	const previewCtxRef = useRef(null);
+	const previewImageRef = useRef(null);
 
 	const scale = Math.floor(
 		Math.min(
@@ -19,6 +24,29 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 	const { saveSnapshot, undo, redo } = useUndoRedo(ctxRef);
 
 	useEffect(() => {
+		const bgCanvas = bgCanvasRef.current;
+
+		bgCanvas.width = WIDTH;
+		bgCanvas.height = HEIGHT;
+
+		const bgCtx = bgCanvas.getContext("2d");
+		drawCheckerBoard(bgCtx, WIDTH, HEIGHT);
+
+	}, []);
+
+	useEffect(() => {
+		const previewCanvas = previewCanvasRef.current;
+
+		previewCanvas.width = WIDTH;
+		previewCanvas.height = HEIGHT;
+
+		const previewCtx = previewCanvas.getContext("2d");
+		previewCtx.imageSmoothingEnabled = false;
+		previewCtxRef.current = previewCtx;
+
+	}, []);
+
+	useEffect(() => {
 		const canvas = canvasRef.current;
 		canvas.width = WIDTH;
 		canvas.height = HEIGHT;
@@ -26,13 +54,35 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 		const ctx = canvas.getContext("2d");
 		ctx.imageSmoothingEnabled = false;
 		ctxRef.current = ctx;
-	
-		drawCheckerBoard(ctx, WIDTH, HEIGHT);
 		
 		if (onUndoRedoReady) {
 			onUndoRedoReady({ undo, redo });
 		}
 	}, [onUndoRedoReady]);
+
+	function clearPreview() {
+		const ctx = previewCtxRef.current;
+		if (!ctx)
+			return;
+		ctx.clearRect(0, 0, WIDTH, HEIGHT);
+	}
+
+	function drawPreview(x, y) {
+		const ctx = previewCtxRef.current;
+		if (!ctx)
+			return;
+
+		ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+		if (tool === "bucket" || tool === "pipette")
+			return;
+
+		ctx.save();
+		ctx.imageSmoothingEnabled = true;
+		ctx.fillStyle = tool === "eraser" ? "rgba(0,0,0,0.2)" : color;
+		ctx.fillRect(x, y, brushSize, brushSize);
+		ctx.restore();
+	}
 
 	function drawPixel(x, y) {
 		if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT)
@@ -40,27 +90,44 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 
 		const ctx = ctxRef.current;
 
-		if (tool === "eraser") {
-			restoreCheckerBoard(ctx, x, y, brushSize);
-			return;
-		}
+	if (tool === "eraser") {
+		ctx.clearRect(x, y, brushSize, brushSize);
+		return;
+	}
 
 		ctx.fillStyle = color;
 		ctx.fillRect(x, y, brushSize, brushSize);
 	}
 
-	function drawAtEvent(e) {
+	function getCoords(e) {
 		const rect = canvasRef.current.getBoundingClientRect();
 
 		const clientX = e.touches ? e.touches[0].clientX : e.clientX;
 		const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-		const x = Math.floor(
-			((clientX - rect.left) / rect.width) * WIDTH
-		);
-		const y = Math.floor(
-			((clientY - rect.top) / rect.height) * HEIGHT
-		);
+		return {
+			x: Math.floor(((clientX - rect.left) / rect.width) * WIDTH),
+			y: Math.floor(((clientY - rect.top) / rect.height) * HEIGHT)
+		};
+	}
+
+	function drawAtEvent(e) {
+		const { x, y } = getCoords(e);
+
+		if (tool === "stroke") {
+			if (!startPosRef.current)
+				return;
+
+			const ctx = ctxRef.current;
+			const snapshot = previewImageRef.current;
+
+			if (snapshot) {
+				ctx.putImageData(snapshot, 0, 0);
+			}
+			const { x: sx, y: sy } = startPosRef.current;
+			drawLine(ctx, sx, sy, x, y, brushSize, color, tool);
+			return;
+		}
 
 		if (lastPosRef.current) {
 			const { x: lx, y: ly } = lastPosRef.current;
@@ -74,7 +141,38 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 
 	function handlePointerDown(e) {
 		e.preventDefault();
+		clearPreview();
 		saveSnapshot();
+		const { x, y } = getCoords(e);
+
+		if (e.button === 2) {
+			if (tool !== "pipette") {
+				setTool("pipette");
+			}
+			return;
+		}
+
+		if (tool === "bucket") {
+			floodFill(ctxRef.current, x, y, color);
+			return;
+		}
+
+		if (tool === "pipette") {
+			selectColor(ctxRef.current, x, y, setColor);
+			setTool("pen");
+			return;
+		}
+
+		if (tool === "stroke") {
+			startPosRef.current = { x, y };
+			previewImageRef.current = ctxRef.current.getImageData(0, 0, WIDTH, HEIGHT);
+			isDrawingRef.current = true;
+			pointerIdRef.current = e.pointerId;
+			canvasRef.current.setPointerCapture(e.pointerId);
+			drawAtEvent(e);
+			return;
+		}
+
 		isDrawingRef.current = true;
 		pointerIdRef.current = e.pointerId;
 		canvasRef.current.setPointerCapture(e.pointerId);
@@ -82,8 +180,11 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 	}
 
 	function handlePointerMove(e) {
-		if (!isDrawingRef.current)
+		const { x, y } = getCoords(e);
+		if (!isDrawingRef.current) {
+			drawPreview(x, y);
 			return;
+		}
 		drawAtEvent(e);
 	}
 
@@ -94,21 +195,65 @@ function PaintCanvas({ canvasRef, tool, color, brushSize, onUndoRedoReady }) {
 		isDrawingRef.current = false;
 		lastPosRef.current = null;
 		pointerIdRef.current = null;
+		startPosRef.current = null;
+		previewImageRef.current = null;
+		clearPreview();
 	}
 
 	function handlePointerCancel(e) {
 		handlePointerUp(e);
 	}
 
+	function handlePointerLeave() {
+		if (!isDrawingRef.current) {
+			clearPreview();
+		}
+	}
+
 	return (
-		<div className="w-full aspect-88-136">
-			<div className="flex justify-center">
+		<div className="w-full aspect-88-136 flex justify-center">
+			<div
+				className="relative"
+				style={{
+					width: WIDTH * scale,
+					height: HEIGHT * scale,
+				}}
+			>
+
+			{/* BACKGROUND */}
+				<canvas
+					ref={bgCanvasRef}
+					className="absolute left-0 top-0 z-2"
+					onContextMenu={(e) => e.preventDefault()}
+					style={{
+						width: WIDTH * scale,
+						height: HEIGHT * scale,
+						imageRendering: "pixelated",
+					}}
+				/>
+
+			{/* PREVIEW */}
+				<canvas
+					ref={previewCanvasRef}
+					className="absolute left-0 top-0 z-99 pointer-events-none"
+					onContextMenu={(e) => e.preventDefault()}
+					style={{
+						width: WIDTH * scale,
+						height: HEIGHT * scale,
+						imageRendering: "pixelated",
+					}}
+				/>
+
+			{/* FOREGROUND */}
 				<canvas
 					ref={canvasRef}
+					className="absolute left-0 top-0 z-3"
 					onPointerDown={handlePointerDown}
 					onPointerMove={handlePointerMove}
 					onPointerUp={handlePointerUp}
 					onPointerCancel={handlePointerCancel}
+					onPointerLeave={handlePointerLeave}
+					onContextMenu={(e) => e.preventDefault()}
 					style={{
 						width: WIDTH * scale,
 						height: HEIGHT * scale,

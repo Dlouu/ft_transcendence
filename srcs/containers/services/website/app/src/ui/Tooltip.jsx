@@ -1,10 +1,10 @@
 function Tooltip({ message, children }) {
 	return (
-	<div class="group relative flex">
+	<div className="group relative flex">
 		{children}
-		<span class={`
+		<span className={`
 			absolute top-8 z-99 scale-0
-			transition-all rounded
+			transition-all rounded text-left
 			bg-gray-500 p-1
 			text-xs text-white
 			group-hover:scale-100 

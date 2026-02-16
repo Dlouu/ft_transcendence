@@ -24,18 +24,26 @@ function GalleryImage() {
 	return (
 		<Page center>
 			<Card>
-				<div className="flex flex-col items-center gap-4">
-					<img
-						src={image.src}
-						className="max-w-full max-h-[80vh] object-contain rounded-xl"
-						alt={id}
-					/>
+				<div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
 
-					<p className="text-gray-400">
-						Author: {image.author}
-					</p>
+					<div className="flex justify-center items-center">
+						<img
+							src={image.src}
+							className="w-full max-h-[90vh] object-contain"
+							alt={id}
+						/>
 
-					<div className="flex flex-row gap-4">
+
+					</div>
+
+					<div className="flex flex-col gap-4">
+						<p className="text-gray-400">
+							Author: {image.author}
+						</p>
+						<Button>
+							EDIT
+						</Button>
+
 						{/* {canDelete && ( */}
 							<Button
 								onClick={() => {
@@ -47,9 +55,17 @@ function GalleryImage() {
 							</Button>
 						{/* )} */}
 
+
+
+						<Button>
+							SELECT AS BACK
+						</Button>
+
 						<Button onClick={() => navigate(-1)}>
 							BACK
 						</Button>
+
+
 					</div>
 				</div>
 			</Card>

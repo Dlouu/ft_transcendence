@@ -13,12 +13,9 @@ function Login() {
 	const passwordRef = useRef(null);
 	const { notify } = useNotifications();
 
-	const handleLogin = () => {
-		login(playerName);
-	};
-
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+
 		try {
 			const request = await fetch("/api/auth/login", {
 				headers: {
@@ -30,16 +27,25 @@ function Login() {
 					"login_email": playerName,
 					"password": password
 				}),
-			})
-			const answer = await request.json();
+			});
+
+			const contentType = request.headers.get("content-type") || "";
+			const answer = contentType.includes("application/json")
+				? await request.json()
+				: await request.text();
+
 			if (request.ok) {
-				handleLogin();
-			}
-			else {
-				notify(answer.message, "error");
+				await login();
+			} else {
+				const message =
+					typeof answer === "string"
+						? answer
+						: answer?.message || "Login failed";
+				notify(message, "error");
 			}
 		} catch (error) {
 			console.log(error);
+			notify("Login failed", "error");
 		}
 	};
 
