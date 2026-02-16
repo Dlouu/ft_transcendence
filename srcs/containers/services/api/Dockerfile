@@ -10,4 +10,7 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "-m", "main"]
+COPY tools/script.sh /
+RUN chmod +x /script.sh
+
+CMD ["/script.sh"]

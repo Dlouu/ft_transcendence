@@ -5,6 +5,10 @@ import os
 from app.extensions import s3
 
 def s3_bucket_health_check(self):
+	"""
+	This decorator is used to check the state of the s3 bucket and make sure he is online and accessible in order
+	to avoid server crash and undefined behavior.
+	"""
 	def decorator(f):
 		@wraps(f)
 		def decorated(*args, **kwargs):

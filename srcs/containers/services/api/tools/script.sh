@@ -1,3 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-# Write your script here
+flask db upgrade
+
+python -m main
+

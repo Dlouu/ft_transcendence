@@ -1,18 +1,14 @@
 from flask import Blueprint, render_template, request, redirect, jsonify
-from dotenv import load_dotenv
-import requests
-import os
-import json
-import bcrypt
-import string
-import re
 from sqlalchemy.exc import IntegrityError
+from dotenv import load_dotenv
 from sqlalchemy import or_
-import datetime
-from .user import User, email_exists, username_exists, load_user_payload
+import requests, os, json, bcrypt
+
+from app.services import session_service as st
+from app.services import session_refresh_service as rt
+from app.utils import user_check as uc
+from app.models.user import User
 from .extensions import db
-from app.utils import session_token as st
-from app.utils import refresh_token as rt
 
 load_dotenv()
 
@@ -24,8 +20,8 @@ def home():
 
 @oauth.route("/oauth/42", methods=["GET"])
 def oauth42():
-	client_id = os.getenv("TRANSCENDANCE_ID")
-	redirect_uri = os.getenv("TRANSCENDANCE_REDIRECTION")
+	client_id = os.getenv("TRANSCENDENCE_ID")
+	redirect_uri = os.getenv("TRANSCENDENCE_REDIRECTION")
 
 	if not client_id or not redirect_uri:
 		return "Missing OAuth configuration", 500
@@ -48,10 +44,10 @@ def oauth42_callback():
 		"https://api.intra.42.fr/oauth/token",
 		data = {
 			"grant_type":"authorization_code",
-			"client_id": os.getenv("TRANSCENDANCE_ID"),
-			"client_secret": os.getenv("TRANSCENDANCE_SECRET"),
+			"client_id": os.getenv("TRANSCENDENCE_ID"),
+			"client_secret": os.getenv("TRANSCENDENCE_SECRET"),
 			"code": code,
-			"redirect_uri": os.getenv("TRANSCENDANCE_REDIRECTION"),
+			"redirect_uri": os.getenv("TRANSCENDENCE_REDIRECTION"),
 		},
 		timeout=10,
 	)
@@ -62,7 +58,7 @@ def oauth42_callback():
 	access_token = token_data.get("access_token")
 
 	if not access_token:
-		return {"message": "No token"}, 401 #?
+		return {"message": "No token"}, 401 #? #??
 
 	success_user = requests.get(
 		"https://api.intra.42.fr/v2/me",
@@ -76,7 +72,7 @@ def oauth42_callback():
 	username = "~" + user.get("login")
 	email = user.get("email")
 	if not username or not email:
-		return {"message": "missing email or login from 42"} # Ajoute un code d'erreur
+		return {"message": "missing email or login from 42"}, 400
 
 	data = {
 		"username": username,
@@ -87,150 +83,10 @@ def oauth42_callback():
 	if existing is not None:
 		return {"message": "Successful 42api login (already logged once previously)"}, 200
 	try:
-		user_payload = load_user_payload(data)
+		user_payload = uc.load_user_payload(data)
 		db.session.add(user_payload)
 		db.session.commit()
 	except Exception as exc:
 		db.session.rollback()
 		return str(exc), 500
-	return {"message": "Successful 42api login (first time login)"}
-
-def check_valid_username(data):
-	check_username = data.get("username")
-	if not check_username:
-		return "empty username", 430
-	check_username = check_username.strip()
-	if " " in check_username:
-		return "whitespace forbidden", 431
-	if len(check_username) < 3 or len(check_username) > 64:
-		return "length not valid", 433
-	for c in check_username:
-		if not (c.isalnum() or c in "-_"):
-			return "Only alphanumeric characters and '-' or '_' are accepted", 436
-	return None
-
-'''
-8 characters minimum
-At least one uppercase and one lowercase letter. At least one symbol and one digit.
-'''
-
-def check_strong_password(str):
-	if len(str) < int(os.getenv("AUTH_MIN_PASS_LENGTH")) or len(str) > int(os.getenv("AUTH_MAX_PASS_LENGTH")):
-		return "not a valid length", 440
-	has_upper = False
-	has_lower = False
-	has_symbol = False
-	has_digit = False
-
-	for c in str:
-		if c.isupper():
-			has_upper = True
-		elif c.islower():
-			has_lower = True
-		elif c.isdigit():
-			has_digit = True
-		elif c in string.punctuation:
-			has_symbol = True
-
-	if not has_upper:
-		return "missing one uppercase character", 1
-	if not has_lower:
-		return "missing one lowercase character", 2
-	if not has_digit:
-		return "missing one digit", 3
-	if not has_symbol:
-		return "missing one special character", 4
-	return None
-
-@oauth.route("/registration", methods=["POST"])
-def registration():
-	data = request.get_json(silent=True)
-	if data is None:
-		with open("test_registration.json", "r") as f:
-			data = json.load(f)
-	regex = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,7}"
-	if not re.fullmatch(regex, data.get("email")):
-		return {"message": "invalid email"}, 409
-	error = check_valid_username(data)
-	if error is not None:
-		msg, code = error
-		return {"message": msg}, code
-	try:
-		user = load_user_payload(data)
-	except ValueError as exc:
-		return {"message": str(exc)}, 400
-	if email_exists(user.email):
-		return {"message": "email already exists"}, 409
-	if username_exists(user.username):
-		return {"message": "username already exists"}, 410
-	password = data.get("password")
-	if not password:
-		return {"message": "missing password"}, 411
-	error = check_strong_password(password)
-	if error:
-		msg, code = error
-		return {"message": msg}, 400
-	try:
-		password_bytes = password.encode("utf-8")
-		password_hash = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
-		user.password = password_hash.decode("utf-8")
-		db.session.add(user)
-		db.session.commit()
-	except IntegrityError:
-		db.session.rollback()
-		return {"message": "email already exists"}, 409
-	except Exception as exc:
-		db.session.rollback()
-		return {"message": str(exc)}, 500
-
-	success, tid = rt.initialize_new_refresh_token(user.id, request)
-	if not success:
-		db.session.delete(user)
-		db.session.commit()
-		return {"message": "failure when storing refresh token"}, 500 # Theo explique nous
-
-	token, public, private = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
-	st.store_session_token(token, public, user.id)
-
-	response = st.wrap_new_session_token(token, public)
-	response["message"] = "success"
-	response["id"] = user.id
-
-	return response, 201
-
-@oauth.route("/login", methods=["POST"])
-def login():
-	data = request.get_json(silent=True)
-	if data is None:
-		with open("test_login.json", "r") as f:
-			data = json.load(f)
-	username_or_login = data.get("email") or data.get("username")
-	password = data.get("password")
-	if not username_or_login and password:
-		return {"message": "infobulle: nothing given"}, 438
-	user = User.query.filter(or_(User.email == username_or_login, User.username == username_or_login)).first()
-	if user is None:
-		return {"message": "login/user and password mismatch"}, 439
-	try:
-		password_bytes = password.encode("utf-8")
-		password_hash = user.password.encode("utf-8")
-		if not bcrypt.checkpw(password_bytes, password_hash):
-			return {"message": "login/user and password mismatch"}, 439
-	except ValueError as exc:
-		return {"message": str(exc)}, 400
-
-	refresh_token_exist, is_last_one, tid = rt.does_refresh_token_exist(user.id, request)
-
-	if not refresh_token_exist and not is_last_one:
-		rt.initialize_new_refresh_token(user.id, request)
-	elif is_last_one:
-		rt.generate_new_active_refresh_token(request, tid)
-
-	token, public, private = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
-	st.store_session_token(token, public, user.id)
-
-	response = st.wrap_new_session_token(token, public)
-	response["message"] = "success"
-	response["id"] = user.id
-
-	return response, 201
+	return {"message": "Successful 42api login (first time login)."}

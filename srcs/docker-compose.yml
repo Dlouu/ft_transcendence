@@ -24,13 +24,12 @@ services:
       - .env
     volumes:
       - website_data:/var/www/website
-    # depends_on:
-    #   - api
+    depends_on:
+      - api
     ports:
       - 5173:5173
     networks:
       - website_network
-      - api_network
   api:
     container_name: service_api
     build: ./containers/services/api
@@ -39,18 +38,19 @@ services:
       - .env
       - .secrets
     environment:
+      DEFAULT_IMG_PATH: default
+      DEFAULT_PROFILE_PICTURE: default_profile_picture.jpg
       REDIS_URL: redis://redis:6379/0
       CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
       USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
-      S3_BUCKET_DATABASE_URI: mysql+mysqldb://s3_bucket_user:user_pwd@s3_bucket_db:3306/user_obj_links
-    ports:
-      - 5050:5000
+      S3_BUCKET_NAME: s3-transcendence-bucket
     volumes:
       - api_data:/var/www/api
+    ports:
+      - 5050:5050
     networks:
-      - api_network
-      - website_network
       - auth_network
+      - website_network
       - game_network
       - redis_network
       - user_db_network
@@ -62,15 +62,19 @@ services:
       - .env
     environment:
       REDIS_URL: redis://redis:6379/0
+      AUTH_MIN_PASS_LENGTH: 8
+      AUTH_MAX_PASS_LENGTH: 64
+      AUTH_MIN_USERNAME_LENGTH: 3
+      AUTH_MAX_USERNAME_LENGTH: 24
       REFRESH_TOKEN_EXPIRATION: 3600
       REFRESH_TOKEN_EXPIRATION_CHECK_DELAY: 120
-      SESSION_TOKEN_EXPIRATION: 600
+      SESSION_TOKEN_EXPIRATION: 10
       TZ: UTC
     depends_on:
       - auth_db
     networks:
-      - redis_network
       - auth_network
+      - redis_network
       - auth_db_network
   game:
     container_name: service_game
@@ -78,8 +82,6 @@ services:
     restart: on-failure
     env_file:
       - .env
-    depends_on:
-      - game_db
     networks:
       - game_network
       - game_db_network
@@ -108,16 +110,6 @@ services:
       - auth_db_data:/var/lib/mysql
     networks:
       - auth_db_network
-  game_db:
-    container_name: game_db
-    build: ./containers/databases/game_db
-    restart: unless-stopped
-    env_file:
-      - .env
-    volumes:
-      - game_db_data:/var/lib/mysql
-    networks:
-      - game_db_network
   user_db:
     container_name: user_db
     build: ./containers/databases/user_db
@@ -133,19 +125,6 @@ services:
       - user_db_data:/var/lib/mysql
     networks:
       - user_db_network
-  s3_bucket_db:
-    container_name: s3_bucket_db
-    build: ./containers/databases/s3_bucket_db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpwd
-      MYSQL_DATABASE: user_obj_links
-      MYSQL_USER: s3_bucket_user
-      MYSQL_PASSWORD: user_pwd
-    volumes:
-      - s3_bucket_db_data:/var/lib/mysql
-    networks:
-      - s3_bucket_network
 
 volumes:
   nginx_data:
@@ -157,7 +136,6 @@ volumes:
       type: none
       o: bind
       device: ${VOLUME_PATH}/auth_db_volume
-  game_db_data:
   user_db_data:
     driver: local
     driver_opts:
@@ -165,17 +143,8 @@ volumes:
       o: bind
       device: ${VOLUME_PATH}/user_db_volume
 
-  s3_bucket_db_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${VOLUME_PATH}/s3_bucket_db_volume
-
 networks:
   mariadb_network:
-    driver: bridge
-  api_network:
     driver: bridge
   auth_network:
     driver: bridge
@@ -185,11 +154,7 @@ networks:
     driver: bridge
   auth_db_network:
     driver: bridge
-  game_db_network:
-    driver: bridge
   user_db_network:
-    driver: bridge
-  s3_bucket_network:
     driver: bridge
   redis_network:
     driver: bridge

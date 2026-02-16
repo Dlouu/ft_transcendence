@@ -1,109 +1,374 @@
-from flask_restx import Namespace, Resource, fields
+from flask_restx import Namespace, Resource, fields, reqparse
+from werkzeug.datastructures import FileStorage
+from datetime import datetime, timezone
+from marshmallow import ValidationError
+from sqlalchemy.orm import joinedload
 from flask import request, g
+from uuid import uuid4
+import os
+
+from app.schemas.card_gallery import card_gallery_schema
+from app.services import s3_bucket_service as s3s
+from app.models.card_gallery import CardGallery
+from app.services import request_service as rs
+from app.services import me_service as ms
+from app.schemas import user as su
 from app.models.user import User
 from app.extensions import db
-from app.schemas.user import user_login_schema, user_schema, user_update_schema
-from app.utils import session_token as st
-from marshmallow import ValidationError
-from datetime import datetime, timezone
-import requests
-import jwt
 
-ns = Namespace("users", description="User operations")
+ns = Namespace("User", description="User endpoints")
 
-user_model = ns.model("User", {
-	"username": fields.String(required=False)
+@ns.route("/me")
+class Me(Resource):
+	"""
+	Return usefull information about the user
+
+	API:
+		Method: GET
+		Endpoint: /user/me
+		Token: yes
+
+	Response:
+		200: Data can be send to the user.
+	"""
+	@ns.jwt_required()
+	def get(self):
+		payload = g.token_payload
+
+		return ms.me(payload["user_id"])
+
+update_information_model = ns.model("UpdateInformationModel", {
+	"username": fields.String(required=False),
+	"email": fields.String(required=False)
 })
 
-user_login_model = ns.model("UserLogin", {
-	"email": fields.String(required=True),
-	"username": fields.String(required=True),
-	"password": fields.String(required=True),
-})
+@ns.route("/update_information")
+class UpdateInformation(Resource):
+	"""
+	General endpoint used to update user's informations like the username or the email.
 
-@ns.route("/registration")
-class UserRegistration(Resource):
-	@ns.expect(user_login_model)
+	API:
+		Method: POST
+		Endpoint: /user/update_information
+		Token: yes
+
+	Response:
+		200: User's informations updated.
+		400: Invalid body, values are missing or invalid.
+		401: The user dont exist in the user database, the credential database or the token is not valid.
+	"""
+	@ns.jwt_required()
+	@ns.expect(update_information_model)
 	def post(self):
-		auth_data = None
 		try:
-			auth_data = user_login_schema.load(request.json)
-		except ValidationError as err:
-			return {"message": err.messages}, 400
+			information = su.user_update_schema.load(request.json)
+		except ValidationError:
+			return {"message": "The body is no valid."}, 400
 
-		try:
-			response = requests.post(
-				"http://auth:5055/registration",
-				json=request.json,
-				headers=request.headers,
-				timeout=5
-			)
+		user_id = g.token_payload["user_id"]
+		request.json["user_id"] = user_id
 
-			json_response = response.json()
-		except requests.exceptions.JSONDecodeError as e:
-			return {"message": "Failed to create the account."}, 401
-		except requests.exceptions.ConnectionError as e:
-			print(f"Unable to communicate with the auth service for registration ({e})", flush=True)
-			return {"message": "Service currently unavailable."}, 503
-		except Exception as e:
-			print(f"WARNING: unhandled error happened in the registration entrypoint ({e})", flush=True)
-			return {"message": "Failed to create the account."}, 401
+		response = rs.make_request("/user/update_information", "POST")
+		if response.status_code != 200:
+			print(f"{request.path}: The auth service was unable to update user information.", flush=True)
+			return response.json(), response.status_code
 
-		if (response.status_code != 201):
-			return json_response, response.status_code
-
-		try:
-			user_payload = {"username": auth_data["username"], "user_id": json_response["id"]}
-			user = user_schema.load(user_payload)
-			db.session.add(user)
-			db.session.commit()
-		except Exception as e:
-			print(e, flush=True)
-			return {"message": "Error while creating the user."}, 401
-
-		g.x_new_token = json_response["token"]
-		return {"message": "success", "id": user.id}, response.status_code
-
-@ns.route("/login")
-class UserLogin(Resource):
-	@ns.expect(user_login_model)
-	def patch(self):
-		try:
-			user_login_schema.load(request.json)
-		except ValidationError as err:
-			return {"message": err.messages}, 400
-
-		try:
-			response = requests.post(
-				"http://auth:5055/login",
-				json=request.json,
-				headers=request.headers,
-				timeout=5
-			)
-		except requests.exceptions.ConnectionError as e:
-			print(f"Unable to communicate with the auth service for login ({e})", flush=True)
-			return {"message": "Service currently unavailable."}, 503
-		except Exception as e:
-			print(f"WARNING: unhandled error happened in the login entrypoint ({e})", flush=True)
-			return {"message": "Failed to log the user."}, 401
-
-
-		json_response = response.json()
-		if response.status_code != 201:
-			return json_response, response.status_code
-
-		user = User.query.filter_by(user_id=json_response["id"]).first()
+		user = User.query.filter_by(user_id=user_id).first()
 
 		if not user:
-			return {"message": "User data not found"}, 404
+			print(f"{request.path}: The user {user_id} does not exist in the database, this isn't a normal error.", flush=True)
+			return {"message": "Something wrong happened while trying to update user's information."}, 401
 
-		update_payload = {"is_active": True, "updated_at": datetime.now(timezone.utc)}
-		update_data = user_update_schema.load(update_payload)
+		if "username" in information and user.username != information["username"]:
+			user.username = information["username"]
 
-		for k, v in update_data.items():
-			setattr(user, k, v)
+		updated_at = datetime.now(timezone.utc)
+		user.updated_at = updated_at
 
 		db.session.commit()
-		g.x_new_token = json_response["token"]
 
-		return {"message": "success", "id": user.id}, response.status_code
+		return {"message": "success"}, 200
+
+updade_profile_picture_model = reqparse.RequestParser()
+updade_profile_picture_model.add_argument(
+	"image",
+	type=FileStorage,
+	location="files",
+	required=True,
+	help="New profile picture."
+)
+
+@ns.route("/update_profile_picture")
+class UpdateProfilePicture(Resource):
+	"""
+	Allow the user to change his profile picture.
+
+	API:
+		Method: POST
+		Endpoint: /user/update_profile_picture
+		Token: yes
+
+	Response:
+		200: Profile picture updated.
+		400: Body is not valid, image is missing or invalid.
+		401: A problem occured while trying to delete the old profile picture or to add the new one to the s3 bucket.
+	"""
+	@ns.jwt_required()
+	@ns.expect(updade_profile_picture_model)
+	@ns.s3_bucket_health_check()
+	def post(self):
+		try:
+			args = updade_profile_picture_model.parse_args()
+			image_file = args["image"]
+
+			if image_file.content_type not in {"image/jpeg", "image/png"}:
+				return {"message": "File format not supported."}, 400
+		except Exception as e:
+			print(f"{request.path}: A problem occured while parsing data: {e}", flush=True)
+
+		user_id = g.token_payload["user_id"]
+
+		user = User.query.filter_by(user_id=user_id).first()
+
+		if not user:
+			return {"message": f"No user found with the id {user_id}, contact an admin if the problem persist."}, 401
+
+		if not s3s.delete_all_resources(f"profile_picture/{user_id}/ffsfsf"):
+			return {"message": "Unable to delete the old profile picture."}, 401
+
+		file_ext = image_file.filename.rsplit(".", 1)[-1]
+		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
+
+		if not s3s.add_resource(image_file, s3_url):
+			return {"message": "Unable to upload the new profile picture."}, 401
+
+		user.profile_picture_url = s3_url
+		db.session.commit()
+
+		return {"message": "success"}, 200
+
+
+update_password_model = ns.model("UpdatePasswordModel", {
+	"password": fields.String(required=True),
+	"new_password": fields.String(required=True)
+})
+
+@ns.route("/update_password")
+class UpdatePassword(Resource):
+	"""
+	Allow the user to update his password, he have to send the last one too to validate this action.
+
+	API:
+		Method: POST
+		Endpoint: /user/update_password
+		Token: yes
+
+	Response:
+		200: Password updated.
+		400: Body is not valid.
+	"""
+	@ns.jwt_required()
+	@ns.expect(update_password_model)
+	def post(self):
+		try:
+			information = su.password_update_schema.load(request.json)
+		except ValidationError:
+			return {"message": "The body is no valid."}, 400
+
+		user_id = g.token_payload["user_id"]
+		request.json["user_id"] = user_id
+
+		response = rs.make_request("/user/update_password", "POST")
+		if response.status_code != 200:
+			print(f"{request.path}: The auth service was unable to update the user's password.", flush=True)
+			return response.json(), response.status_code
+
+		return {"message": "success"}, 200
+
+delete_account_model = ns.model("DeleteAccountModel", {
+	"password": fields.String(required=True)
+})
+
+@ns.route("/delete_account")
+class DeleteAccount(Resource):
+	"""
+	This route is used by the user to delete his account.
+
+	API:
+		Method: POST
+		Endpoint: /user/delete_account
+		Token: yes
+
+	Response:
+		200: Account have been deleted.
+		400: The body isn't valid.
+
+	"""
+	@ns.jwt_required()
+	@ns.expect(delete_account_model)
+	def post(self):
+		try:
+			su.delete_account_schema.load(request.json)
+		except ValidationError:
+			return {"message": "The body is no valid."}, 400
+
+		user_id = g.token_payload["user_id"]
+		request.json["user_id"] = user_id
+
+		response = rs.make_request("/user/delete_account", "POST")
+		if response.status_code != 200:
+			print(f"{request.path}: The auth service was unable to delete the user's account.", flush=True)
+			return response.json(), response.status_code
+
+		user = User.query.options(joinedload(User.cards)).filter_by(user_id=user_id).first()
+
+		if user is not None:
+			deleted_username = str(uuid4()).split("-", 1)[0]
+			while User.query.filter_by(username=deleted_username).first() is not None:
+				deleted_username = str(uuid4()).split("-", 1)[0]
+
+			user.username = "deleted_user_" + str(deleted_username)
+			user.profile_picture_url = os.getenv("DEFAULT_IMG_PATH") + "/" + os.getenv("DEFAULT_PROFILE_PICTURE", "")
+
+			s3s.delete_all_resources(f"card_gallery/{user_id}/")
+			s3s.delete_all_resources(f"profile_picture/{user_id}/")
+
+		for row in user.cards:
+			db.session.delete(row)
+
+		db.session.commit()
+
+		return {"message": "success"}, 200
+
+upload_model = reqparse.RequestParser()
+upload_model.add_argument(
+	"image",
+	type=FileStorage,
+	location="files",
+	required=True,
+	help="Image to upload."
+)
+
+@ns.route("/upload_card_image")
+class UploadCardImage(Resource):
+	"""
+	Allow the user to upload image for his cards.
+
+	API:
+		Method: POST
+		Endpoint: /user/upload_card_image
+		Token: yes
+
+	Response:
+		200: The image have been added to the s3 bucket and is now available for the user.
+		400: The body is not valid or the image have a wrong format.
+		401: Failed to upload the image to the s3 bucket.
+	"""
+	@ns.jwt_required()
+	@ns.expect(upload_model)
+	@ns.s3_bucket_health_check()
+	def post(self):
+		try:
+			args = upload_model.parse_args()
+			image_file = args["image"]
+
+			if image_file.content_type not in {"image/jpeg", "image/png"}:
+				return {"message": "File format not supported."}, 400
+		except Exception as e:
+			print(f"A problem occured while parsing data ({e})", flush=True)
+			return {"message": "Bad request"}, 400
+
+		user_id = g.token_payload["user_id"]
+
+		file_ext = image_file.filename.rsplit(".", 1)[-1]
+		s3_url = f"card_gallery/{user_id}/{uuid4()}.{file_ext}"
+
+		try:
+			image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
+			db.session.add(image_db_obj)
+		except ValidationError as e:
+			db.session.rollback()
+			print(f"Something wrong happened while creating image database's object for user id {user_id} ({g.token}), the image '{image_file.filename}' will not be uploaded.", flush=True)
+			return {"message": "Failure, something wrong happened while uploading this image."}, 400
+		except Exception as e:
+			db.session.rollback()
+			print(f"Unhandled error happened while creating image database's object for user id {user_id} ({g.token}), handle this error as soons as possible ({e}).", flush=True)
+			return {"message": "Failure, something wrong happened while uploading this image."}, 400
+
+		if not s3s.add_resource(image_file, s3_url):
+			db.session.rollback()
+			return {"message": "Failed to upload the image"}, 401
+
+		db.session.commit()
+		return {"message": "success"}, 201
+
+remove_card_image_model = ns.model("RemoveCardImageModel", {
+	"card_id": fields.Integer(required=True)
+})
+
+@ns.route("/remove_card_image")
+class RemoveCardImage(Resource):
+	"""
+	Allow the user to delete one of his card image.
+
+	API:
+		Method: POST
+		Endpoint: /user/remove_card_image
+		Token: yes
+
+	Response:
+		200: The image have been deleted from the s3 bucket.
+		400: The body is not valid.
+		404: The image can't be found in the s3 bucket.
+	"""
+	@ns.jwt_required()
+	@ns.expect(remove_card_image_model)
+	@ns.s3_bucket_health_check()
+	def post(self):
+		try:
+			data = su.delete_card_image_schema.load(request.json)
+		except ValidationError:
+			return {"message": "The body is not valid."}, 400
+
+		user_id = g.token_payload["user_id"]
+		card = CardGallery.query.filter_by(user_id=user_id, id=data["card_id"]).first()
+
+		if not card:
+			return {"message": f"No card found with the id {data["card_id"]} for the user id {user_id}."}, 404
+
+		s3s.delete_resource(card.img_url)
+		db.session.delete(card)
+		db.session.commit()
+
+		return {"message": "success"}, 200
+
+@ns.route("/<user_id>/get_card_images")
+class GetCardImage(Resource):
+	"""
+	This endpoint is used to get ALL the card images of a user.
+
+	API:
+		Method: GET
+		Endpoint: /<user_id>/get_card_images
+		Token: no
+
+	Response:
+		200: Success, all the image URL can be found in the response body.
+		404: No image found for the given user id, can be caused because the user don't exist or
+			simply because he don't have any image.
+	"""
+	@ns.jwt_required()
+	def get(self, user_id):
+
+		query = CardGallery.query.filter_by(user_id=user_id)
+
+		if query.first() is None:
+			return {"message": "No card image found for this user id "}, 404
+
+		images_url = []
+		for row in query.yield_per(50):
+			url = s3s.get_resource_url(row.img_url, 3600)
+			if url is not None:
+				images_url.append({"url": url, "image_id": row.id})
+
+		return {"message": "success", "images_url": images_url}, 200

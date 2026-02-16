@@ -5,6 +5,7 @@ from marshmallow import fields, Schema
 class UserSchema(ma.SQLAlchemyAutoSchema):
 	username = fields.String(required=True)
 	user_id = fields.Integer(required=True)
+	profile_picture_url = fields.String(required=True)
 	class Meta:
 		model = User
 		load_instance = True
@@ -14,15 +15,37 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
-class UserUpdateSchema(Schema):
-	is_active = fields.Boolean(required=True)
-	updated_at = fields.DateTime(required=True)
-
-user_update_schema = UserUpdateSchema()
-
-class UserLoginSchema(Schema):
-	email = fields.Email(required=True)
+class UserRegistrationSchema(Schema):
+	email = fields.String(required=True)
 	username = fields.String(required=True)
 	password = fields.String(required=True, load_only=True)
 
+user_registration_schema = UserRegistrationSchema()
+
+class UserLoginSchema(Schema):
+	login_email = fields.String(required=True)
+	password = fields.String(required=True, load_only=True)
+
 user_login_schema = UserLoginSchema()
+
+class UserUpdateSchema(Schema):
+	email = fields.String(required=False)
+	username = fields.String(required=False)
+
+user_update_schema = UserUpdateSchema()
+
+class PasswordUpdateSchema(Schema):
+	password = fields.String(required=True)
+	new_password = fields.String(required=True)
+
+password_update_schema = PasswordUpdateSchema()
+
+class DeleteAccountSchema(Schema):
+	password = fields.String(required=True)
+
+delete_account_schema = DeleteAccountSchema()
+
+class DeleteCardImageSchema(Schema):
+	card_id = fields.Integer(required=True)
+
+delete_card_image_schema = DeleteCardImageSchema()

@@ -19,26 +19,47 @@ function Navbar() {
 		setOpen(false);
 	};
 
+	// Handler pour bouton test JWT a supprimer plus tard + suppr ligne 60-62
+	const handleJWT = async (e) => {
+		e.preventDefault();
+		try {
+			const request = await fetch("/tests/test_jwt", {
+				method: "GET",
+			});
+		} catch (error) {
+			console.log(error);
+		}
+	};
+
+	const navLinks = [
+		{ to: "/", label: "PLAY" },
+		{ to: "/gallery", label: "CUSTOMIZE" },
+		{ to: "/profile", label: "PROFILE" }
+	];
+
 	const linkClass = (path) =>
 		`block px-3 py-2 rounded ${
-      location.pathname === path
-        ? "bg-gray-600 text-purple-400"
-        : "hover:bg-gray-700"
+			location.pathname === path
+				? "bg-gray-600 text-purple-400"
+				: "hover:bg-gray-700"
 		}`;
 
 	return (
 		<nav
 			className="
-				fixed h-14 top-0 left-0 z-50 w-full
-				bg-gray-800 px-4
+				fixed h-14 px-4 top-0 left-0 z-50 w-full
+				bg-gray-800 border-b border-gray-700
 				flex items-center
-				border-b border-gray-700
 			"
 		>
 
-			<Link to="/" className="text-lg font-bold text-purple-500">
+			<Link to="/" className="text-lg font-pixelm font-bold text-purple-500">
 				UwUNO
 			</Link>
+
+		{/* A delete, pour tester si y'a le cookie actif */}
+			<div className="px-2"></div>
+			<Button variant="icon" onClick={handleJWT}>󱛞</Button>
 
 		{/* Burger */}
 			{user && (
@@ -53,67 +74,49 @@ function Navbar() {
 
 		{/* Desktop */}
 			{user && (
-				<div className="hidden sm:flex ml-auto items-center gap-4 font-bold">
+				<div className="hidden sm:flex font-pixelhb ml-auto items-center gap-4 font-bold">
+					{navLinks.map((link) => (
+						<Link key={link.to} to={link.to} className={linkClass(link.to)}>
+							{link.label}
+						</Link>
+					))}
 
-					<Link to="/" className={linkClass("/")}>
-						PLAY
-					</Link>
-
-					<Link to="/gallery" className={linkClass("/gallery")}>
-						CUSTOMIZE
-					</Link>
-
-					<Link to="/profile" className={linkClass("/profile")}>
-						PROFILE
-					</Link>
-
-					{user ? (
-						<Button variant="login" onClick={handleLogout}>
-							LOG OUT
-						</Button>
-					) : null}
-
+					<Button variant="login" onClick={handleLogout}>
+						LOG OUT
+					</Button>
 				</div>
 			)}
 
 		{/* Mobile menu */}
 			{user && open && (
-				<div className="sm:hidden fixed inset-0 z-50 bg-gray-800 flex flex-col">
+				<div className="flex flex-col sm:hidden font-pixelhb fixed inset-0 z-50 bg-gray-800/90">
 					<div className="flex items-center justify-between p-4 border-b border-gray-700">
-
-						<span className="text-lg font-bold text-purple-500">
-							Menu
-						</span>
+						<span className="text-lg font-pixelm text-purple-500">MENU</span>
 
 						<button
 							className="text-2xl"
 							onClick={() => setOpen(false)}
 							aria-label="Close menu"
 						>
-              				✕
-            			</button>
+							✕
+						</button>
 					</div>
 
 					<div className="flex-1 flex flex-col items-center justify-center gap-8">
+						{navLinks.map((link) => (
+							<Link
+								key={link.to}
+								className="py-2 px-5 rounded bg-gray-700"
+								to={link.to}
+								onClick={() => setOpen(false)}
+							>
+								{link.label}
+							</Link>
+						))}
 
-						<Link className="py-2 px-5 rounded bg-gray-700" to="/" onClick={() => setOpen(false)}>
-							PLAY
-						</Link>
-
-						<Link className="py-2 px-5 rounded bg-gray-700" to="/gallery" onClick={() => setOpen(false)}>
-							CUSTOMIZE
-						</Link>
-
-						<Link className="py-2 px-5 rounded bg-gray-700" to="/profile" onClick={() => setOpen(false)}>
-							PROFILE
-						</Link>
-
-						{user ? (
-							<Button variant="login" onClick={handleLogout}>
-								LOG OUT
-							</Button>
-						) : null}
-
+						<Button variant="login" onClick={handleLogout}>
+							LOG OUT
+						</Button>
 					</div>
 				</div>
 			)}

@@ -8,12 +8,12 @@ function Gallery() {
 
 	return (
 		<Page center>
-			<Card>
-				<h2 className="text-3xl font-bold mb-6 text-shadow-lg">
-					Gallery
+			<Card big>
+				<h2 className="text-2xl font-pixelm font-bold mb-6 text-shadow-lg">
+					GALLERY
 				</h2>
 
-				<div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+				<div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
 					{images.map((img) => (
 						<Link key={img.id} to={`/gallery/${img.id}`}>
 							<img

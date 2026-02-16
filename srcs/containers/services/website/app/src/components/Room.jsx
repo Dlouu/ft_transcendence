@@ -28,7 +28,7 @@ function Room({ room, players, setPlayers, deck, setDeck, isHost, onBack }) {
 
 	return (
 		<div className="flex flex-col gap-4">
-			<h2 className="text-2xl text-center font-bold">
+			<h2 className="text-2xl font-pixelm text-center font-bold">
 				ROOM {room.code}
 			</h2>
 
@@ -54,14 +54,14 @@ function Room({ room, players, setPlayers, deck, setDeck, isHost, onBack }) {
 
 					<DeckSelector deck={deck} setDeck={setDeck} />
 				
-					<Button disabled={!canStart}>
+					<Button disabled={!canStart} onClick={() => navigate("/game")}>
 						START
 					</Button>
 				</>
 			)}
 
 			{!isHost && (
-				<Button>
+				<Button onClick={() => navigate("/game")}>
 					READY
 				</Button>
 			)}
