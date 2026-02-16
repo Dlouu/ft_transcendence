@@ -16,8 +16,12 @@ function Me() {
 				<h2 className="text-2xl font-pixelm font-bold mb-2">
 					{user?.username}
 				</h2>
-
-				<div className="h-30 w-30  bg-white"></div>
+				<span>Email: {user?.email}</span>
+				<img
+					src={user?.profile_picture_url}
+					className="h-30 w-30"
+					alt={user?.username}
+				/>
 
 				<h1 className="font-bold text-xl">Statistics</h1>
 				<ul className="space-y-1">
