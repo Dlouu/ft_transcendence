@@ -2,8 +2,10 @@ import { useContext } from "react";
 import { GameContext } from "../context/GameContext";
 import { Button, Card, Page } from "../ui";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 
-function Profile() {
+function Me() {
+	const { user } = useContext(AuthContext);
 	const { profile } = useContext(GameContext);
 	const navigate = useNavigate();
 
@@ -12,7 +14,7 @@ function Profile() {
 			<Card>
 
 				<h2 className="text-2xl font-pixelm font-bold mb-2">
-					PROFILE
+					{user?.username}
 				</h2>
 
 				<div className="h-30 w-30  bg-white"></div>
@@ -37,6 +39,6 @@ function Profile() {
 	);
 }
 
-export default Profile;
+export default Me;
 
 //avatars, usernames, friends list

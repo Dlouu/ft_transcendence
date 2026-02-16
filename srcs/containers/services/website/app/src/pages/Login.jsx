@@ -13,12 +13,9 @@ function Login() {
 	const passwordRef = useRef(null);
 	const { notify } = useNotifications();
 
-	const handleLogin = () => {
-		login(playerName);
-	};
-
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+
 		try {
 			const request = await fetch("/api/auth/login", {
 				headers: {
@@ -30,13 +27,15 @@ function Login() {
 					"login_email": playerName,
 					"password": password
 				}),
-			})
+			});
+
 			const contentType = request.headers.get("content-type") || "";
 			const answer = contentType.includes("application/json")
 				? await request.json()
 				: await request.text();
+
 			if (request.ok) {
-				handleLogin();
+				await login();
 			} else {
 				const message =
 					typeof answer === "string"

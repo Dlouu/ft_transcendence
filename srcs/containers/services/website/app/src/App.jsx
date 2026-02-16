@@ -5,7 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
-import Profile from "./pages/Profile";
+import Me from "./pages/Me";
 import Gallery from "./pages/Gallery";
 import GalleryImage from "./pages/GalleryImage";
 import Paint from "./pages/Paint";
@@ -16,7 +16,10 @@ import { AuthContext } from "./context/AuthContext";
 
 
 function App() {
-	const { user } = useContext(AuthContext);
+	const { user, loading } = useContext(AuthContext);
+
+	if (loading)
+		return (<div>Loading...</div>);
 
 	return (
 		<AppLayout>
@@ -26,8 +29,11 @@ function App() {
 				{/* <Route path="/game" element={<Game />}/> */}
 				<Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>}/>
 				<Route path="/register" element={<Register />}/>
-				<Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>}/>
+				<Route path="/me" element={<ProtectedRoute><Me /></ProtectedRoute>}/>
 				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>}/>
+				//profile/:id pour les autres utilisateurs
+				//room/:id necessaire ?
+				//game/:id necessaire ?
 				<Route path="/gallery/:id" element={<ProtectedRoute><GalleryImage /></ProtectedRoute>}/>
 				<Route path="/paint" element={<ProtectedRoute><Paint /></ProtectedRoute>}/>
 				<Route path="/terms" element={<Terms />}/>

@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, Page, Input, Button, Tooltip } from "../ui";
 import { useNotifications } from "../context/AlertContext";
 
@@ -18,6 +18,7 @@ function Register() {
 			passwordCheck &&
 			password === passwordCheck;
 		const { notify } = useNotifications();
+		const navigate = useNavigate();
 
 		const handleSubmit = async (e) => {
 		e.preventDefault();
@@ -36,7 +37,8 @@ function Register() {
 			})
 			const answer = await request.json();
 			if (request.ok) {
-				await login(playerName, userEmail, password, passwordCheck);
+				await login();
+				navigate("/");
 			}
 			else {
 				notify(answer.message, "error");
