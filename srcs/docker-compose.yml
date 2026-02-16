@@ -84,7 +84,6 @@ services:
       - .env
     networks:
       - game_network
-      - game_db_network
   lobby:
     container_name: lobby_game
     build: ./containers/services/lobby
