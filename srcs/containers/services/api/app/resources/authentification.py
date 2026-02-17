@@ -1,12 +1,13 @@
 from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
 from datetime import datetime, timezone
-from flask import request, g
+from flask import request, g, session
 import os, requests
 
 from app.schemas.user import user_registration_schema, user_login_schema, user_schema
 from app.services import request_service as rs
 from app.services import me_service as ms
+from app.services import session_service as ss
 from app.models.user import User
 from app.extensions import db
 
@@ -122,5 +123,7 @@ class UserLogin(Resource):
 @ns.route("/logout")
 class Logout(Resource):
 	def get(self):
+		if hasattr(g, "token") and ss.does_session_token_exist(g.token):
+			ss.delete_session_token(g.token)
 		g.x_new_token = "none"
 		return {"message": "success"}, 200
