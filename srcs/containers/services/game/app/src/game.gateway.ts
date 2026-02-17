@@ -1,87 +1,64 @@
 import {
-  WebSocketGateway,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  OnGatewayInit,
-  WebSocketServer,
+	WebSocketGateway,
+	OnGatewayConnection,
+	OnGatewayDisconnect,
+	OnGatewayInit,
+	WebSocketServer,
+	SubscribeMessage,
+	MessageBody,
+	Ack,
 } from "@nestjs/websockets";
 import { GameService } from "./game.service";
 import { Server, Socket } from "socket.io";
-import { GameState } from "./domain/UnoGame";
+import { Game, GameState } from "./domain/UnoGame";
+import { DeckService } from "./deck.service";
+import { GameLogicService } from "./game-logic.service";
+import { GamePlayService } from "./game-play.service";
+import { GameRepositoryService } from "./game-repository";
+import { PlaceholderEventDto } from "./dto/placeholder-event.dto";
 
 @WebSocketGateway({ cors: { origin: "*" } })
-export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
-  server!: Server;
+export class GameGateway
+	implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
+	constructor(private readonly gameService: GameService) {}
 
-  constructor(private readonly gameService: GameService) {}
+	afterInit(server: Server): void {
+		this.gameService.setServer(server);
+	}
 
-  afterInit(server: Server): void {
-    this.gameService.setServer(server);
-  }
+	handleConnection(socket: Socket): void {
+		try {
+			const playerId = socket.handshake.query.playerId;
 
-  handleConnection(client: Socket): void {
-    try {
-      const rawPlayerId = client.handshake.query.playerId;
+			if (typeof playerId !== "string" || playerId.trim() === "") {
+				throw new Error("Connection rejected: Missing or invalid playerId.");
+			}
 
-      if (!rawPlayerId || Array.isArray(rawPlayerId)) {
-        throw new Error("Connection rejected: Missing or invalid playerId.");
-      }
+			socket.data.playerId = playerId; // Saving access for disconnection
 
-      const playerId = rawPlayerId;
+			this.gameService.join(playerId, socket);
+		} catch (error) {
+			console.error("Error during connection:", error);
+			socket.disconnect();
+		}
+	}
 
-      // console.log(`Player ${playerId}'s trying connection`);
+	handleDisconnect(socket: Socket): void {
+		this.gameService.leave(socket.data.playerId, socket);
+	}
 
-      client.data.playerId = playerId;
 
-      const game = this.gameService.findGameByPlayer(client.data.playerId);
-      if (game) {
-        console.log(`Player ${client.data.playerId} is connected`);
-
-        client.join(game.roomName);
-        
-        this.gameService.join(client.data.playerId, game, client);
-
-        client.emit("game:join", {
-          game: game.toJson(),
-        });
-
-        client.to(game.roomName).emit("playerJoined", { playerName: client.data.playerId });
-
-        this.gameService.tryStart(game);
-      }
-      else
-      {
-        // console.log(`Player ${client.data.playerId} is not in a game`);
-        throw new Error("Player's not in a game.");
-      }
-    }
-    catch (error)
-    {
-      console.error("Error during connection handshake:", error);
-      client.disconnect();
-    }
-  }
-
-  handleDisconnect(client: Socket): void {
-    const playerName = client.data.playerId;
-    console.log("Client " + playerName + " disconnected");
-
-    const game = this.gameService.leave(playerName);
-    if (game) {
-      const wasConnected = game.connectedPlayers.delete(playerName);
-      if (wasConnected) {
-        console.log(`Player ${playerName} removed from connectedPlayers in ${game.roomName}`);
-      } else {
-        console.log(`Player ${playerName} was not in connectedPlayers for ${game.roomName}`);
-      }
-
-      client.to(game.roomName).emit("playerLeft", { playerName });
-
-      if (game.connectedPlayers.size === 0 && game.state != GameState.WAITING_FOR_PLAYERS) {
-        console.log(`No connected players left in ${game.roomName}. Deleting game.`);
-        this.gameService.deleteGame(game);
-      }
-    }
-  }
+	@SubscribeMessage("placeholder:event")
+	handlePlaceholderEvent(
+		@MessageBody() payload: PlaceholderEventDto, // Gets the client-sent event payload from the message body.
+		@Ack() acknowledgement: (response: any) => void, // Injects the Socket.IO ack callback to answer this event.
+	): void {
+		console.log("placeholder event go !"); // Logs that this listener was triggered.
+		acknowledgement({ // Sends an acknowledgement response back to the emitting client.
+			ok: true, // Marks the operation as successful.
+			event: "placeholder:event", // Echoes the event name for client-side confirmation.
+			payload, // Returns the received payload for debugging/verification.
+		});
+	}
 }

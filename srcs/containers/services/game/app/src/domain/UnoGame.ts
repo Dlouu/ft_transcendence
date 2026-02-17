@@ -20,12 +20,12 @@ export class Game {
     this.players = [];
 
     for (let i = 0; i < playerNbr; i++) {
-      const p = new UnoPlayer(players[i], false, null);
+      const p = new UnoPlayer(players[i], players[i], false, null);
       this.players.push(p);
     }
 
     for (let i = 0; i < botNbr; i++) {
-      const p = new UnoPlayer("bot_" + i, true, null);
+      const p = new UnoPlayer("bot_" + i, "bot_" + i, true, null);
       this.players.push(p);
     }
 
