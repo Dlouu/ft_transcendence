@@ -5,6 +5,8 @@ from marshmallow import ValidationError
 from sqlalchemy.orm import joinedload
 from flask import request, g
 from uuid import uuid4
+from PIL import Image
+from io import BytesIO
 import os
 
 from app.schemas.card_gallery import card_gallery_schema
@@ -126,6 +128,15 @@ class UpdateProfilePicture(Resource):
 		except Exception as e:
 			print(f"{request.path}: A problem occured while parsing data: {e}", flush=True)
 
+		image_file.stream.seek(0, 2)
+		file_size = image_file.stream.tell()
+		image_file.stream.seek(0)
+
+		max_size = int(os.getenv("MAX_IMAGE_SIZE", 2097152))
+		if file_size > max_size:
+			max_mb = max_size / (max_size * 0.5)
+			return {"message": f"The image is too big (max: {max_mb:.0f}mb)."}, 400
+
 		user_id = g.token_payload["user_id"]
 
 		user = User.query.filter_by(user_id=user_id).first()
@@ -133,13 +144,38 @@ class UpdateProfilePicture(Resource):
 		if not user:
 			return {"message": f"No user found with the id {user_id}, contact an admin if the problem persist."}, 401
 
-		if not s3s.delete_all_resources(f"profile_picture/{user_id}/ffsfsf"):
+		if not s3s.delete_all_resources(f"profile_picture/{user_id}"):
 			return {"message": "Unable to delete the old profile picture."}, 401
+
+		try:
+			img = Image.open(image_file.stream)
+
+			if image_file.content_type == "image/png":
+				img = img.convert("RGBA")
+			else:
+				img = img.convert("RGB")
+
+			small_image = img.resize((50, 50), Image.NEAREST)
+			pixelated_img = small_image.resize((100, 100), Image.NEAREST)
+
+			output = BytesIO()
+			format = "PNG" if image_file.content_type == "image/png" else "JPEG"
+			pixelated_img.save(output, format=format)
+			output.seek(0)
+
+			processed_file = FileStorage(
+				stream=output,
+				filename=image_file.filename,
+				content_type=image_file.content_type,
+			)
+		except Exception as e:
+			print(e, flush=True)
 
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
 		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
 
-		if not s3s.add_resource(image_file, s3_url):
+		if not s3s.add_resource(processed_file, s3_url):
+			user.profile_picture_url = os.getenv("DEFAULT_IMG_PATH") + "/" + os.getenv("DEFAULT_PROFILE_PICTURE", "")
 			return {"message": "Unable to upload the new profile picture."}, 401
 
 		user.profile_picture_url = s3_url
