@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button, Input, EditableField } from "../../ui";
 import { useNotifications } from "../../context/AlertContext";
+import { useUser } from "../../hooks/useUser";
 
 function PasswordSection() {
 	const { notify } = useNotifications();
+	const { changePassword } = useUser();
 	const [password, setPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
@@ -14,39 +16,7 @@ function PasswordSection() {
 			notify("Passwords do not match", "error");
 			return;
 		}
-
-		try {
-			const request = await fetch("/api/user/update_password", {
-				headers: {
-					'Accept': 'application/json',
-					'Content-Type': 'application/json'
-				},
-				method: "POST",
-				body: JSON.stringify({
-					password: password,
-					new_password: newPassword
-				}),
-			});
-
-			const contentType = request.headers.get("content-type") || "";
-			const answer = contentType.includes("application/json")
-				? await request.json()
-				: await request.text();
-
-			if (request.ok) {
-				notify("Password changed", "success")
-				setIsChangingPassword(false);
-			} else {
-				const message =
-					typeof answer === "string"
-						? answer
-						: answer?.message || "Update failed";
-				notify(message, "error");
-			}
-		} catch (error) {
-			console.log(error);
-			notify("Error", "error");
-		}
+		changePassword(password, newPassword);
 	};
 
 	return (

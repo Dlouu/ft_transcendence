@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Button, Input } from "../../ui";
 import { useNotifications } from "../../context/AlertContext";
+import { useUser } from "../../hooks/useUser";
 
 function DeleteAccount({ profile }) {
 	const { notify } = useNotifications();
 	const [password, setPassword] = useState("");
 	const [confirm, setConfirm] = useState("");
 	const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+	const { deleteAccount } = useUser();
 
 	const deleteUserAccount = async (e) => {
 		e.preventDefault();
@@ -15,42 +17,12 @@ function DeleteAccount({ profile }) {
 			notify("You didn't type your password", "error");
 			return;
 		}
-		if (confirm !== "DELETE"){
+		if (confirm !== "DELETE") {
 			notify("You didn't type DELETE", "error");
 			return;
 		}
 
-		try {
-			const request = await fetch("/api/user/delete_account", {
-				headers: {
-					'Accept': 'application/json',
-					'Content-Type': 'application/json'
-				},
-				method: "POST",
-				body: JSON.stringify({
-					"password": password
-				}),
-			});
-
-			const contentType = request.headers.get("content-type") || "";
-			const answer = contentType.includes("application/json")
-				? await request.json()
-				: await request.text();
-
-			if (request.ok) {
-				notify("Account deleted", "success")
-				logout();
-			} else {
-				const message =
-					typeof answer === "string"
-						? answer
-						: answer?.message || "Login failed";
-				notify(message, "error");
-			}
-		} catch (error) {
-			console.log(error);
-			notify("Error", "error");
-		}
+		await deleteAccount(password);
 	};
 
 	return (
