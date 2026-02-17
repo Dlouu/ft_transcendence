@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
 from datetime import datetime, timezone
 from flask import request, g
-import os
+import os, requests
 
 from app.schemas.user import user_registration_schema, user_login_schema, user_schema
 from app.services import request_service as rs
@@ -118,3 +118,9 @@ class UserLogin(Resource):
 		g.x_new_token = json_response["token"]
 
 		return ms.me(json_response["id"])
+
+@ns.route("/logout")
+class Logout(Resource):
+	def get(self):
+		g.x_new_token = "none"
+		return {"message": "success"}, 200
