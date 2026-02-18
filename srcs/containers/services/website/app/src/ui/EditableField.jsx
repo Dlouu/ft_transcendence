@@ -33,6 +33,7 @@ function EditableField({ label, value, inputType = "text", onSave }) {
 					<Input
 						value={tempValue}
 						type={inputType}
+						variant="oneline"
 						onChange={(e) => setTempValue(e.target.value)}
 					/>
 					<Button variant="icon" onClick={handleSave}>✔</Button>

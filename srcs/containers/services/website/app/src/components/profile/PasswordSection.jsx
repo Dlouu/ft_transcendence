@@ -31,6 +31,10 @@ function PasswordSection() {
 				</Button>
 			) : (
 				<div className="flex flex-col gap-2">
+					<Button onClick={() => setIsChangingPassword(false)}>
+						CHANGE PASSWORD
+					</Button>
+
 					<Input
 						type="password"
 						variant="oneline"
@@ -56,11 +60,11 @@ function PasswordSection() {
 					/>
 
 					<div className="flex gap-2">
-						<Button onClick={handleChangePassword}>
+						<Button variant="password" onClick={handleChangePassword}>
 							SAVE
 						</Button>
 						<Button
-							variant="secondary"
+							variant="password"
 							onClick={() => {
 								setIsChangingPassword(false);
 								setPassword("");

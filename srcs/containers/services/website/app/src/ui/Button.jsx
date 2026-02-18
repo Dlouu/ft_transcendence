@@ -5,6 +5,7 @@ function Button({ children, onClick, type, disabled = false, variant = "primary"
 		primary:	`${base} px-5 mt-5 bg-purple-600 hover:bg-purple-300 text-white`,
 		secondary:	`${base} px-5 mt-5 bg-gray-600 hover:bg-gray-600 text-white`,
 		red:		`${base} px-5 mt-5 bg-gray-600 hover:bg-red-600 text-white`,
+		password:	`${base} px-5 bg-gray-600 hover:bg-purple-500 text-white`,
 		success:	`${base} px-5 mt-5 bg-purple-500 hover:bg-yellow-400 text-white`,
 		login:		`${base} px-5 bg-gray-500 hover:bg-yellow-400 text-white`,
 		fullscreen:	`${base} px-5 mt-2 bg-gray-700 hover:bg-pink-400`,
