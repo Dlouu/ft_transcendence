@@ -61,7 +61,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 					type="color"
 					value={color}
 					onChange={(e) => setColor(e.target.value)}
-					className="sm:w-8 w-6 sm:h-8 h-6 border rounded border-gray-400 hover:opacity-80 transition cursor-pointer"
+					className="w-9 h-9 border rounded border-gray-400 hover:opacity-80 transition cursor-pointer"
 					title="Custom color"
 				/>
 
@@ -85,7 +85,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 								onClick={() => setColor(c)}
 								onDoubleClick={() => colorInputRefs.current[`base-${index}`]?.click()}
 								style={{ backgroundColor: c }}
-								className="sm:w-8 w-6 sm:h-8 h-6 border rounded border-gray-400 hover:opacity-80 transition"
+								className="w-9 h-9 border rounded border-gray-400 hover:opacity-80 transition"
 								title="Click to select, double-click to edit"
 							/>
 						</Tooltip>
@@ -109,7 +109,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 					<Button
 						variant={customColors.length > 5 ? "iconDisabled" : "icon"}
 						onClick={() => setPalette([...palette, color])}
-						className="w-6 h-6 border rounded text-xs"
+						className="w-9 h-9 border rounded text-xs"
 						title="Add color"
 						disabled={customColors.length > 5}
 					>
@@ -131,7 +131,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 										onDoubleClick={() => colorInputRefs.current[`custom-${index}`]?.click()}
 										onChange={(e) => updateColor(index, e.target.value)}
 										style={{ backgroundColor: c }}
-										className="sm:w-8 w-6 sm:h-8 h-6 border rounded border-gray-400 hover:opacity-80 transition"
+										className="w-9 h-9 border rounded border-gray-400 hover:opacity-80 transition"
 										title="Click to select, double-click to edit"
 									/>
 								</Tooltip>

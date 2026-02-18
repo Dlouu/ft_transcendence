@@ -27,7 +27,7 @@ function AvatarSection({ user }) {
 				</p>
 				<img
 					src={img}
-					className="h-34 w-22 rounded"
+					className="h-34 w-22"
 					alt="Card back"
 				/>
 				<Button variant="icon" onClick={() => navigate("/gallery")}>

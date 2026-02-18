@@ -26,9 +26,9 @@ function DeleteAccount({ profile }) {
 	};
 
 	return (
-		<div>	
+		<>	
 			{!isDeletingAccount ? (
-				<Button variant="secondary" onClick={() => setIsDeletingAccount(true)}>
+				<Button variant="red" onClick={() => setIsDeletingAccount(true)}>
 					DELETE ACCOUNT
 					</Button>
 			) : (
@@ -66,7 +66,7 @@ function DeleteAccount({ profile }) {
 					</div>
 				</div>
 			)}
-		</div>
+		</>
 	);
 }
 

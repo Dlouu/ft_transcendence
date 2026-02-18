@@ -9,7 +9,7 @@ function Gallery() {
 	return (
 		<Page center>
 			<Card big>
-				<h2 className="text-2xl font-pixelm font-bold mb-6 text-shadow-lg">
+				<h2 className="text-2xl font-pixelm font-bold mb-6 text-center text-shadow-lg">
 					GALLERY
 				</h2>
 
@@ -25,9 +25,17 @@ function Gallery() {
 					))}
 				</div>
 
-				<div className="flex flex-col sm:flex-row gap-4">
+				<div className="flex flex-col sm:flex-row gap-4 justify-center">
 					<Button variant="success" onClick={() => navigate("/paint")}>
 						CREATE
+					</Button>
+
+					<Button variant="success">
+						IMPORT
+					</Button>
+
+					<Button variant="success">
+						BROWSE ALL IMAGES
 					</Button>
 
 					<Button variant="secondary" onClick={() => navigate(-1)}>

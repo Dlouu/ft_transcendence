@@ -12,8 +12,12 @@ function PasswordSection() {
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
 
 	const handleChangePassword = async () => {
+		if (newPassword === password) {
+			notify("New password must be different from old password", "error");
+			return;
+		}
 		if (newPassword !== confirmPassword) {
-			notify("Passwords do not match", "error");
+			notify("New password doesn't match", "error");
 			return;
 		}
 		changePassword(password, newPassword);
@@ -24,7 +28,7 @@ function PasswordSection() {
 			{!isChangingPassword ? (
 				<Button onClick={() => setIsChangingPassword(true)}>
 					CHANGE PASSWORD
-					</Button>
+				</Button>
 			) : (
 				<div className="flex flex-col gap-2">
 					<Input
