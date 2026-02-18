@@ -1,104 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <title>Lobby</title>
-</head>
-<body>
-
-  <h1>Nom de la room : {{ code }}</h1>
-
-  <p>Total joueurs (humains + bots) : <span id="player-count">0</span> / 4</p>
-
-  <p>Theme : <span id="theme-label">basic</span></p>
-
-  <ul id="player-list"></ul>
-
-  <button id="ready-btn">Ready?</button>
-
-  <div id="master-panel" style="display:none;">
-    <button id="theme-uwu">Theme uwu</button>
-    <button id="theme-basic">Theme basic</button>
-
-    <button id="add-bot">+ Bot</button>
-    <button id="remove-bot">- Bot</button>
-    <button id="start-btn">Start</button>
-  </div>
-
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script>
-const code = "{{ code }}";
-const socket = io();
-
-const readyBtn = document.getElementById("ready-btn");
-const masterPanel = document.getElementById("master-panel");
-const themeLabel = document.getElementById("theme-label");
-
-socket.on("connect", () => {
-  socket.emit("join_lobby", { code: code });
-});
-
-socket.on("lobby_state", (data) => {
-  document.getElementById("player-count").textContent = data.total_count;
-
-  // theme affiché pour tout le monde
-  themeLabel.textContent = data.theme ? "uwu" : "basic";
-
-  // panel visible seulement pour l'hôte
-  masterPanel.style.display = (socket.id === data.supreme_master_sid) ? "block" : "none";
-
-  const list = document.getElementById("player-list");
-  list.innerHTML = "";
-
-  data.humans.forEach(player => {
-    const li = document.createElement("li");
-    const ready = data.ready_humans.includes(player);
-    const crown = (player === data.supreme_master_sid) ? " 👑" : "";
-    li.textContent = player + (ready ? " ✅" : " ❌") + crown;
-    list.appendChild(li);
-  });
-
-  data.bots.forEach(bot => {
-    const li = document.createElement("li");
-    li.textContent = bot + " 🤖 ✅";
-    list.appendChild(li);
-  });
-});
-
-readyBtn.addEventListener("click", () => {
-  socket.emit("player_ready");
-});
-
-// THEME (host only - le serveur re-vérifie)
-document.getElementById("theme-uwu").addEventListener("click", () => {
-  socket.emit("set_theme", { theme: true });
-});
-
-document.getElementById("theme-basic").addEventListener("click", () => {
-  socket.emit("set_theme", { theme: false });
-});
-
-// BOTS + START
-document.getElementById("add-bot").addEventListener("click", () => {
-  socket.emit("add_bot");
-});
-
-document.getElementById("remove-bot").addEventListener("click", () => {
-  socket.emit("remove_bot");
-});
-
-document.getElementById("start-btn").addEventListener("click", () => {
-  socket.emit("master_start");
-});
-
-socket.on("game_start", (data) => {
-  window.location.href = `/game/${data.code}`;
-});
-
-socket.on("error", (data) => {
-  alert(data.message || "Error");
-});
-</script>
-
-</body>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login API</title>
+  </head>
+  <body>
+    <div class="lobby">
+      <h1>Lobby code</h1>
+      <p>Nous jouons au UwUNO {{ code }}</p>
+    </div>
+  </body>
 </html>

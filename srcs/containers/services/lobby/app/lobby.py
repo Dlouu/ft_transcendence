@@ -9,12 +9,34 @@ lobby = Blueprint("lobby", __name__)
 # "*" only in production. Allows each to connect to the lobby no matter the origin. Has to be replaced by the actual domain main (localhost:5173)
 socketio = SocketIO(cors_allowed_origins="*")
 
-lobbies= {} # Dictionnary with: 4-characters room code -> {"players": int, "game_started": bool}      
+lobbies = {} # Dictionnary with: 4-characters room code -> {"players": int, "game_started": bool}      
 socketid_lobby = {}    # Dictionnary with: socket id -> room code
 max_players  = 4       # Max players per lobby
 
 
-# Debugging. Shows all lobbies with players count, state of the game. Shows all socket ids for each room
+
+"""""""""""""""""""""""""""""""""""""""
+!!! start of debugging functions  !!!
+"""""""""""""""""""""""""""""""""""""""
+
+
+
+"""
+GET /debuglobbies
+
+📥 Receives:
+- HTTP GET request
+- No parameters required
+
+📤 Returns:
+- JSON object containing:
+    - All active lobbies with their internal state
+    - socket_id -> lobby mapping
+    - Total number of active lobbies
+
+🎯 Purpose:
+Debug endpoint used to inspect the internal server state.
+"""
 @lobby.route("/debuglobbies", methods=["GET"])
 def get_lobbies():
     safe_lobbies = {}
@@ -26,7 +48,7 @@ def get_lobbies():
         safe_lobbies[code] = {
             "players_count": data.get("players", 0),
             "bots": data.get("bots", 0),
-            "total": data.get("players", 0) + data.get("bots", 0),
+            "total": len(data.get("players", {})) + data.get("bots", 0),
             "game_started": data.get("game_started", False),
             "theme": data.get("theme", False),
             "supreme_master_user_id": data.get("supreme_master_user_id"),
@@ -48,52 +70,116 @@ def lobby_total_players(data):
 def lobby_bot_ids(data):
     return [f"BOT#{i+1}" for i in range(data.get("bots", 0))]
 
+
+"""
+Emits the current lobby state via SocketIO
+
+📥 Receives:
+- code (str): lobby room code
+
+📤 Emits (SocketIO event: "lobby_state"):
+- code
+- list of human players (socket IDs)
+- list of ready players
+- list of bots
+- theme status
+- humans count
+- bots count
+- total count
+- max players allowed
+- host socket ID (supreme_master_sid)
+- game_started flag
+- supreme_master_starts flag
+
+🎯 Purpose:
+Synchronizes all connected clients in the lobby with the latest state.
+"""
 def emit_lobby_state(code):
     if code not in lobbies:
         return
-
     data = lobbies[code]
+
+    humans_sids = [sid for sid, p in data["players"].items() if p["connected"]]
+    ready_sids = [sid for sid, p in data["players"].items() if p["ready"]]
 
     payload = {
         "code": code,
-        "humans": list(data["players_sids"]),
-        "ready_humans": list(data["ready"]),
-        "bots": lobby_bot_ids(data),
-
+        "humans": humans_sids,
+        "ready_humans": ready_sids,
+        "bots": [f"BOT#{i+1}" for i in range(data.get("bots", 0))],
         "theme": data.get("theme", False),
-
-        "humans_count": data.get("players", 0),
+        "humans_count": len(humans_sids),
         "bots_count": data.get("bots", 0),
-        "total_count": lobby_total_players(data),
+        "total_count": len(humans_sids) + data.get("bots", 0),
         "max_players": max_players,
-
         "supreme_master_sid": data.get("supreme_master_sid"),
         "game_started": data.get("game_started", False),
-        "supreme_master_starts": data.get("supreme_master_starts", False),
+        "supreme_master_starts": data.get("supreme_master_starts", False)
     }
 
     socketio.emit("lobby_state", payload, room=code)
 
 
-# redirect to the game once everyone is ready to play
+
+
+
+
+"""""""""""""""""""""""""""""""""""""""
+!!! end of debugging functions  !!!
+"""""""""""""""""""""""""""""""""""""""
+
+"""
+GET /game/<code>
+
+📥 Receives:
+- code (str): lobby room code
+
+📤 Returns:
+- has to return the html page of the game (game.html is juste ici pour la deco)
+
+🎯 Purpose:
+Renders the game page once the match has started.
+"""
 @lobby.route("/game/<code>", methods=["GET"])
 def starting_game(code):
-    return render_template("game2.html", code=code)
+    return render_template("game.html", code=code)
 
 
-# Main route
+"""
+Just here for prod
+GET /
+📥 Receives:
+- HTTP GET request
+
+📤 Returns:
+- HTML template "home.html"
+
+🎯 Purpose:
+Displays the homepage.
+"""
 @lobby.route("/")
 def home():
     return render_template("home.html")
 
 
 """
-Route for creating lobby. Checks in this order:
-- If name is not empty, name contains only alnum characters, name is 4 charcaters long
-- If room name is already taken
-- If there are too many rooms already (1679616 = 36^4)
+POST /create_lobby
 
-Add the lobby to the lobby dict with 0 players and game not started. Start a timer to remove the lobby after X seconds if no one joins. Redirect to the join lobby page if success
+📥 Receives:
+- room_name (form data)
+- user_id (session)
+
+📤 Returns:
+- Redirect to /join_lobby if successful
+- Error message with custom status codes (601, 602, 603) otherwise
+
+🎯 Purpose:
+Creates a new lobby after validating:
+- Name format
+- Room uniqueness
+- Maximum room limit
+
+Initializes lobby data and starts an expiration timer.
 """
 @lobby.route("/create_lobby", methods=["POST"])
 def create_lobby():
@@ -108,11 +194,9 @@ def create_lobby():
         return "No more rooms available", 603
 
     lobbies[room_name] = {
-        "players": 0,
+        "players": {}, # --> {sid, ready, connected}
         "bots": 0,
         "game_started": False,
-        "ready": set(),
-        "players_sids": set(),
         "theme": False,
         "supreme_master_user_id": user_id,
         "supreme_master_sid": None,
@@ -123,91 +207,177 @@ def create_lobby():
     return redirect(url_for("lobby.join_lobby", code=room_name))
 
 
-# Join lobby with code
+"""
+POST /join_lobby
+
+📥 Receives:
+- code (form data)
+
+📤 Returns:
+- Redirect to /join_lobby?code=...
+- Error message if the room does not exist
+
+🎯 Purpose:
+Allows a user to join a lobby using a room code.
+"""
 @lobby.route("/join_lobby", methods=["POST"])
 def join_lobby_post():
     user_code = request.form.get("code", "").strip().upper()
+    user_id = session.get("user_id")
+
     if user_code not in lobbies:
         return "Room doesn't exist"
+
+    lobby_data = lobbies[user_code]
+
+    # Partie déjà commencée
+    if lobby_data["game_started"]:
+        if user_id in lobby_data["players"]:
+            # Reconnecion autorisée
+            return redirect(url_for("lobby.join_lobby", code=user_code))
+        else:
+            return "Game already started"
+
+    # Lobby non plein
+    total_players = len(lobby_data["players"]) + lobby_data["bots"]
+    if total_players >= max_players:
+        return "Room is full"
+
     return redirect(url_for("lobby.join_lobby", code=user_code))
 
 
-#join lobby after creating the lobby
+
+"""
+GET /join_lobby
+
+📥 Receives:
+- code (query parameter)
+
+📤 Returns:
+- HTML template "game.html"
+- Error message if the code is invalid
+
+🎯 Purpose:
+Displays the lobby page after successful creation.
+"""
 @lobby.route("/join_lobby", methods=["GET"])
 def join_lobby():
     code = request.args.get("code", "").strip().upper()
     if not code or code not in lobbies:
         return "Wrong room code"
-    return render_template("game.html", code=code)
+    return render_template("lobby.html", code=code)
 
 
-# SocketIO event for joining a lobby.
+"""
+SocketIO event: "join_lobby"
+
+📥 Receives:
+- data:
+    - code (str)
+
+📤 Emits:
+- "error" if validation fails
+- "room_full" if lobby is full
+- "lobby_state" (via emit_lobby_state) on success
+
+🎯 Purpose:
+Adds a player to the lobby, updates internal structures,
+and synchronizes all clients.
+"""
 @socketio.on("join_lobby")
 def join_lobby_socket(data):
     code = (data.get("code") or "").strip().upper()
-    user_id = session.get("user_id")
-
     if code not in lobbies:
         emit("error", {"message": "Room doesn't exist"})
         return
 
-    if lobbies[code]["game_started"]:
-        emit("error", {"message": "Game already started"})
+    lobby_data = lobbies[code]
+
+    if lobby_data["game_started"]:
+        if request.sid in lobby_data["players"]:
+            # Reconnexion autorisee
+            lobby_data["players"][request.sid]["connected"] = True
+            join_room(code)
+            socketid_lobby[request.sid] = code
+            emit_lobby_state(code)
+        else:
+            emit("error", {"message": "Game already started"})
         return
 
-    if request.sid in socketid_lobby:
-        emit("error", {"message": "Already in a room"})
+    total_players = len(lobby_data["players"]) + lobby_data["bots"]
+    if total_players >= max_players:
+        emit("room_full", {"message": "Room is full"})
         return
 
-    if len(lobbies[code]["players_sids"]) + lobbies[code]["bots"] >= max_players:
-        emit("room_full")
-        return
-
+    # Ajout du joueur
     join_room(code)
-
     socketid_lobby[request.sid] = code
-    lobbies[code]["players_sids"].add(request.sid)
-    lobbies[code]["players"] = len(lobbies[code]["players_sids"])
+    lobby_data["players"][request.sid] = {"ready": False, "connected": True}
 
-    creator_id = lobbies[code]["supreme_master_user_id"]
-    if creator_id is not None and user_id == creator_id:
-        lobbies[code]["supreme_master_sid"] = request.sid
-
-    if lobbies[code]["supreme_master_sid"] is None:
-        lobbies[code]["supreme_master_sid"] = request.sid
+    # Definir le host si inexistant
+    if lobby_data["supreme_master_sid"] is None:
+        lobby_data["supreme_master_sid"] = request.sid
 
     emit_lobby_state(code)
 
 
 
-# SocketIO event for disconnecting from a lobby. Decrease player count, remove socket id from socketid_lobby dict. If lobby is empty, start a timer to remove the lobby after X seconds
+
+
+"""
+SocketIO event: "disconnect"
+
+📥 Receives:
+- Automatic disconnection event
+
+📤 Emits:
+- "lobby_state" if lobby still has players
+- Deletes lobby if empty
+
+🎯 Purpose:
+Removes the player from the lobby.
+Transfers host role if necessary.
+Deletes the lobby if no players remain.
+"""
 @socketio.on("disconnect")
 def on_disconnect():
     sid = request.sid
     code = socketid_lobby.pop(sid, None)
-
     if not code or code not in lobbies:
         return
 
     data = lobbies[code]
+    if sid not in data["players"]:
+        return
 
-    data["players"] = len(data["players_sids"])
-    data["ready"].discard(sid)
-    data["players_sids"].discard(sid)
+    if data["game_started"]:
+        data["players"][sid]["connected"] = False
+    else:
+        del data["players"][sid]
+        if data["supreme_master_sid"] == sid:
+            data["supreme_master_sid"] = next(iter(data["players"]), None)
 
-    if data["supreme_master_sid"] == sid:
-        remaining = list(data["players_sids"])
-        data["supreme_master_sid"] = remaining[0] if remaining else None
-        data["supreme_master_starts"] = False
-
-    if data["players"] <= 0:
+    if not data["players"] and not data["game_started"]:
         lobbies.pop(code, None)
         return
 
     emit_lobby_state(code)
 
 
-# Remove the lobby from the lobby dict. Emit a message to the lobby if the game hasn't started yet. Remove all socket ids associated with the lobby from the socketid_lobby dict
+
+
+"""
+Internal function
+
+📥 Receives:
+- code (str): lobby room code
+
+📤 Emits:
+- "room_expired" if the game has not started
+
+🎯 Purpose:
+Permanently deletes a lobby and cleans all related socket mappings.
+"""
 def remove_lobby(code):
     lobby_data = lobbies.get(code)
     if not lobby_data:
@@ -223,131 +393,180 @@ def remove_lobby(code):
             socketid_lobby.pop(sid, None)
 
 
-# Start a timer to remove the lobby after X seconds. If the lobby is already removed, do nothing
+"""
+Internal function (timer)
+
+📥 Receives:
+- code (str)
+- delay (int, seconds)
+
+📤 Returns:
+- None
+
+🎯 Purpose:
+Schedules automatic lobby removal after a period of inactivity.
+"""
 def lobby_removal(code, delay=200):
     timer = threading.Timer(delay, remove_lobby, args=[code])
     timer.daemon = True
     timer.start()
 
-# set to true if player clicks on ready button
+
+"""
+SocketIO event: "player_ready"
+
+📥 Receives:
+- No payload
+
+📤 Emits:
+- "lobby_state"
+
+🎯 Purpose:
+Toggles the ready state of a player and updates lobby synchronization.
+"""
 @socketio.on("player_ready")
 def player_ready_to_play():
     sid = request.sid
     code = socketid_lobby.get(sid)
-
     if not code or code not in lobbies:
         return
 
     data = lobbies[code]
-
-    if data["game_started"]:
+    if data["game_started"] or sid not in data["players"]:
         return
 
-    if sid in data["ready"]:
-        data["ready"].remove(sid)
-    else:
-        data["ready"].add(sid)
-
+    data["players"][sid]["ready"] = not data["players"][sid]["ready"]
     emit_lobby_state(code)
 
-# host can add bots
+"""
+SocketIO event: "add_bot"
+
+📥 Receives:
+- No payload
+
+📤 Emits:
+- "lobby_state"
+- "error" if unauthorized or lobby is full
+
+🎯 Purpose:
+Allows the host to add a bot to the lobby.
+"""
 @socketio.on("add_bot")
 def add_bot():
     sid = request.sid
     code = socketid_lobby.get(sid)
-
     if not code or code not in lobbies:
         return
 
     data = lobbies[code]
-
-    if data["game_started"]:
-        return
-    
-    if sid != data["supreme_master_sid"]:
+    if data["game_started"] or sid != data["supreme_master_sid"]:
         emit("error", {"message": "Only host can add bots"})
         return
-    
-    if data["players"] + data["bots"] >= max_players:
+
+    if len(data["players"]) + data["bots"] >= max_players:
         emit("error", {"message": "Lobby is full"})
         return
 
     data["bots"] += 1
     emit_lobby_state(code)
 
-# host can remove bots
+
+"""
+SocketIO event: "remove_bot"
+
+📥 Receives:
+- No payload
+
+📤 Emits:
+- "lobby_state"
+- "error" if unauthorized
+
+🎯 Purpose:
+Allows the host to remove a bot from the lobby.
+"""
 @socketio.on("remove_bot")
 def remove_bot():
     sid = request.sid
     code = socketid_lobby.get(sid)
-
     if not code or code not in lobbies:
         return
 
     data = lobbies[code]
-
-    if data["game_started"]:
-        return
-    
-    if sid != data["supreme_master_sid"]:
-        emit("error", {"message": "Only host can delete bots"})
-        return
-    
-    if data["bots"] <= 0:
+    if data["game_started"] or sid != data["supreme_master_sid"]:
+        emit("error", {"message": "Only host can remove bots"})
         return
 
-    data["bots"] -= 1
-    emit_lobby_state(code)
+    if data["bots"] > 0:
+        data["bots"] -= 1
+        emit_lobby_state(code)
 
-# If all requirements are up, host can start the game
+"""
+SocketIO event: "master_start"
+
+📥 Receives:
+- No payload
+
+📤 Emits:
+- "game_start" if all conditions are met
+- "error" otherwise
+
+🎯 Purpose:
+Allows the host to start the game once:
+- At least one player is present
+- Player limit is respected
+- All human players are ready
+"""
 @socketio.on("master_start")
 def master_start():
     sid = request.sid
     code = socketid_lobby.get(sid)
-
     if not code or code not in lobbies:
         return
 
     data = lobbies[code]
-
     if sid != data["supreme_master_sid"]:
         emit("error", {"message": "Only host can start"})
         return
 
-    if len(data["players_sids"]) == 0:
+    if len(data["players"]) == 0:
         remove_lobby(code)
         return
 
-    total_players = data["players"] + data["bots"]
-    if total_players > max_players:
+    if len(data["players"]) + data.get("bots", 0) > max_players:
         emit("error", {"message": "Too many players"})
         return
 
-    all_humans_ready = len(data["ready"]) == len(data["players_sids"])
-
-    if all_humans_ready:
+    if all(p["ready"] for p in data["players"].values()):
         data["game_started"] = True
         socketio.emit("game_start", {"code": code}, room=code)
     else:
         emit("error", {"message": "Not everyone is ready"})
 
 
-# set the theme to whether Uwu or basic
+
+"""
+SocketIO event: "set_theme"
+
+📥 Receives:
+- data:
+    - theme (bool)
+
+📤 Emits:
+- "lobby_state"
+- "error" if unauthorized or invalid value
+
+🎯 Purpose:
+Allows the host to change the lobby theme before the game starts.
+"""
 @socketio.on("set_theme")
 def set_theme(data):
     sid = request.sid
     code = socketid_lobby.get(sid)
-
     if not code or code not in lobbies:
         return
 
     lobby_data = lobbies[code]
-
-    if lobby_data["game_started"]:
-        return
-
-    #supreme master cam only change host
-    if sid != lobby_data["supreme_master_sid"]:
+    if lobby_data["game_started"] or sid != lobby_data["supreme_master_sid"]:
         emit("error", {"message": "Only host can change theme"})
         return
 
