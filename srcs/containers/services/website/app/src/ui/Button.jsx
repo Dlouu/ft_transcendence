@@ -1,5 +1,5 @@
 function Button({ children, onClick, type, disabled = false, variant = "primary", isActive = false }) {
-	const base = "rounded font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed py-2";
+	const base = "cursor-pointer rounded font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed py-2";
 
 	const variants = {
 		primary:	`${base} px-5 mt-5 bg-purple-600 hover:bg-purple-300 text-white`,

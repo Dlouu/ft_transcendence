@@ -35,8 +35,8 @@ function EditableField({ label, value, inputType = "text", onSave }) {
 						type={inputType}
 						onChange={(e) => setTempValue(e.target.value)}
 					/>
-					<Button onClick={handleSave}>✔</Button>
-					<Button onClick={handleCancel}>✖</Button>
+					<Button variant="icon" onClick={handleSave}>✔</Button>
+					<Button variant="icon" onClick={handleCancel}>✖</Button>
 				</div>
 			)}
 		</div>

@@ -3,7 +3,6 @@ import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import { Button, Page, Input, Card } from "../ui";
-import imageLog42 from "../assets/42login.svg"
 import { useNotifications } from "../context/AlertContext";
 
 function Login() {
@@ -80,10 +79,7 @@ function Login() {
 						LET'S PLAY
 					</Button>
 					<div className="flex flex-col justify-center items-center">
-						<a href="http://localhost:5050/oauth/42" className="flex flex-row gap-2 py-5">
-							sign in with <img src={imageLog42} className="h-6"/>
-						</a>
-						<p>
+						<p className="mt-10">
 							no account ?
 							<Link className="text-purple-300 font-bold p-2" to="/register">
 								register

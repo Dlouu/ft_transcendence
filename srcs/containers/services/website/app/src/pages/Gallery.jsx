@@ -1,10 +1,17 @@
+import { useContext, useState, useEffect } from "react";
 import { Button, Page, Card } from "../ui";
 import { Link, useNavigate } from "react-router-dom";
 import { getGallery } from "../services/galleryService";
+import { AuthContext } from "../context/AuthContext";
+import UserGallery from "../components/profile/UserGallery";
 
 function Gallery() {
 	const navigate = useNavigate();
 	const images = getGallery();
+	const { user } = useContext(AuthContext);
+	const [cards, setCards] = useState([]);
+	const [loadingCards, setLoadingCards] = useState(true);
+	const userId = user?.userId;
 
 	return (
 		<Page center>
@@ -24,6 +31,8 @@ function Gallery() {
 						</Link>
 					))}
 				</div>
+
+				<UserGallery userId={userId} />
 
 				<div className="flex flex-col sm:flex-row gap-4 justify-center">
 					<Button variant="success" onClick={() => navigate("/paint")}>
