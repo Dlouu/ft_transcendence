@@ -19,7 +19,7 @@ function BrushSelector({ brushSize, setBrushSize }) {
 
 	return (
 		<Tooltip message="Size, press + or -">
-			<div className="flex gap-1">
+			<div className="flex gap-1 sm:flex-col justify-center">
 				{BRUSH_SIZES.map((size, index) => (
 					<button
 						key={size}

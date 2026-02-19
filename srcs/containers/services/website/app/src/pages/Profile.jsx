@@ -25,7 +25,6 @@ function Me() {
 							<PasswordSection />
 							<DeleteAccount logout={logout}/>
 						</div>
-						<PersonalGallery/>
 					</div>
 
 					<Sidebar profile={profile}/>

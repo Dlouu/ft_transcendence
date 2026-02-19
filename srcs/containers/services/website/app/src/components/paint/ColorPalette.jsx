@@ -52,16 +52,16 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 	const customColors = palette.slice(COLORS.length);
 
 	return (
-		<div className="flex flex-col gap-2">
+		<div className="flex sm:flex-col gap-2">
 
-			<div className="flex gap-1 items-center">
+			<div className="flex sm:flex-col gap-1 items-center">
 	
 			{/* Active color */}
 				<input
 					type="color"
 					value={color}
 					onChange={(e) => setColor(e.target.value)}
-					className="w-9 h-9 border rounded border-gray-400 hover:opacity-80 transition cursor-pointer"
+					className="sm:w-9 sm:h-9 w-7 h-7 border rounded border-purple-300 hover:opacity-80 transition cursor-pointer"
 					title="Custom color"
 				/>
 
@@ -85,7 +85,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 								onClick={() => setColor(c)}
 								onDoubleClick={() => colorInputRefs.current[`base-${index}`]?.click()}
 								style={{ backgroundColor: c }}
-								className="w-9 h-9 border rounded border-gray-400 hover:opacity-80 transition"
+								className="sm:w-9 sm:h-9 w-7 h-7  border rounded border-gray-400 hover:opacity-80 transition"
 								title="Click to select, double-click to edit"
 							/>
 						</Tooltip>
@@ -105,7 +105,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 				))}
 
 			{/* Add button */}
-				<Tooltip message="add color, switch with [1]~[9]">
+				{/* {/* <Tooltip message="add color, switch with [1]~[9]">
 					<Button
 						variant={customColors.length > 5 ? "iconDisabled" : "icon"}
 						onClick={() => setPalette([...palette, color])}
@@ -115,12 +115,12 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 					>
 						+
 					</Button>
-				</Tooltip>
+				</Tooltip> */}
 			</div>
 
 		{/* Custom added colors */}
-			{customColors.length > 0 && (
-				<div className="flex gap-1">
+			{/* {customColors.length > 0 && (
+				<div className="flex gap-1 sm:flex-col items-center">
 					{customColors.map((c, index) => {
 						const globalIndex = baseColors.length + index;
 						return (
@@ -151,7 +151,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 						);
 					})}
 				</div>
-			)}
+			)} */}
 		</div>
 	);
 }

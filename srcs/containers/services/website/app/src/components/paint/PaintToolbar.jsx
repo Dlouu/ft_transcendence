@@ -19,20 +19,24 @@ function PaintToolbar({
 
 	return (
 		<>
-			<div className="grid sm:flex justify-center">
-				<div className="flex flex-row justify-center gap-1 py-1">
+			<div className="grid sm:flex sm:flex-col gap-2 justify-center sm:px-1 mt-2">
+				<div className="flex flex-row sm:flex-col justify-center gap-1">
 					<ToolSelector tool={tool} setTool={setTool} canvasRef={canvasRef} />
 					<UndoRedo onUndo={undo} onRedo={redo} />
+					<div className="sm:flex sm:flex-col hidden gap-1">
+						<BrushSelector brushSize={brushSize} setBrushSize={setBrushSize} />
+						<Save canvasRef={canvasRef} />
+					</div>
 				</div>
 
-				<div className="flex flex-row justify-center gap-1 py-1">
+				<div className="flex flex-row sm:hidden justify-center gap-1">
 					<BrushSelector brushSize={brushSize} setBrushSize={setBrushSize} />
 					<Save canvasRef={canvasRef} />
 				</div>
 			</div>
 
-			<div className="grid">
-				<div className="flex flex-row justify-center gap-1 py-1">
+			<div className="grid sm:w-[100px]">
+				<div className="flex flex-row sm:flex-col justify-center gap-1 py-2">
 					<ColorPalette color={color} setColor={setColor} tool={tool} setTool={setTool} />
 				</div>
 			</div>

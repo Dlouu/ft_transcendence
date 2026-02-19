@@ -7,6 +7,9 @@ export const COLORS = [
 	"#000000",
 	"#ffffff",
 	"#8a3887",
+	"#ff00ff",
+	"#f0000f",
+	"#fff00f",
 ];
 
 export const BRUSH_SIZES = [1, 2, 3, 4];
