@@ -1,42 +1,74 @@
 import { Assets, Spritesheet, Texture } from "pixi.js";
 
 export enum CardsTheme {
-	Normal = "normal",
+	Basic = "basic",
 	Uwu = "uwu",
 }
 
 export enum CardSet {
-	One = "set_one",
-	Two = "set_two",
-	Three = "set_three",
-	Four = "set_four",
-	Wild = "black",
+	One = "set-one",
+	Two = "set-two",
+	Three = "set-three",
+	Four = "set-four",
+	Wild = "wild",
 }
 
 export enum CardValue {
-	Zero = "0",
-	One = "1",
-	Two = "2",
-	Three = "3",
-	Four = "4",
-	Five = "5",
-	Six = "6",
-	Seven = "7",
-	Eight = "8",
-	Nine = "9",
-	PlusTwo = "plus2",
-	Reverse = "reverse",
+	Zero = "zero",
+	One = "one",
+	Two = "two",
+	Three = "three",
+	Four = "four",
+	Five = "five",
+	Six = "six",
+	Seven = "seven",
+	Eight = "eight",
+	Nine = "nine",
 	Skipp = "skip",
+	Reverse = "reverse",
+	PlusTwo = "drawTwo",
 	Wild = "wild",
-	PlusFour = "plus4",
+	PlusFour = "wildDrawFour",
 }
 
 export class AssetsManager {
 	private _spritesheet: Spritesheet | null = null;
 	private _backTextures: Map<string, Texture> = new Map();
 
+	private _normalizeThemeFileName(theme: CardsTheme): string {
+		switch (theme) {
+			case CardsTheme.Basic:
+				return "basic-theme.json";
+			case CardsTheme.Uwu:
+				return "uwu-theme.json";
+			default:
+				return `${theme}-theme.json`;
+		}
+	}
+
+	private _buildTextureKeys(color: CardSet, value: CardValue): string[] {
+		const baseKey = `${color}-${value}`;
+		const aliasByValue: Partial<Record<CardValue, string>> = {
+			[CardValue.PlusTwo]: "draw2",
+			[CardValue.Wild]: "color",
+			[CardValue.PlusFour]: "draw4",
+		};
+
+		const aliasedValue = aliasByValue[value];
+		const keys = [baseKey, `${baseKey}.png`];
+
+		if (aliasedValue) {
+			keys.unshift(`${color}-${aliasedValue}`);
+			if (color === CardSet.Wild) {
+				keys.unshift(`wild_${aliasedValue}`);
+			}
+		}
+
+		return keys;
+	}
+
 	public async loadTheme(theme: CardsTheme): Promise<void> {
-		const fileName = `${theme}-theme.json`;
+		const fileName = this._normalizeThemeFileName(theme);
 
 		const assetPath = `${fileName}`;
 
@@ -51,7 +83,7 @@ export class AssetsManager {
 		}
 	}
 
-	public async loadCardBacks(variants: string[] = ["default"]): Promise<void> {
+	public async loadCardBacks(variants: string[] = ["uwu"]): Promise<void> {
 		// Clear previous theme backs if needed, or keep cache depending on needs.
 		// For now, we clear to ensure we only have current theme backs.
 		this._backTextures.clear();
@@ -79,13 +111,15 @@ export class AssetsManager {
 			return Texture.EMPTY;
 		}
 
-		const key = `${color}-${value}.png`;
+		const keys = this._buildTextureKeys(color, value);
 
-		if (this._spritesheet.textures[key]) {
-			return this._spritesheet.textures[key];
+		for (const key of keys) {
+			if (this._spritesheet.textures[key]) {
+				return this._spritesheet.textures[key];
+			}
 		}
 
-		console.warn(`AssetsManager: Texture not found for key: ${key}`);
+		console.warn(`AssetsManager: Texture not found for keys: ${keys.join(", ")}`);
 		return Texture.EMPTY;
 	}
 

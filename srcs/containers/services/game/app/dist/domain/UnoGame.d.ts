@@ -8,9 +8,26 @@ export declare enum GameState {
     GAME_OVER = 4
 }
 export declare class Game {
+    roomName: string;
+    players: UnoPlayer[];
+    connectedPlayers: Set<string>;
+    expectedPlayers: string[];
+    private realPlayersNbr;
+    private botNbr;
+    deck: Card[];
+    discard: Card[];
+    currentFamily: CardFamily;
+    currentDirection: "CLOCKWISE" | "COUNTER-CLOCKWISE";
+    currentPlayerIndex: number;
+    createdAt: number;
+    turnStartTime: number;
+    lastActionTime: number;
+    pendingUnoPlayerIndex: number | null;
+    state: GameState;
     constructor(name: string, players: string[], playerNbr: number, botNbr: number);
     toJson(): {
         roomName: string;
+        expectedPlayers: string[];
         players: {
             name: string;
             isBot: boolean;
@@ -27,22 +44,8 @@ export declare class Game {
         state: GameState;
         lastActionTime: number;
         pendingUnoPlayerIndex: number | null;
-        unoShouted: boolean;
     };
-    roomName: string;
-    players: UnoPlayer[];
-    connectedPlayers: Set<string>;
-    realPlayersNbr: number;
-    deck: Card[];
-    discard: Card[];
-    currentFamily: CardFamily;
-    currentDirection: "CLOCKWISE" | "COUNTER-CLOCKWISE";
-    currentPlayerIndex: number;
-    createdAt: number;
-    turnStartTime: number;
-    lastActionTime: number;
-    pendingUnoPlayerIndex: number | null;
-    unoShouted: boolean;
-    hasDrawnThisTurn: boolean;
-    state: GameState;
+    addBots(): void;
+    addPlayer(player: UnoPlayer): boolean;
+    removePlayer(playerId: string): boolean;
 }

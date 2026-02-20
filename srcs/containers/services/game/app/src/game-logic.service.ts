@@ -20,24 +20,31 @@ export class GameLogicService {
 	/**
 	 * Starts the game automatically when all registered players are connected.
 	 * @param game Current game instance to evaluate.
-	 * @returns void
+	 * @returns true when the game starts, otherwise false.
 	 */
-	tryStart(game: Game): void {
-		if (game.connectedPlayers.size === game.players.length) {
-			this.startGame(game);
-			console.log(`Game '${game.roomName}' started !`);
+	tryStart(game: Game): boolean {
+		if (game.connectedPlayers.size === game.expectedPlayers.length) {
+			const started = this.startGame(game);
+			if (started) {
+				console.log(`Game '${game.roomName}' started !`);
+				return started;
+			}
 		}
+
+		return false;
 	}
 
 	/**
 	 * Initializes gameplay state, shuffles/deals cards, and sets the game to PLAYING.
 	 * @param game Current game instance to initialize.
-	 * @returns void
+	 * @returns true when initialization succeeds, otherwise false.
 	 */
-	startGame(game: Game): void {
+	startGame(game: Game): boolean {
 		if (!game || game.state === GameState.PLAYING) {
-			return;
+			return false;
 		}
+
+		game.addBots();
 
 		this.randomizePlayerOrder(game);
 
@@ -50,8 +57,6 @@ export class GameLogicService {
 		}
 
 		game.pendingUnoPlayerIndex = null;
-		game.unoShouted = false;
-		game.hasDrawnThisTurn = false;
 
 		const now = Date.now();
 		game.turnStartTime = now;
@@ -62,6 +67,7 @@ export class GameLogicService {
 		this.deckService.startDeal(game);
 
 		game.state = GameState.PLAYING;
+		return true;
 	}
 
 	/**
@@ -131,9 +137,5 @@ export class GameLogicService {
 				(game.currentPlayerIndex - 1 + game.players.length) %
 				game.players.length;
 		}
-	}
-
-	passTurn(gameId: string, playerName: string) {
-		// Is this function necessary ?
 	}
 }

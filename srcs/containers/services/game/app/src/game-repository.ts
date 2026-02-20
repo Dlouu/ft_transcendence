@@ -13,6 +13,14 @@ export class GameRepositoryService {
 	// ===== CREATION AND DELETION =====
 	// =================================
 
+	/**
+	 * Creates a new game and stores it in memory.
+	 *
+	 * Use this when a player hosts a new game room.
+	 * @param createGameDto - Payload with room name, players, and bot count.
+	 * @returns The created Game instance.
+	 * @throws ConflictException when the room name already exists.
+	 */
 	create(createGameDto: CreateGameDto): Game {
 		const { roomName, players, botNbr } = createGameDto;
 
@@ -31,6 +39,13 @@ export class GameRepositoryService {
 		return newGame;
 	}
 
+	/**
+	 * Removes a game from the in-memory store.
+	 *
+	 * Use this when a game ends or is canceled.
+	 * @param game - The game instance to remove.
+	 * @returns void
+	 */
 	deleteGame(game: Game): void {
 		this.games = this.games.filter((existingGame) => existingGame !== game);
 	}
@@ -45,15 +60,31 @@ export class GameRepositoryService {
 	 * Use this when a player connects (or reconnects) to an existing game.
 	 * - In waiting states, it emits join information to the player and notifies others.
 	 * - In active states, it forwards the flow to the rejoin handler.
-	 * @param game - The target game instance to join.
 	 * @param playerId - The unique player identifier used to find the player in the game.
 	 * @param socket - The player's active Socket.IO connection.
-	 * @returns void
+	 * @returns The game instance the player joined.
 	 */
-	join(game: Game, playerId: string, socket: Socket): void {
-		const player = game.players.find((p) => p._name === playerId);
-		if (!player) return;
-		else player._socket = socket;
+	join(playerId: string, socket: Socket): Game {
+		const game = this.getGameByExpectedPlayer(playerId);
+		if (!game) throw new Error("Player's not in a game.");
+
+		if (!game.expectedPlayers.includes(playerId)) {
+			throw new ConflictException("Player is not expected in this game");
+		}
+
+		let player = this.getPlayerInGame(game, playerId);
+		const isFirstJoin = !player;
+
+		if (!player) {
+			const newPlayer = new UnoPlayer(playerId, playerId, socket, false);
+			const hasJoined = game.addPlayer(newPlayer);
+			if (!hasJoined) {
+				throw new ConflictException("Unable to join game: game is full");
+			}
+			player = newPlayer;
+		} else {
+			player._socket = socket;
+		}
 
 		socket.join(game.roomName);
 
@@ -62,18 +93,22 @@ export class GameRepositoryService {
 			game.state === GameState.AWAITING_COLOR_CHOICE
 		) {
 			this.rejoin(player, game);
-			return;
+			return game;
 		}
 
 		socket.emit("game:join", {
 			game: game.toJson(),
 		});
 
-		socket
-			.to(game.roomName)
-			.emit("game:playerJoined", { playerName: player._name });
+		if (isFirstJoin) {
+			socket
+				.to(game.roomName)
+				.emit("game:playerJoined", { playerName: player._name });
+		}
 
 		game.connectedPlayers.add(playerId);
+
+		return game;
 	}
 
 	rejoin(player: UnoPlayer, game: Game): void {
@@ -92,15 +127,19 @@ export class GameRepositoryService {
 	 * Use this when a player disconnects or leaves an active game room.
 	 * It updates the server-side connection state and emits a leave event
 	 * to all other sockets in the same room.
-	 * @param game - The game instance the player is leaving.
 	 * @param playerId - The unique player identifier to remove from connected players.
 	 * @param socket - The disconnecting player's Socket.IO connection.
-	 * @returns void
+	 * @returns The game instance the player left.
 	 */
-	leave(game: Game, playerId: string, socket: Socket): void {
+	leave(playerId: string, socket: Socket): Game {
+		const game = this.getGameByConnectedPlayer(playerId);
+		if (!game) throw new Error("Player's not in a game.");
+
 		game.connectedPlayers.delete(playerId);
 
 		socket.to(game.roomName).emit("game:playerLeft", { playerId });
+
+		return game;
 	}
 
 	// ===============================
@@ -127,11 +166,20 @@ export class GameRepositoryService {
 	}
 
 	/**
-	 * Finds a game that contains a player with the specified name
-	 * @param playerId - The name of the player to search for
-	 * @returns The Game object if found, undefined otherwise
+	 * Finds a game where the player is listed in expected players.
+	 * @param playerId - The player identifier to search in expected players.
+	 * @returns The Game object if found, undefined otherwise.
 	 */
-	getGameByPlayer(playerId: string): Game | undefined {
+	getGameByExpectedPlayer(playerId: string): Game | undefined {
+		return this.games.find((g) => g.expectedPlayers.includes(playerId));
+	}
+
+	/**
+	 * Finds a game where the player is currently present in game players.
+	 * @param playerId - The player identifier to search in connected/current players.
+	 * @returns The Game object if found, undefined otherwise.
+	 */
+	getGameByConnectedPlayer(playerId: string): Game | undefined {
 		return this.games.find((g) => g.players.some((p) => p._name === playerId));
 	}
 

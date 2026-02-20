@@ -1,4 +1,4 @@
-import { UnoPlayer } from "./UnoPlayer";
+import { generateNickname, UnoPlayer } from "./UnoPlayer";
 import { Card, CardFamily } from "./UnoCard";
 
 export enum GameState {
@@ -10,6 +10,27 @@ export enum GameState {
 }
 
 export class Game {
+  public roomName: string;
+
+  public players: UnoPlayer[];
+  public connectedPlayers: Set<string>;
+  public expectedPlayers: string[];
+  private realPlayersNbr: number;
+  private botNbr: number;
+
+  public deck: Card[];
+  public discard: Card[];
+  public currentFamily: CardFamily;
+  public currentDirection: "CLOCKWISE" | "COUNTER-CLOCKWISE";
+  public currentPlayerIndex: number;
+
+  public createdAt: number; // Timestamp of room creation
+  public turnStartTime: number; // Timestamp
+  public lastActionTime: number;
+  public pendingUnoPlayerIndex: number | null;
+
+  public state: GameState;
+
   constructor(
     name: string,
     players: string[], // To replace by uids
@@ -17,17 +38,12 @@ export class Game {
     botNbr: number,
   ) {
     this.roomName = name;
+    this.expectedPlayers = players;
+    this.realPlayersNbr = playerNbr;
+    this.botNbr = botNbr;
+
     this.players = [];
-
-    for (let i = 0; i < playerNbr; i++) {
-      const p = new UnoPlayer(players[i], players[i], false, null);
-      this.players.push(p);
-    }
-
-    for (let i = 0; i < botNbr; i++) {
-      const p = new UnoPlayer("bot_" + i, "bot_" + i, true, null);
-      this.players.push(p);
-    }
+    this.deck = [];
 
     this.currentPlayerIndex = 0;
     this.currentDirection = "CLOCKWISE";
@@ -40,13 +56,12 @@ export class Game {
 
     this.lastActionTime = 0;
     this.pendingUnoPlayerIndex = null;
-    this.unoShouted = false;
-    this.hasDrawnThisTurn = false;
   }
 
   toJson() {
     return {
       roomName: this.roomName,
+      expectedPlayers: this.expectedPlayers,
       players: this.players.map((player) => ({
         name: player._name,
         isBot: player._isBot,
@@ -63,28 +78,36 @@ export class Game {
       state: this.state,
       lastActionTime: this.lastActionTime,
       pendingUnoPlayerIndex: this.pendingUnoPlayerIndex,
-      unoShouted: this.unoShouted,
     };
   }
 
-  roomName: string;
+  addBots(): void {
+    for (let i = 0; i < this.botNbr; i++) {
+      const botName = generateNickname();
+      this.players.push(new UnoPlayer(botName + "_id", botName, null, true));
+    }
+  }
 
-  players: UnoPlayer[];
-  connectedPlayers: Set<string>;
-  realPlayersNbr: number;
+  addPlayer(player: UnoPlayer): boolean {
+    const realPlayersCount = this.players.filter((existingPlayer) => !existingPlayer._isBot).length;
 
-  deck: Card[];
-  discard: Card[];
-  currentFamily: CardFamily;
-  currentDirection: "CLOCKWISE" | "COUNTER-CLOCKWISE";
-  currentPlayerIndex: number;
+    if (realPlayersCount >= this.realPlayersNbr) {
+      return false;
+    }
 
-  createdAt: number; // Timestamp of room creation
-  turnStartTime: number; // Timestamp
-  lastActionTime: number;
-  pendingUnoPlayerIndex: number | null;
-  unoShouted: boolean;
-  hasDrawnThisTurn: boolean;
+    this.players.push(player);
 
-  state: GameState;
+    return true;
+  }
+
+  removePlayer(playerId: string): boolean {
+    const playerIndex = this.players.findIndex((player) => player._id === playerId);
+
+    if (playerIndex === -1) {
+      return false;
+    }
+
+    this.players.splice(playerIndex, 1);
+    return true;
+  }
 }

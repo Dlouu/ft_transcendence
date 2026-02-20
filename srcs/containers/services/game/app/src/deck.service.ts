@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Card, CardCode, CardFamily, isNumberCard } from "./domain/UnoCard";
 import { Game, GameState } from "./domain/UnoGame";
-import { toInitHandDto } from "./dto/init-hand.dto";
 
 // Handles card generation, shuffling, dealing, and deck management
 @Injectable()
@@ -127,7 +126,6 @@ export class DeckService {
 					p._hand.push(drawnCard);
 				}
 			}
-			if (p._socket) p._socket.emit("game:initHand", toInitHandDto(p._hand));
 		}
 
 		let firstCard = game.deck.pop();

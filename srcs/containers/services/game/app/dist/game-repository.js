@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameRepositoryService = void 0;
 const common_1 = require("@nestjs/common");
 const UnoGame_1 = require("./domain/UnoGame");
+const UnoPlayer_1 = require("./domain/UnoPlayer");
 let GameRepositoryService = class GameRepositoryService {
     games = [];
     create(createGameDto) {
@@ -25,34 +26,55 @@ let GameRepositoryService = class GameRepositoryService {
     deleteGame(game) {
         this.games = this.games.filter((existingGame) => existingGame !== game);
     }
-    join(game, playerId, socket) {
-        const player = game.players.find((p) => p._name === playerId);
-        if (!player)
-            return;
-        else
+    join(playerId, socket) {
+        const game = this.getGameByExpectedPlayer(playerId);
+        if (!game)
+            throw new Error("Player's not in a game.");
+        if (!game.expectedPlayers.includes(playerId)) {
+            throw new common_1.ConflictException("Player is not expected in this game");
+        }
+        let player = this.getPlayerInGame(game, playerId);
+        const isFirstJoin = !player;
+        if (!player) {
+            const newPlayer = new UnoPlayer_1.UnoPlayer(playerId, playerId, socket, false);
+            const hasJoined = game.addPlayer(newPlayer);
+            if (!hasJoined) {
+                throw new common_1.ConflictException("Unable to join game: game is full");
+            }
+            player = newPlayer;
+        }
+        else {
             player._socket = socket;
+        }
         socket.join(game.roomName);
         if (game.state === UnoGame_1.GameState.PLAYING ||
             game.state === UnoGame_1.GameState.AWAITING_COLOR_CHOICE) {
             this.rejoin(player, game);
-            return;
+            return game;
         }
         socket.emit("game:join", {
             game: game.toJson(),
         });
-        socket
-            .to(game.roomName)
-            .emit("game:playerJoined", { playerName: player._name });
+        if (isFirstJoin) {
+            socket
+                .to(game.roomName)
+                .emit("game:playerJoined", { playerName: player._name });
+        }
         game.connectedPlayers.add(playerId);
+        return game;
     }
     rejoin(player, game) {
         if (!player)
             return;
         game.connectedPlayers.add(player._id);
     }
-    leave(game, playerId, socket) {
+    leave(playerId, socket) {
+        const game = this.getGameByConnectedPlayer(playerId);
+        if (!game)
+            throw new Error("Player's not in a game.");
         game.connectedPlayers.delete(playerId);
         socket.to(game.roomName).emit("game:playerLeft", { playerId });
+        return game;
     }
     getPlayerInGame(game, playerId) {
         if (!game) {
@@ -64,7 +86,10 @@ let GameRepositoryService = class GameRepositoryService {
         }
         return player;
     }
-    getGameByPlayer(playerId) {
+    getGameByExpectedPlayer(playerId) {
+        return this.games.find((g) => g.expectedPlayers.includes(playerId));
+    }
+    getGameByConnectedPlayer(playerId) {
         return this.games.find((g) => g.players.some((p) => p._name === playerId));
     }
     getGameByName(room) {

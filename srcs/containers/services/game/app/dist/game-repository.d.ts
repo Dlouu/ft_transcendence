@@ -6,10 +6,11 @@ export declare class GameRepositoryService {
     private games;
     create(createGameDto: CreateGameDto): Game;
     deleteGame(game: Game): void;
-    join(game: Game, playerId: string, socket: Socket): void;
+    join(playerId: string, socket: Socket): Game;
     rejoin(player: UnoPlayer, game: Game): void;
-    leave(game: Game, playerId: string, socket: Socket): void;
+    leave(playerId: string, socket: Socket): Game;
     getPlayerInGame(game: Game, playerId: string): UnoPlayer | undefined;
-    getGameByPlayer(playerId: string): Game | undefined;
+    getGameByExpectedPlayer(playerId: string): Game | undefined;
+    getGameByConnectedPlayer(playerId: string): Game | undefined;
     getGameByName(room: string): Game | undefined;
 }

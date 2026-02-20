@@ -16,12 +16,14 @@ const deck_service_1 = require("./deck.service");
 const game_logic_service_1 = require("./game-logic.service");
 const game_repository_1 = require("./game-repository");
 const game_play_service_1 = require("./game-play.service");
+const init_game_dto_1 = require("./dto/init-game.dto");
 let GameService = class GameService {
     gameRepository;
     gameLogic;
     deckService;
     gamePlay;
     io;
+    gameInitReadyByRoom = new Map();
     constructor(gameRepository, gameLogic, deckService, gamePlay) {
         this.gameRepository = gameRepository;
         this.gameLogic = gameLogic;
@@ -35,19 +37,67 @@ let GameService = class GameService {
         return this.gameRepository.create(dto);
     }
     join(playerId, socket) {
-        const game = this.gameRepository.getGameByPlayer(playerId);
-        if (!game)
-            throw new Error("Player's not in a game.");
-        this.gameRepository.join(game, playerId, socket);
-        this.gameLogic.tryStart(game);
+        const game = this.gameRepository.join(playerId, socket);
+        const started = this.gameLogic.tryStart(game);
+        if (!started || !this.io || game.discard.length === 0) {
+            return;
+        }
+        this.emitGameInit(game);
+    }
+    onPlayerInitReady(playerId) {
+        if (!this.io) {
+            return;
+        }
+        const game = this.gameRepository.getGameByConnectedPlayer(playerId);
+        if (!game || game.state !== UnoGame_1.GameState.PLAYING) {
+            return;
+        }
+        if (!game.expectedPlayers.includes(playerId)) {
+            return;
+        }
+        const roomReadyPlayers = this.gameInitReadyByRoom.get(game.roomName);
+        if (!roomReadyPlayers) {
+            return;
+        }
+        roomReadyPlayers.add(playerId);
+        if (roomReadyPlayers.size < game.expectedPlayers.length) {
+            return;
+        }
+        this.io.to(game.roomName).emit("game:start");
+        this.gameInitReadyByRoom.delete(game.roomName);
+    }
+    emitGameInit(game) {
+        this.gameInitReadyByRoom.set(game.roomName, new Set());
+        const topDiscard = game.discard[game.discard.length - 1];
+        const players = game.players.map((player) => ({
+            name: player._name,
+            cardBack: player._cardBack,
+        }));
+        game.players.forEach((player, index) => {
+            const initGameDto = {
+                players,
+                discardTopCard: {
+                    cardCode: topDiscard.value,
+                    cardFamily: topDiscard.family,
+                },
+                firstPlayerIndex: game.currentPlayerIndex,
+                turnDirection: game.currentDirection,
+                startCardNbr: 7,
+                playerIndex: index,
+                playerHand: (0, init_game_dto_1.toCardDtoArray)(player._hand),
+                cardTheme: "basic",
+            };
+            if (player._socket) {
+                player._socket.emit("game:init", initGameDto);
+            }
+        });
     }
     leave(playerId, socket) {
-        const game = this.gameRepository.getGameByPlayer(playerId);
-        if (!game)
-            throw new Error("Player's not in a game.");
-        this.gameRepository.leave(game, playerId, socket);
-        if (game.connectedPlayers.size === 0 &&
+        const game = this.gameRepository.leave(playerId, socket);
+        if (game &&
+            game.connectedPlayers.size === 0 &&
             game.state != UnoGame_1.GameState.WAITING_FOR_PLAYERS) {
+            this.gameInitReadyByRoom.delete(game.roomName);
             console.log(`No connected players left in ${game.roomName}. Deleting game.`);
             this.gameRepository.deleteGame(game);
         }

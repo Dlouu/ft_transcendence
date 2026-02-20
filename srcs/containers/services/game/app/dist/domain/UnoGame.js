@@ -11,17 +11,29 @@ var GameState;
     GameState[GameState["GAME_OVER"] = 4] = "GAME_OVER";
 })(GameState || (exports.GameState = GameState = {}));
 class Game {
+    roomName;
+    players;
+    connectedPlayers;
+    expectedPlayers;
+    realPlayersNbr;
+    botNbr;
+    deck;
+    discard;
+    currentFamily;
+    currentDirection;
+    currentPlayerIndex;
+    createdAt;
+    turnStartTime;
+    lastActionTime;
+    pendingUnoPlayerIndex;
+    state;
     constructor(name, players, playerNbr, botNbr) {
         this.roomName = name;
+        this.expectedPlayers = players;
+        this.realPlayersNbr = playerNbr;
+        this.botNbr = botNbr;
         this.players = [];
-        for (let i = 0; i < playerNbr; i++) {
-            const p = new UnoPlayer_1.UnoPlayer(players[i], players[i], false, null);
-            this.players.push(p);
-        }
-        for (let i = 0; i < botNbr; i++) {
-            const p = new UnoPlayer_1.UnoPlayer("bot_" + i, "bot_" + i, true, null);
-            this.players.push(p);
-        }
+        this.deck = [];
         this.currentPlayerIndex = 0;
         this.currentDirection = "CLOCKWISE";
         this.discard = [];
@@ -29,12 +41,11 @@ class Game {
         this.connectedPlayers = new Set();
         this.lastActionTime = 0;
         this.pendingUnoPlayerIndex = null;
-        this.unoShouted = false;
-        this.hasDrawnThisTurn = false;
     }
     toJson() {
         return {
             roomName: this.roomName,
+            expectedPlayers: this.expectedPlayers,
             players: this.players.map((player) => ({
                 name: player._name,
                 isBot: player._isBot,
@@ -51,25 +62,30 @@ class Game {
             state: this.state,
             lastActionTime: this.lastActionTime,
             pendingUnoPlayerIndex: this.pendingUnoPlayerIndex,
-            unoShouted: this.unoShouted,
         };
     }
-    roomName;
-    players;
-    connectedPlayers;
-    realPlayersNbr;
-    deck;
-    discard;
-    currentFamily;
-    currentDirection;
-    currentPlayerIndex;
-    createdAt;
-    turnStartTime;
-    lastActionTime;
-    pendingUnoPlayerIndex;
-    unoShouted;
-    hasDrawnThisTurn;
-    state;
+    addBots() {
+        for (let i = 0; i < this.botNbr; i++) {
+            const botName = (0, UnoPlayer_1.generateNickname)();
+            this.players.push(new UnoPlayer_1.UnoPlayer(botName + "_id", botName, null, true));
+        }
+    }
+    addPlayer(player) {
+        const realPlayersCount = this.players.filter((existingPlayer) => !existingPlayer._isBot).length;
+        if (realPlayersCount >= this.realPlayersNbr) {
+            return false;
+        }
+        this.players.push(player);
+        return true;
+    }
+    removePlayer(playerId) {
+        const playerIndex = this.players.findIndex((player) => player._id === playerId);
+        if (playerIndex === -1) {
+            return false;
+        }
+        this.players.splice(playerIndex, 1);
+        return true;
+    }
 }
 exports.Game = Game;
 //# sourceMappingURL=UnoGame.js.map

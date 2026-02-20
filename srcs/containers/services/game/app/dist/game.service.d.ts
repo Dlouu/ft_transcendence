@@ -11,9 +11,12 @@ export declare class GameService {
     private readonly deckService;
     private readonly gamePlay;
     private io?;
+    private readonly gameInitReadyByRoom;
     constructor(gameRepository: GameRepositoryService, gameLogic: GameLogicService, deckService: DeckService, gamePlay: GamePlayService);
     setServer(io: Server): void;
     create(dto: CreateGameDto): Game;
     join(playerId: string, socket: Socket): void;
+    onPlayerInitReady(playerId: string): void;
+    private emitGameInit;
     leave(playerId: string, socket: Socket): void;
 }

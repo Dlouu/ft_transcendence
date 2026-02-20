@@ -10,7 +10,6 @@ exports.DeckService = void 0;
 const common_1 = require("@nestjs/common");
 const UnoCard_1 = require("./domain/UnoCard");
 const UnoGame_1 = require("./domain/UnoGame");
-const init_hand_dto_1 = require("./dto/init-hand.dto");
 let DeckService = class DeckService {
     createDeck() {
         const deck = [];
@@ -82,8 +81,6 @@ let DeckService = class DeckService {
                     p._hand.push(drawnCard);
                 }
             }
-            if (p._socket)
-                p._socket.emit("game:initHand", (0, init_hand_dto_1.toInitHandDto)(p._hand));
         }
         let firstCard = game.deck.pop();
         while (firstCard && !(0, UnoCard_1.isNumberCard)(firstCard.value)) {

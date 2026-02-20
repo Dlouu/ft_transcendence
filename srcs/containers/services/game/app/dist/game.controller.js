@@ -23,7 +23,10 @@ let GameController = class GameController {
     }
     createGame(dto) {
         const room = this.gameService.create(dto);
-        return room.toJson();
+        if (room)
+            return room.toJson();
+        else
+            throw new common_1.InternalServerErrorException("Failed to create game");
     }
 };
 exports.GameController = GameController;

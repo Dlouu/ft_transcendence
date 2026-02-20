@@ -22,15 +22,20 @@ let GameLogicService = class GameLogicService {
         this.gameRepository = gameRepository;
     }
     tryStart(game) {
-        if (game.connectedPlayers.size === game.players.length) {
-            this.startGame(game);
-            console.log(`Game '${game.roomName}' started !`);
+        if (game.connectedPlayers.size === game.expectedPlayers.length) {
+            const started = this.startGame(game);
+            if (started) {
+                console.log(`Game '${game.roomName}' started !`);
+                return started;
+            }
         }
+        return false;
     }
     startGame(game) {
         if (!game || game.state === UnoGame_1.GameState.PLAYING) {
-            return;
+            return false;
         }
+        game.addBots();
         this.randomizePlayerOrder(game);
         game.currentPlayerIndex = 0;
         game.currentDirection = "CLOCKWISE";
@@ -39,14 +44,13 @@ let GameLogicService = class GameLogicService {
             game.currentFamily = topCard.family;
         }
         game.pendingUnoPlayerIndex = null;
-        game.unoShouted = false;
-        game.hasDrawnThisTurn = false;
         const now = Date.now();
         game.turnStartTime = now;
         game.lastActionTime = now;
         game.deck = this.deckService.shuffleDeck(this.deckService.createDeck());
         this.deckService.startDeal(game);
         game.state = UnoGame_1.GameState.PLAYING;
+        return true;
     }
     randomizePlayerOrder(game) {
         for (let i = game.players.length - 1; i > 0; i--) {
@@ -75,8 +79,6 @@ let GameLogicService = class GameLogicService {
                 (game.currentPlayerIndex - 1 + game.players.length) %
                     game.players.length;
         }
-    }
-    passTurn(gameId, playerName) {
     }
 };
 exports.GameLogicService = GameLogicService;

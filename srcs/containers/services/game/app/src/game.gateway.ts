@@ -7,6 +7,7 @@ import {
 	SubscribeMessage,
 	MessageBody,
 	Ack,
+	ConnectedSocket,
 } from "@nestjs/websockets";
 import { GameService } from "./game.service";
 import { Server, Socket } from "socket.io";
@@ -33,7 +34,7 @@ export class GameGateway
 
 			if (typeof playerId !== "string" || playerId.trim() === "") {
 				throw new Error("Connection rejected: Missing or invalid playerId.");
-			}
+      }
 
 			socket.data.playerId = playerId; // Saving access for disconnection
 
@@ -46,6 +47,16 @@ export class GameGateway
 
 	handleDisconnect(socket: Socket): void {
 		this.gameService.leave(socket.data.playerId, socket);
+	}
+
+	@SubscribeMessage("game:init:ready")
+	handleGameInitReady(@ConnectedSocket() socket: Socket): void {
+		const playerId = socket.data.playerId;
+		if (typeof playerId !== "string" || playerId.trim() === "") {
+			return;
+		}
+
+		this.gameService.onPlayerInitReady(playerId);
 	}
 
 

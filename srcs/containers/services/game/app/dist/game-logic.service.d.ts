@@ -7,12 +7,11 @@ export declare class GameLogicService {
     private readonly deckService;
     private readonly gameRepository;
     constructor(deckService: DeckService, gameRepository: GameRepositoryService);
-    tryStart(game: Game): void;
-    startGame(game: Game): void;
+    tryStart(game: Game): boolean;
+    startGame(game: Game): boolean;
     randomizePlayerOrder(game: Game): void;
     doesPlayerHaveCard(cardDto: CardDto, player: UnoPlayer): boolean;
     isPlayersTurn(game: Game, playerName: string): boolean;
     reverseTurnOrder(game: Game): void;
     goToNextPlayerIndex(game: Game): void;
-    passTurn(gameId: string, playerName: string): void;
 }

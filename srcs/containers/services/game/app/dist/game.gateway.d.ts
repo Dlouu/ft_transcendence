@@ -8,5 +8,6 @@ export declare class GameGateway implements OnGatewayInit, OnGatewayConnection, 
     afterInit(server: Server): void;
     handleConnection(socket: Socket): void;
     handleDisconnect(socket: Socket): void;
+    handleGameInitReady(socket: Socket): void;
     handlePlaceholderEvent(payload: PlaceholderEventDto, acknowledgement: (response: any) => void): void;
 }

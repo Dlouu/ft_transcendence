@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
 const game_service_1 = require("./game.service");
+const socket_io_1 = require("socket.io");
 const placeholder_event_dto_1 = require("./dto/placeholder-event.dto");
 let GameGateway = class GameGateway {
     gameService;
@@ -41,6 +42,13 @@ let GameGateway = class GameGateway {
     handleDisconnect(socket) {
         this.gameService.leave(socket.data.playerId, socket);
     }
+    handleGameInitReady(socket) {
+        const playerId = socket.data.playerId;
+        if (typeof playerId !== "string" || playerId.trim() === "") {
+            return;
+        }
+        this.gameService.onPlayerInitReady(playerId);
+    }
     handlePlaceholderEvent(payload, acknowledgement) {
         console.log("placeholder event go !");
         acknowledgement({
@@ -51,6 +59,13 @@ let GameGateway = class GameGateway {
     }
 };
 exports.GameGateway = GameGateway;
+__decorate([
+    (0, websockets_1.SubscribeMessage)("game:init:ready"),
+    __param(0, (0, websockets_1.ConnectedSocket)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], GameGateway.prototype, "handleGameInitReady", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)("placeholder:event"),
     __param(0, (0, websockets_1.MessageBody)()),

@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, InternalServerErrorException, Post } from "@nestjs/common";
 import { CreateGameDto } from "./dto/create-game.dto";
 import { Game } from "./domain/UnoGame";
 import { GameService } from "./game.service";
@@ -10,6 +10,9 @@ export class GameController {
   @Post("create")
   createGame(@Body() dto: CreateGameDto): Record<string, unknown> {
     const room: Game = this.gameService.create(dto);
-    return room.toJson();
+    if (room)
+      return room.toJson();
+    else
+      throw new InternalServerErrorException("Failed to create game");
   }
 }

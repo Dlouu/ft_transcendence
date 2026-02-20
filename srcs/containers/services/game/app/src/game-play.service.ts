@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { DeckService } from "./deck.service";
 import { GameRepositoryService } from "./game-repository";
 
-// Handles the inputsof the players of the game (play card, draw, uno).
+// Handles the inputs of the players of the game (play card, draw, uno).
 @Injectable()
 export class GamePlayService {
 	constructor(
