@@ -7,7 +7,7 @@ USE users_data;
 CREATE TABLE IF NOT EXISTS users (
 	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-	user_id BIGINT UNSIGNED NOT NULL UNIQUE,
+	user_id BIGINT UNSIGNED NOT NULL UNIQUE, #?
 	username VARCHAR(255) NULL, #????????????????????????????
 	profile_picture_url VARCHAR(255) NOT NULL,
 
@@ -32,16 +32,35 @@ CREATE TABLE IF NOT EXISTS card_gallery (
 ) ENGINE=InnoDB;
 
 
-CREATE TABLE IF NOT EXISTS friends {
+CREATE TABLE IF NOT EXISTS friends (
 
-	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY_KEY;
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-	user_id BIGINT UNSIGNED NOT NULL UNIQUE;
-	username VARCHAR(255) NOT NULL;
+	requester_id BIGINT UNSIGNED NOT NULL,
+	accepter_id  BIGINT UNSIGNED NOT NULL,
 
-	profile_picture_url VARCHAR(255) NOT NULL;
-	is_active BOOLEAN NOT NULL DEFAULT TRUE;
+	status ENUM('pending', 'accepted', 'rejected', 'blocked')
+		NOT NULL DEFAULT 'pending',
 
-	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
-	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
-} ENGINE=InnoDB;
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+	CONSTRAINT fk_requester
+		FOREIGN KEY (requester_id)
+		REFERENCES users(id)
+		ON DELETE CASCADE,
+	
+	CONSTRAINT fk_accepter
+		FOREIGN KEY (accepter_id)
+		REFERENCES users(id)
+		ON DELETE CASCADE,
+
+	CONSTRAINT unique_friendship
+		UNIQUE (requester_id, accepter_id),
+
+	INDEX idx_requester (requester_id),
+	INDEX idx_accepter (accepter_id),
+
+	CHECK (requester_id <> accepter_id)
+
+) ENGINE=Innodb;
