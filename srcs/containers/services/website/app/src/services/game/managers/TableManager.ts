@@ -1,11 +1,12 @@
 import { Container } from "pixi.js";
-import { Hand, HandRotation } from "../domain/Hand";
+import { Hand } from "../domain/Hand";
 import { CardPile } from "../domain/CardPile";
 import { OpponentsManager } from "./OpponentsManager";
 import { CardPool } from "../domain/CardPool";
-import { AssetsManager, CardSet, CardValue } from "./AssetsManager";
-import { UnoCard } from "../domain/UnoCard";
+import { AssetsManager } from "./AssetsManager";
+import { Card, UnoCard } from "../domain/UnoCard";
 import { InitGameDto } from "../dto/init-game.dto";
+import { HandRotation } from "../domain/GameEnums";
 
 export class TableManager extends Container
 {
@@ -13,13 +14,15 @@ export class TableManager extends Container
     private _deck: CardPile;
     private _discard: CardPile;
     private _opponentsManager: OpponentsManager;
+    private _playerIndex: number = -1;
 
     private _cardPool: CardPool;
     private _assetsManager: AssetsManager;
 
     constructor(
         cardPool: CardPool,
-        assetsManager: AssetsManager
+        assetsManager: AssetsManager,
+        onPlayerCardClick?: (card: UnoCard) => void
     )
     {
         super();
@@ -36,7 +39,8 @@ export class TableManager extends Container
             0.66,
             HandRotation.Bottom,
             true,
-            false
+            false,
+            onPlayerCardClick
         );
 
         this._opponentsManager = new OpponentsManager(
@@ -52,6 +56,8 @@ export class TableManager extends Container
 
     public initializeGame(initGameDto: InitGameDto): void
     {
+        this._playerIndex = initGameDto.playerIndex;
+
         this._opponentsManager.initializeOpponents(initGameDto);
 
         this.setupPlayerHand(initGameDto);
@@ -61,6 +67,37 @@ export class TableManager extends Container
         this._playerHand.setVisible(true);
         this._deck.setVisible(true);
         this._discard.setVisible(true);
+
+        this.setActivePlayer(initGameDto.firstPlayerIndex);
+    }
+
+    public setActivePlayer(playerIndex: number): void
+    {
+        const isLocalPlayerTurn = playerIndex === this._playerIndex;
+        this._playerHand.setTurnActive(isLocalPlayerTurn);
+        this._opponentsManager.setActivePlayer(playerIndex);
+    }
+
+    public removePlayerCard(cardIndex: number): void
+    {
+        const removedCard = this._playerHand.removeCardAt(cardIndex);
+        if (!removedCard)
+        {
+            return;
+        }
+
+        this._cardPool.returnCard(removedCard);
+    }
+
+    public removeOpponentCard(playerName: string, cardIndex: number): void
+    {
+        const removedCard = this._opponentsManager.removeOpponentCard(playerName, cardIndex);
+        if (!removedCard)
+        {
+            return;
+        }
+
+        this._cardPool.returnCard(removedCard);
     }
 
     public resize(width: number, height: number): void
@@ -84,12 +121,13 @@ export class TableManager extends Container
         for (const cardData of dto.playerHand)
         {
             const card = this._cardPool.getCard();
+            const cardModel = new Card(cardData.cardFamily, cardData.cardCode);
             const texture = this._assetsManager.getCardTexture(
-                cardData.cardFamily as unknown as CardSet,
-                cardData.cardCode as unknown as CardValue
+                cardData.cardFamily,
+                cardData.cardCode
             );
 
-            card.setFaceUpCard(texture, true);
+            card.setFaceUpCard(texture, true, cardModel);
             this._playerHand.addCard(card);
         }
     }
@@ -97,15 +135,16 @@ export class TableManager extends Container
     private setupPiles(dto: InitGameDto): void
     {
         const deckCard = this._cardPool.getCard();
-        deckCard.setFaceBackCard(this._assetsManager.getCardBack(dto.cardTheme), true);
+        deckCard.setFaceBackCard(this._assetsManager.getCardBack(dto.players[dto.playerIndex].cardBack), true, null);
         this._deck.setCard(deckCard);
 
         const discardCard = this._cardPool.getCard();
+        const discardCardModel = new Card(dto.discardTopCard.cardFamily, dto.discardTopCard.cardCode);
         const texture = this._assetsManager.getCardTexture(
-            dto.discardTopCard.cardFamily as unknown as CardSet,
-            dto.discardTopCard.cardCode as unknown as CardValue
+            dto.discardTopCard.cardFamily,
+            dto.discardTopCard.cardCode
         );
-        discardCard.setFaceUpCard(texture, true);
+        discardCard.setFaceUpCard(texture, true, discardCardModel);
         this._discard.setCard(discardCard);
     }
 

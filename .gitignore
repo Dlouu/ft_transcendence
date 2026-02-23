@@ -13,8 +13,9 @@
 ***/.swp
 
 # Ignore custom files
-				socket,
 ./srcs/volumes
+./srcs/containers/services/game/**/dist/
+./srcs/containers/services/game/**/dist/**
 ***/.venv/
 ***/.env/
 ***/volumes/

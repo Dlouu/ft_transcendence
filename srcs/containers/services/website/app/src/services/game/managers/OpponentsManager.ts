@@ -1,10 +1,11 @@
-import { Container, Texture } from "pixi.js";
-import { Hand, HandRotation } from "../domain/Hand";
+import { Container } from "pixi.js";
+import { Hand } from "../domain/Hand";
 import { Opponent } from "../domain/Opponent";
 import { CardPool } from "../domain/CardPool";
 import { AssetsManager } from "./AssetsManager";
 import { UnoCard } from "../domain/UnoCard";
 import { InitGameDto } from "../dto/init-game.dto";
+import { HandRotation } from "../domain/GameEnums";
 
 export class OpponentsManager extends Container
 {
@@ -121,6 +122,28 @@ export class OpponentsManager extends Container
             hand.resize(width, height);
             hand.setVisible(true);
         });
+    }
+
+    public setActivePlayer(playerIndex: number): void
+    {
+        this._opponents.forEach((opp) => {
+            opp.hand.setTurnActive(opp.index === playerIndex);
+        });
+    }
+
+    public removeOpponentCard(playerName: string, cardIndex: number): UnoCard | null
+    {
+        for (const opponent of this._opponents.values())
+        {
+            if (opponent.name !== playerName)
+            {
+                continue;
+            }
+
+            return opponent.hand.removeCardAt(cardIndex);
+        }
+
+        return null;
     }
 
     public destroy(): void

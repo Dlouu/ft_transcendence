@@ -1,6 +1,7 @@
 import { ConflictException, Injectable } from "@nestjs/common";
 import { Socket } from "socket.io";
-import { Game, GameState } from "./domain/UnoGame";
+import { Game } from "./domain/UnoGame";
+import { GameState } from "./domain/GameEnums";
 import { UnoPlayer } from "./domain/UnoPlayer";
 import { CreateGameDto } from "./dto/create-game.dto";
 
@@ -22,13 +23,20 @@ export class GameRepositoryService {
 	 * @throws ConflictException when the room name already exists.
 	 */
 	create(createGameDto: CreateGameDto): Game {
-		const { roomName, players, botNbr } = createGameDto;
+		const { roomName, players, botNbr, theme } = createGameDto;
 
 		if (this.getGameByName(roomName)) {
 			throw new ConflictException("Game name already exists");
 		}
 
-		const newGame = new Game(roomName, players, players.length, botNbr);
+		const cardTheme = theme === "UWU" ? "uwu" : "basic";
+		const newGame = new Game(
+			roomName,
+			players,
+			players.length,
+			botNbr,
+			cardTheme,
+		);
 
 		newGame.state = GameState.WAITING_FOR_PLAYERS;
 

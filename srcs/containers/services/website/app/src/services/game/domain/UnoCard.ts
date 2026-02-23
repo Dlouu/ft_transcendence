@@ -1,4 +1,12 @@
 import { Container, Sprite, Texture } from "pixi.js";
+import { CardCode, CardFamily } from "./GameEnums";
+
+export class Card {
+	constructor(
+		public family: CardFamily,
+		public value: CardCode,
+	) {}
+}
 
 export class UnoCard extends Container {
 	private _faceSprite: Sprite;
@@ -7,6 +15,7 @@ export class UnoCard extends Container {
 
 	private _isFaceUp: boolean = false;
 	private _shadowActive: boolean = false;
+	private _card: Card | null = null;
 
 	private _shadowOffsetX: number = 0;
 	private _shadowOffsetY: number = 0;
@@ -47,11 +56,20 @@ export class UnoCard extends Container {
 		this.scale.set(1);
 
 		this._isFaceUp = false;
+		this._card = null;
 
 		this.setShadowOffset(5, 5);
 		this.setShadow(false);
 
 		this.updateVisibility();
+	}
+
+	public get card(): Card | null {
+		return this._card;
+	}
+
+	public setCard(card: Card | null): void {
+		this._card = card;
 	}
 
 	public setShadowOffset(x: number, y: number): void {
@@ -60,12 +78,14 @@ export class UnoCard extends Container {
 		this._shadowSprite.position.set(x, y);
 	}
 
-	public setBackTexture(texture: Texture): void {
+	public setBackTexture(texture: Texture, card: Card | null = null): void {
+		this._card = card;
 		this._backSprite.texture = texture;
 		this.updateVisibility();
 	}
 
-	public setFaceTexture(texture: Texture): void {
+	public setFaceTexture(texture: Texture, card: Card): void {
+		this._card = card;
 		this._faceSprite.texture = texture;
 		this.updateVisibility();
 	}
@@ -80,14 +100,16 @@ export class UnoCard extends Container {
 		this.updateVisibility();
 	}
 
-	public setFaceUpCard(texture: Texture, isShadow: boolean): void {
+	public setFaceUpCard(texture: Texture, isShadow: boolean, card: Card): void {
+		this._card = card;
 		this._shadowActive = isShadow;
 		this._isFaceUp = true;
 		this._faceSprite.texture = texture;
 		this.updateVisibility();
 	}
 
-	public setFaceBackCard(texture: Texture, isShadow: boolean): void {
+	public setFaceBackCard(texture: Texture, isShadow: boolean, card: Card | null = null): void {
+		this._card = card;
 		this._shadowActive = isShadow;
 		this._isFaceUp = false;
 		this._backSprite.texture = texture;

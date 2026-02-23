@@ -1,0 +1,87 @@
+import { Socket } from "socket.io-client";
+import { InitGameDto } from "./game/dto/init-game.dto";
+import { NextTurnDto } from "./game/dto/next-turn.dto";
+import { PlayedCardDto } from "./game/dto/played-card.dto";
+import { TableManager } from "./game/managers/TableManager";
+
+interface RegisterServerEventCallbacksOptions {
+	socket: Socket;
+	ready: Promise<void>;
+	hasHandInitialized: () => boolean;
+	setHandInitialized: (value: boolean) => void;
+	hasGameStarted: () => boolean;
+	setPendingInitGameDto: (value: InitGameDto) => void;
+	startGame: () => Promise<void>;
+	getTableManager: () => TableManager | null;
+}
+
+export function registerServerEventCallbacks({
+	socket,
+	ready,
+	hasHandInitialized,
+	setHandInitialized,
+	hasGameStarted,
+	setPendingInitGameDto,
+	startGame,
+	getTableManager,
+}: RegisterServerEventCallbacksOptions): void {
+	socket.once("connect", () => {
+		console.log("GameService: Socket connected", socket.id);
+	});
+
+	socket.on("connect_error", (err) => {
+		console.error("GameService: Connection error", err);
+		window.location.href = "/";
+	});
+
+	socket.once("disconnect", (reason) => {
+		if (reason === "io server disconnect") {
+			window.location.href = "/";
+		}
+	});
+
+	socket.once("game:join", (_payload) => {
+		console.log(`You have joined:`, _payload);
+	});
+
+	socket.once("game:rejoin", (_payload) => {
+		console.log(`You have rejoined:`, _payload);
+	});
+
+	socket.once("game:init", async (_payload: InitGameDto) => {
+		console.log("You got your initial hand:", _payload);
+		await ready;
+		if (hasHandInitialized()) return;
+		setPendingInitGameDto(_payload);
+		setHandInitialized(true);
+		socket.emit("game:init:ready");
+	});
+
+	socket.once("game:start", async (_payload) => {
+		await ready;
+		if (hasGameStarted()) return;
+		await startGame();
+		console.log("The game started:", _payload);
+	});
+
+	socket.on("game:played:card:self", async (_payload: PlayedCardDto) => {
+		getTableManager()?.removePlayerCard(_payload.cardIndex);
+		console.log(`${_payload.name} played the card:`, _payload);
+	});
+
+	socket.on("game:played:card:others", async (_payload: PlayedCardDto) => {
+		getTableManager()?.removeOpponentCard(_payload.name, _payload.cardIndex);
+		console.log(`${_payload.name} played the card:`, _payload);
+	});
+
+	socket.on("game:nextTurn", async (_payload: NextTurnDto) => {
+		getTableManager()?.setActivePlayer(_payload.currentPlayerIndex);
+		console.log(`Next turn:`, _payload);
+	});
+
+	socket.on("game:error", (payload) => {
+		console.error("GameService: Game error", payload);
+		socket.disconnect();
+		window.location.href = "/";
+	});
+}

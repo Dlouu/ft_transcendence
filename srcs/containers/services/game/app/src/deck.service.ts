@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { Card, CardCode, CardFamily, isNumberCard } from "./domain/UnoCard";
-import { Game, GameState } from "./domain/UnoGame";
+import { Card, isNumberCard } from "./domain/UnoCard";
+import { CardCode, CardFamily, GameState } from "./domain/GameEnums";
+import { Game } from "./domain/UnoGame";
 
 // Handles card generation, shuffling, dealing, and deck management
 @Injectable()
@@ -79,9 +80,11 @@ export class DeckService {
 
 		const topCard = game.discard.pop();
 
-		game.deck = this.shuffleDeck([...game.deck, ...game.discard]);
+		game.deck.setCards(
+			this.shuffleDeck([...game.deck.toArray(), ...game.discard.toArray()]),
+		);
 
-		game.discard = [];
+		game.discard.clear();
 		if (topCard) {
 			game.discard.push(topCard);
 		}
@@ -131,7 +134,7 @@ export class DeckService {
 		let firstCard = game.deck.pop();
 		while (firstCard && !isNumberCard(firstCard.value)) {
 			game.deck.unshift(firstCard);
-			game.deck = this.shuffleDeck(game.deck);
+			game.deck.setCards(this.shuffleDeck(game.deck.toArray()));
 			firstCard = game.deck.pop();
 		}
 

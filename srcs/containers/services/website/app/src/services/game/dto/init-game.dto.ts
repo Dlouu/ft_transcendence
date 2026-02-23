@@ -1,7 +1,7 @@
 import { ArrayMinSize, IsArray, IsIn, IsNumber, IsString, Min, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { Card } from "../domain/UnoCard";
-import { CardDto } from "./play-card.dto";
+import { CardDto } from "./card.dto";
 
 export class InitPlayerDto {
   @IsString()

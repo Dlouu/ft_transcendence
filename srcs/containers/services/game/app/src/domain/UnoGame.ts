@@ -1,16 +1,10 @@
 import { generateNickname, UnoPlayer } from "./UnoPlayer";
-import { Card, CardFamily } from "./UnoCard";
-
-export enum GameState {
-  WAITING_FOR_PLAYERS,
-  DEALING,
-  PLAYING,
-  AWAITING_COLOR_CHOICE,
-  GAME_OVER,
-}
+import { CardFamily, GameState } from "./GameEnums";
+import { DeckPile } from "./DeckPile";
 
 export class Game {
   public roomName: string;
+  public cardTheme: "basic" | "uwu";
 
   public players: UnoPlayer[];
   public connectedPlayers: Set<string>;
@@ -18,8 +12,8 @@ export class Game {
   private realPlayersNbr: number;
   private botNbr: number;
 
-  public deck: Card[];
-  public discard: Card[];
+  public deck: DeckPile;
+  public discard: DeckPile;
   public currentFamily: CardFamily;
   public currentDirection: "CLOCKWISE" | "COUNTER-CLOCKWISE";
   public currentPlayerIndex: number;
@@ -36,19 +30,21 @@ export class Game {
     players: string[], // To replace by uids
     playerNbr: number,
     botNbr: number,
+    cardTheme: "basic" | "uwu",
   ) {
     this.roomName = name;
+    this.cardTheme = cardTheme;
     this.expectedPlayers = players;
     this.realPlayersNbr = playerNbr;
     this.botNbr = botNbr;
 
     this.players = [];
-    this.deck = [];
+    this.deck = new DeckPile();
 
     this.currentPlayerIndex = 0;
     this.currentDirection = "CLOCKWISE";
 
-    this.discard = [];
+    this.discard = new DeckPile();
 
     this.createdAt = Date.now();
 
@@ -61,6 +57,7 @@ export class Game {
   toJson() {
     return {
       roomName: this.roomName,
+      cardTheme: this.cardTheme,
       expectedPlayers: this.expectedPlayers,
       players: this.players.map((player) => ({
         name: player._name,
@@ -68,8 +65,8 @@ export class Game {
         handSize: player._hand.length,
       })),
       connectedPlayers: Array.from(this.connectedPlayers),
-      deck: this.deck,
-      discard: this.discard,
+      deck: this.deck.toArray(),
+      discard: this.discard.toArray(),
       currentFamily: this.currentFamily,
       currentDirection: this.currentDirection,
       currentPlayerIndex: this.currentPlayerIndex,

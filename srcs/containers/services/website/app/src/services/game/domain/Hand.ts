@@ -1,19 +1,14 @@
 import { UnoCard } from './UnoCard';
 import { Container, Rectangle, Graphics } from 'pixi.js';
-
-export enum HandRotation
-{
-    Bottom = 0,
-    Left = 90,
-    Top = 180,
-    Right = 270
-}
+import { HandRotation } from './GameEnums';
 
 export class Hand extends Container
 {
     private _cards: UnoCard[] = [];
     private _hoveredCard: UnoCard | null = null;
     private _underlay: Graphics;
+    private _onCardClick?: (card: UnoCard) => void;
+    private _isTurnActive: boolean = false;
 
     // Config
     private _areaPercent: number;
@@ -35,7 +30,8 @@ export class Hand extends Container
         cardRatio: number = 0.66,
         rotation: HandRotation = HandRotation.Bottom,
         isInteractive: boolean = false,
-        isVisible: boolean = true
+        isVisible: boolean = true,
+        onCardClick?: (card: UnoCard) => void
     )
     {
         super();
@@ -43,6 +39,7 @@ export class Hand extends Container
         this._overlapPercent = overlapPercent;
         this._cardRatio = cardRatio;
         this._isInteractive = isInteractive;
+        this._onCardClick = onCardClick;
         this.visible = isVisible;
         
         this.sortableChildren = true;
@@ -65,6 +62,7 @@ export class Hand extends Container
             card.cursor = 'pointer';
             card.on('pointerenter', () => this.onCardHover(card));
             card.on('pointerleave', () => this.onCardOut(card));
+            card.on('pointertap', () => this.onCardClick(card));
         }
 
         this.updateLayout();
@@ -94,6 +92,18 @@ export class Hand extends Container
         }
     }
 
+    public removeCardAt(index: number): UnoCard | null
+    {
+        if (index < 0 || index >= this._cards.length)
+        {
+            return null;
+        }
+
+        const card = this._cards[index];
+        this.removeCard(card);
+        return card;
+    }
+
     private onCardHover(card: UnoCard): void
     {
         if (this._hoveredCard !== card)
@@ -112,6 +122,11 @@ export class Hand extends Container
         }
     }
 
+    private onCardClick(card: UnoCard): void
+    {
+        this._onCardClick?.(card);
+    }
+
     public resize(width: number, height: number): void
     {
         this._canvasWidth = width;
@@ -128,6 +143,17 @@ export class Hand extends Container
     public setVisible(visible: boolean): void
     {
         this.visible = visible;
+    }
+
+    public setTurnActive(active: boolean): void
+    {
+        if (this._isTurnActive === active)
+        {
+            return;
+        }
+
+        this._isTurnActive = active;
+        this.updateLayout();
     }
 
     private updateLayout(): void
@@ -153,7 +179,16 @@ export class Hand extends Container
 
         this._underlay.clear();
         this._underlay.ellipse(0, underlayYOffset, handLengthAvailable / 2, cardHeight * 1.25);
-        this._underlay.fill({ color: 0x000000, alpha: 0.25 });
+
+        if (this._isTurnActive)
+        {
+            this._underlay.fill({ color: 0xffffff, alpha: 0.35 });
+            this._underlay.stroke({ color: 0xffffff, alpha: 0.8, width: Math.max(2, cardHeight * 0.035) });
+        }
+        else
+        {
+            this._underlay.fill({ color: 0x000000, alpha: 0.25 });
+        }
 
         if (count === 0) return;
 

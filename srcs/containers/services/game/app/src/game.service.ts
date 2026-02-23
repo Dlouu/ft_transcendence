@@ -1,12 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { CreateGameDto } from "./dto/create-game.dto";
-import { Game, GameState } from "./domain/UnoGame";
+import { Game } from "./domain/UnoGame";
+import { GameState } from "./domain/GameEnums";
 import { Server, Socket } from "socket.io";
 import { DeckService } from "./deck.service";
 import { GameLogicService } from "./game-logic.service";
 import { GameRepositoryService } from "./game-repository";
 import { GamePlayService } from "./game-play.service";
 import { toCardDtoArray } from "./dto/init-game.dto";
+import { CardDto } from "./dto/card.dto";
+import { NextTurnDto } from "./dto/next-turn.dto";
 
 @Injectable()
 export class GameService {
@@ -72,7 +75,10 @@ export class GameService {
 	private emitGameInit(game: Game): void {
 		this.gameInitReadyByRoom.set(game.roomName, new Set<string>());
 
-		const topDiscard = game.discard[game.discard.length - 1];
+		const topDiscard = game.discard.peek();
+		if (!topDiscard) {
+			return;
+		}
 		const players = game.players.map((player) => ({
 			name: player._name,
 			cardBack: player._cardBack,
@@ -90,7 +96,7 @@ export class GameService {
 				startCardNbr: 7, // TODO: Replace by a const variable
 				playerIndex: index,
 				playerHand: toCardDtoArray(player._hand),
-				cardTheme: "basic",
+				cardTheme: game.cardTheme,
 			};
 			if (player._socket) {
 				player._socket.emit("game:init", initGameDto);
@@ -117,5 +123,27 @@ export class GameService {
 		}
 	}
 
+  playCard(playerId: string, dto: CardDto): void {
+		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
+		if (!game || game.state !== GameState.PLAYING) {
+			return;
+		}
 
+    if (!this.gamePlay.playCard(playerId, game, dto))
+      return ;
+
+    this.gameLogic.goToNextPlayerIndex(game);
+
+    const now = Date.now();
+    game.lastActionTime = now;
+    game.turnStartTime = now;
+
+		const nextTurnDto: NextTurnDto = {
+			currentPlayerIndex: game.currentPlayerIndex,
+			turnDirection: game.currentDirection,
+		};
+
+		this.io?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
+    console.log("Next turn !");
+  }
 }

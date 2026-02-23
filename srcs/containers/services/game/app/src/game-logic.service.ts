@@ -1,9 +1,11 @@
 import { Injectable } from "@nestjs/common";
-import { Game, GameState } from "./domain/UnoGame";
+import { Game } from "./domain/UnoGame";
+import { GameState, CardCode } from "./domain/GameEnums";
 import { DeckService } from "./deck.service";
 import { GameRepositoryService } from "./game-repository";
 import { UnoPlayer } from "./domain/UnoPlayer";
-import { CardDto } from "./dto/play-card.dto";
+import { CardDto } from "./dto/card.dto";
+import { Card } from "./domain/UnoCard";
 
 // Handles the rules of the game (turns, UNO shouts, card validation).
 @Injectable()
@@ -52,7 +54,10 @@ export class GameLogicService {
 		game.currentDirection = "CLOCKWISE";
 
 		if (!game.currentFamily && game.discard.length > 0) {
-			const topCard = game.discard[game.discard.length - 1];
+			const topCard = game.discard.peek();
+			if (!topCard) {
+				return false;
+			}
 			game.currentFamily = topCard.family;
 		}
 
@@ -62,7 +67,9 @@ export class GameLogicService {
 		game.turnStartTime = now;
 		game.lastActionTime = now;
 
-		game.deck = this.deckService.shuffleDeck(this.deckService.createDeck());
+		game.deck.setCards(
+			this.deckService.shuffleDeck(this.deckService.createDeck()),
+		);
 
 		this.deckService.startDeal(game);
 
@@ -90,10 +97,10 @@ export class GameLogicService {
 	 * Checks whether the given player currently has the exact card they want to play.
 	 * @param cardDto Card request containing the expected card value and family.
 	 * @param player Player whose hand is validated.
-	 * @returns true if a matching card exists in the player's hand, otherwise false.
+	 * @returns Index of the matching card in the player's hand, or -1 if not found.
 	 */
-	doesPlayerHaveCard(cardDto: CardDto, player: UnoPlayer): boolean {
-		return player._hand.some(
+	doesPlayerHaveCard(cardDto: CardDto, player: UnoPlayer): number {
+		return player._hand.findIndex(
 			(c) => c.value === cardDto.cardCode && c.family === cardDto.cardFamily,
 		);
 	}
@@ -101,12 +108,30 @@ export class GameLogicService {
 	/**
 	 * Verifies whether it is currently the specified player's turn.
 	 * @param game Current game instance containing turn state.
-	 * @param playerName Name of the player to verify.
+	 * @param player Player to verify.
 	 * @returns true if the player index matches the current player index, otherwise false.
 	 */
-	isPlayersTurn(game: Game, playerName: string): boolean {
-		const playerIndex = game.players.findIndex((p) => p._name === playerName);
+	isPlayersTurn(game: Game, player: UnoPlayer): boolean {
+		const playerIndex = game.players.findIndex((p) => p._name === player._name);
 		return playerIndex === game.currentPlayerIndex;
+	}
+
+	isPlayable(topCard: Card | undefined, playingCard: CardDto): boolean {
+		if (!topCard || !playingCard) {
+			return false;
+		}
+
+		if (
+			playingCard.cardCode === CardCode.Wild ||
+			playingCard.cardCode === CardCode.WildDrawFour
+		) {
+			return true;
+		}
+
+		return (
+			topCard.family === playingCard.cardFamily ||
+			topCard.value === playingCard.cardCode
+		);
 	}
 
 	// ==============================

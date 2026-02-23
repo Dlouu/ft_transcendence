@@ -11,12 +11,12 @@ import {
 } from "@nestjs/websockets";
 import { GameService } from "./game.service";
 import { Server, Socket } from "socket.io";
-import { Game, GameState } from "./domain/UnoGame";
 import { DeckService } from "./deck.service";
 import { GameLogicService } from "./game-logic.service";
 import { GamePlayService } from "./game-play.service";
 import { GameRepositoryService } from "./game-repository";
 import { PlaceholderEventDto } from "./dto/placeholder-event.dto";
+import { CardDto } from "./dto/card.dto";
 
 @WebSocketGateway({ cors: { origin: "*" } })
 export class GameGateway
@@ -59,6 +59,19 @@ export class GameGateway
 		this.gameService.onPlayerInitReady(playerId);
 	}
 
+	@SubscribeMessage("game:play:card")
+	handlePlayCard(
+		@MessageBody() payload: CardDto,
+		@ConnectedSocket() socket: Socket,
+	): void {
+		const playerId = socket.data.playerId;
+		if (typeof playerId !== "string" || playerId.trim() === "") {
+			return;
+		}
+
+		this.gameService.playCard(playerId, payload);
+		console.log(`Player ${playerId} play the card ${payload.cardCode} ${payload.cardFamily}`);
+  }
 
 	@SubscribeMessage("placeholder:event")
 	handlePlaceholderEvent(

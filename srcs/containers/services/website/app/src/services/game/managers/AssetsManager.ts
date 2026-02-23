@@ -1,35 +1,5 @@
 import { Assets, Spritesheet, Texture } from "pixi.js";
-
-export enum CardsTheme {
-	Basic = "basic",
-	Uwu = "uwu",
-}
-
-export enum CardSet {
-	One = "set-one",
-	Two = "set-two",
-	Three = "set-three",
-	Four = "set-four",
-	Wild = "wild",
-}
-
-export enum CardValue {
-	Zero = "zero",
-	One = "one",
-	Two = "two",
-	Three = "three",
-	Four = "four",
-	Five = "five",
-	Six = "six",
-	Seven = "seven",
-	Eight = "eight",
-	Nine = "nine",
-	Skipp = "skip",
-	Reverse = "reverse",
-	PlusTwo = "drawTwo",
-	Wild = "wild",
-	PlusFour = "wildDrawFour",
-}
+import { CardCode, CardFamily, CardsTheme } from "../domain/GameEnums";
 
 export class AssetsManager {
 	private _spritesheet: Spritesheet | null = null;
@@ -46,12 +16,12 @@ export class AssetsManager {
 		}
 	}
 
-	private _buildTextureKeys(color: CardSet, value: CardValue): string[] {
+	private _buildTextureKeys(color: CardFamily, value: CardCode): string[] {
 		const baseKey = `${color}-${value}`;
-		const aliasByValue: Partial<Record<CardValue, string>> = {
-			[CardValue.PlusTwo]: "draw2",
-			[CardValue.Wild]: "color",
-			[CardValue.PlusFour]: "draw4",
+		const aliasByValue: Partial<Record<CardCode, string>> = {
+			[CardCode.DrawTwo]: "draw2",
+			[CardCode.Wild]: "color",
+			[CardCode.WildDrawFour]: "draw4",
 		};
 
 		const aliasedValue = aliasByValue[value];
@@ -59,7 +29,7 @@ export class AssetsManager {
 
 		if (aliasedValue) {
 			keys.unshift(`${color}-${aliasedValue}`);
-			if (color === CardSet.Wild) {
+			if (color === CardFamily.WILD) {
 				keys.unshift(`wild_${aliasedValue}`);
 			}
 		}
@@ -105,7 +75,7 @@ export class AssetsManager {
 		await Promise.all(loadPromises);
 	}
 
-	public getCardTexture(color: CardSet, value: CardValue): Texture {
+	public getCardTexture(color: CardFamily, value: CardCode): Texture {
 		if (!this._spritesheet) {
 			console.error("AssetsManager: Spritesheet not loaded yet.");
 			return Texture.EMPTY;

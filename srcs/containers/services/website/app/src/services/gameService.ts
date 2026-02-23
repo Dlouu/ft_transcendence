@@ -1,9 +1,13 @@
 import { Application } from "pixi.js";
 import { io, Socket } from "socket.io-client";
 import { CardPool } from "./game/domain/CardPool";
-import { AssetsManager, CardsTheme } from "./game/managers/AssetsManager";
+import { AssetsManager } from "./game/managers/AssetsManager";
+import { CardsTheme } from "./game/domain/GameEnums";
 import { TableManager } from "./game/managers/TableManager";
 import { InitGameDto } from "./game/dto/init-game.dto";
+import { UnoCard } from "./game/domain/UnoCard";
+import { handlePlayerCardClicked } from "./gameInputCallbacks";
+import { registerServerEventCallbacks } from "./gameServerEventCallbacks";
 
 interface IGameInitOptions {
 	canvas: HTMLCanvasElement;
@@ -54,7 +58,11 @@ export class GameService {
 
 		this._cardPool = new CardPool(this._app.stage);
 
-		this._tableManager = new TableManager(this._cardPool, this._assetsMangr);
+		this._tableManager = new TableManager(
+			this._cardPool,
+			this._assetsMangr,
+			(card) => this.onPlayerCardClicked(card)
+		);
 
 		this._isInitialized = true;
 		this._resolveReady();
@@ -75,49 +83,19 @@ export class GameService {
 	private registerSocketListeners(): void {
 		if (!this._socket) return;
 
-		this._socket.once("connect", () => {
-			console.log("GameService: Socket connected", this._socket?.id);
-		});
-
-		this._socket.on("connect_error", (err) => {
-			console.error("GameService: Connection error", err);
-			window.location.href = "/";
-		});
-
-		this._socket.once("disconnect", (reason) => {
-			if (reason === "io server disconnect") {
-				window.location.href = "/";
-			}
-		});
-
-		this._socket.once("game:join", (_payload) => {
-			console.log(`You have joined:`, _payload);
-		});
-
-		this._socket.once("game:rejoin", (_payload) => {
-			console.log(`You have rejoined:`, _payload);
-		});
-
-		this._socket.once("game:init", async (_payload: InitGameDto) => {
-			console.log("You got your initial hand:", _payload);
-			await this._ready;
-			if (this._hasHandInitialized) return;
-			this._pendingInitGameDto = _payload;
-			this._hasHandInitialized = true;
-			this._socket?.emit("game:init:ready");
-		});
-
-		this._socket.once("game:start", async (_payload) => {
-			await this._ready;
-			if (this._hasGameStarted) return;
-			await this.start();
-			console.log("The game started:", _payload);
-		});
-
-		this._socket.on("game:error", (payload) => {
-			console.error("GameService: Game error", payload);
-			this._socket?.disconnect();
-			window.location.href = "/";
+		registerServerEventCallbacks({
+			socket: this._socket,
+			ready: this._ready,
+			hasHandInitialized: () => this._hasHandInitialized,
+			setHandInitialized: (value) => {
+				this._hasHandInitialized = value;
+			},
+			hasGameStarted: () => this._hasGameStarted,
+			setPendingInitGameDto: (value) => {
+				this._pendingInitGameDto = value;
+			},
+			startGame: () => this.start(),
+			getTableManager: () => this._tableManager,
 		});
 	}
 
@@ -145,6 +123,10 @@ export class GameService {
 		}
 
 		this._hasGameStarted = true;
+	}
+
+	private onPlayerCardClicked(card: UnoCard): void {
+		handlePlayerCardClicked(card, this._socket);
 	}
 }
 
