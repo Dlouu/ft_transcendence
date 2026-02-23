@@ -17,10 +17,8 @@ def add_resource(image_file, url):
 	try:
 		s3.upload_fileobj(image_file, os.getenv("S3_BUCKET_NAME", ""), url, ExtraArgs={"ContentType": image_file.content_type})
 	except AttributeError:
-		print("Failed to upload, the image file dont have a file format.", flush=True)
 		return False
 	except ParamValidationError:
-		print(f"Failed to upload the image, it can caused by one of the following reasons: bucket name is invalid (check env var) or the URL is invalid.", flush=True)
 		return False
 	return True
 
@@ -77,7 +75,6 @@ def delete_resource(key):
 	try:
 		s3.delete_object(Bucket=os.getenv("S3_BUCKET_NAME", ""), Key=key)
 	except Exception as e:
-		print(f"Unhandled error occured while trying to delete the key {key}: {e}", flush=True)
 		return False
 	return True
 
@@ -94,7 +91,6 @@ def delete_all_resources(prefix):
 	try:
 		response = s3.list_objects_v2(Bucket=os.getenv("S3_BUCKET_NAME", ""), Prefix=prefix)
 	except ParamValidationError:
-		print(f"Failed to delete the images, it might be because of the s3 bucket name env var.", flush=True)
 		return False
 
 	if "Contents" not in response:

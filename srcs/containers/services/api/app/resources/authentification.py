@@ -1,12 +1,13 @@
 from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
 from datetime import datetime, timezone
-from flask import request, g
+from flask import request, g, Request
 import os
 
 from app.schemas.user import user_registration_schema, user_login_schema, user_schema
 from app.services import request_service as rs
 from app.services import me_service as ms
+from app.utils.logger import logger
 from app.models.user import User
 from app.extensions import db
 
@@ -40,12 +41,14 @@ class UserRegistration(Resource):
 		try:
 			auth_data = user_registration_schema.load(request.json)
 		except ValidationError as err:
+			logger.warning("Request validation error.", extra=logger.extra(request=request))
 			return {"message": "One or more fields are missing"}, 400
 
 		response = rs.make_request("/auth/registration", "POST")
 		json_response = response.json()
 
 		if (response.status_code != 201):
+			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target_service="auth"))
 			return json_response, response.status_code
 
 		try:
@@ -57,10 +60,12 @@ class UserRegistration(Resource):
 			db.session.add(user)
 			db.session.commit()
 		except Exception as e:
-			print(e, flush=True)
+			logger.critical(f"Unhandled error happened: {e}", extra=logger.extra(request=request))
 			return {"message": "Error while creating the user."}, 401
 
 		g.x_new_token = json_response["token"]
+
+		logger.info("Registration successful.", extra=logger.extra(request=request))
 		return ms.me(json_response["id"])
 
 
@@ -91,12 +96,14 @@ class UserLogin(Resource):
 		try:
 			auth_data = user_login_schema.load(request.json)
 		except ValidationError as err:
+			logger.warning("Request validation error.", extra=logger.extra(request=request))
 			return {"message": "The body format isn't valid."}, 400
 
 		response = rs.make_request("/auth/login", "POST")
 		json_response = response.json()
 
 		if response.status_code != 200:
+			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target_service="auth"))
 			return json_response, response.status_code
 
 		user = User.query.filter_by(user_id=json_response["id"]).first()
@@ -108,7 +115,7 @@ class UserLogin(Resource):
 				db.session.add(user)
 				db.session.commit()
 			except Exception as e:
-				print(f"{request.path}: something went wrong while trying to initialize the user in the database. ({e})", flush=True)
+				logger.critical(f"Unhandled error happened: {e}", extra=logger.extra(request=request))
 				return {"message": "The user exist but something went wrong while initializing his metadata. If the problem persist contact an admin."}, 401
 
 		user.is_active = True
@@ -117,4 +124,5 @@ class UserLogin(Resource):
 		db.session.commit()
 		g.x_new_token = json_response["token"]
 
+		logger.info("Login successful.", extra=logger.extra(request=request))
 		return ms.me(json_response["id"])
