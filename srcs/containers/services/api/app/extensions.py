@@ -1,8 +1,9 @@
+from botocore.exceptions import ClientError
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 import boto3, os, redis
 
-from botocore.exceptions import ClientError
+from app.utils.logger import logger
 
 cache_token = {}
 
@@ -14,10 +15,11 @@ try:
 	r = redis.from_url(os.getenv("REDIS_URL", ""), decode_responses=True)
 	r.ping()
 except ValueError as e:
-	print(f"A problem occured when trying to connect to redis from url ({e})", flush=True)
+	logger.fatal(f"A problem occured when trying to connect to redis from url, to avoid any undefined behavior the API will stop. ({e})", extra=logger.extra(target_service="redis"))
+	exit(1)
 except ConnectionError as e:
-	print(f"Failed to ping redis, service will be unavailable ({e})", flush=True)
-
+	logger.fatal(f"Failed to ping redis, to avoid any undefined behavior the API will stop ({e})", extra=logger.extra(target_service="redis"))
+	exit(1)
 
 s3 = None
 try:
@@ -34,4 +36,5 @@ try:
 		s3.upload_file(f"app/{image_name}", bucket_name, s3_key, ExtraArgs={'ContentType': 'image/jpeg'})
 
 except Exception as e:
-	print(f"A problem occured while initializing the s3 client: {e}", flush=True)
+	logger.fatal(f"A problem occured while initializing the s3 client, to avoid any undefined behavior the API will stop ({e})", extra=logger.extra(target_service="aws"))
+	exit(1)

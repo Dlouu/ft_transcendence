@@ -26,3 +26,5 @@ api = Api(title="TranscendenceAPI",
 api.add_namespace(authentification_ns, path="/auth")
 api.add_namespace(haha_ns, path="/user")
 api.add_namespace(test_ns, path="/test")
+
+from app.utils.logger import logger

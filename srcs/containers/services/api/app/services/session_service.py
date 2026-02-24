@@ -1,8 +1,9 @@
 import jwt
 from app.extensions import cache_token, r
 
+from app.utils.logger import logger
 
-UNAVAILABLE_MESSAGE = "WARNING: Redis is unavailable, the service might be offline or bad configured in this one."
+UNAVAILABLE_MESSAGE = "WARNING: Redis is unavailable, the service might be offline."
 
 def does_session_token_exist(key):
 	"""
@@ -14,9 +15,10 @@ def does_session_token_exist(key):
 	return:
 		True if found, else False.
 	"""
-	if not r:
-		print(UNAVAILABLE_MESSAGE, flush=True)
-		return None
+	try:
+		r.ping()
+	except ConnectionError:
+		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
 
 	return r.exists(f"token:{key}")
 
@@ -30,8 +32,10 @@ def decode_session_token(key):
 	return:
 		None if the token don't exist, else the decoded token (payload).
 	"""
-	if not r:
-		print(UNAVAILABLE_MESSAGE, flush=True)
+	try:
+		r.ping()
+	except ConnectionError:
+		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
 
 	if not does_session_token_exist(key):
 		return None
