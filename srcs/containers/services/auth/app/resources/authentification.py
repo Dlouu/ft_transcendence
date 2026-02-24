@@ -16,7 +16,7 @@ def registration():
 	data = request.get_json(silent=True)
 
 	if not uc.is_email_valid(data.get("email", "")):
-		return {"message": "The email is not valid."}, 409
+		return {"message": "The email is not valid."}, 400
 
 	min_len = int(os.getenv("AUTH_MIN_USERNAME_LENGTH", "3"))
 	max_len = int(os.getenv("AUTH_MAX_USERNAME_LENGTH", 10))
@@ -35,9 +35,9 @@ def registration():
 		return {"message": str(exc)}, 400
 
 	if uc.does_email_exist(user.email):
-		return {"message": "Email already exists."}, 409
+		return {"message": "Email already exists."}, 400
 	if uc.username_exists(user.username):
-		return {"message": "username already exists"}, 410
+		return {"message": "username already exists"}, 400
 
 	try:
 		password_bytes = password.encode("utf-8")
@@ -47,7 +47,7 @@ def registration():
 		db.session.commit()
 	except IntegrityError:
 		db.session.rollback()
-		return {"message": "email already exists"}, 409
+		return {"message": "email already exists"}, 401
 	except Exception as exc:
 		db.session.rollback()
 		return {"message": str(exc)}, 500
@@ -56,7 +56,7 @@ def registration():
 	if not success:
 		db.session.delete(user)
 		db.session.commit()
-		return {"message": "failure when storing refresh token"}, 500
+		return {"message": "failure when storing refresh token"}, 401
 
 	token, public, private, created_at = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
 	st.store_session_token(token, public, user.id)

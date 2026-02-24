@@ -1,48 +1,37 @@
 import { useContext } from "react";
-import { GameContext } from "../context/GameContext";
-import { Button, Card, Page } from "../ui";
-import { useNavigate } from "react-router-dom";
+import { Card, Page } from "../ui";
 import { AuthContext } from "../context/AuthContext";
+import { GameContext } from "../context/GameContext";
+import AvatarSection from "../components/profile/AvatarSection";
+import InfoSection from "../components/profile/InfoSection";
+import PasswordSection from "../components/profile/PasswordSection";
+import DeleteAccount from "../components/profile/DeleteAccount";
+import PersonalGallery from "../components/profile/PersonalGallery";
+import Sidebar from "../components/profile/Sidebar";
 
 function Me() {
-	const { user } = useContext(AuthContext);
+	const { user, logout } = useContext(AuthContext);
 	const { profile } = useContext(GameContext);
-	const navigate = useNavigate();
 
 	return (
 		<Page center>
-			<Card>
+			<Card big="true">
+				<div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-10">
 
-				<h2 className="text-2xl font-pixelm font-bold mb-2">
-					{user?.username}
-				</h2>
-				<span>Email: {user?.email}</span>
-				<img
-					src={user?.profile_picture_url}
-					className="h-30 w-30"
-					alt={user?.username}
-				/>
+					<div>
+						<AvatarSection user={user}/>
+						<InfoSection user={user}/>
+						<PasswordSection />
+						<DeleteAccount logout={logout}/>
+						<PersonalGallery/>
+					</div>
 
-				<h1 className="font-bold text-xl">Statistics</h1>
-				<ul className="space-y-1">
-					<li>Games played: {profile.stats.gamesPlayed}</li>
-					<li>Games won: {profile.stats.gamesWon}</li>
-					<li>Win rate: {profile.stats.winRate}%</li>
-				</ul>
+					<Sidebar profile={profile}/>
 
-				<p className="font-bold text-purple-300">Gallery a ajouter</p>
-
-				<div className="flex flex-col sm:flex-row gap-4">
-					<Button onClick={() => navigate(-1)}>
-						BACK
-					</Button>
 				</div>
-
 			</Card>
 		</Page>
 	);
 }
 
 export default Me;
-
-//avatars, usernames, friends list

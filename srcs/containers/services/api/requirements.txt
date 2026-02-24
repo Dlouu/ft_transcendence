@@ -12,3 +12,6 @@ PyJWT == 2.10.0
 cryptography == 46.0.4
 boto3 == 1.42.42
 redis == 7.1.0
+pillow == 12.1.1
+python-json-logger == 4.0.0
+ecs-logging == 2.3.0
