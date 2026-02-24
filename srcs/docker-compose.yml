@@ -99,14 +99,21 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - cluster.routing.allocation.disk.watermark.low=5gb
+      - cluster.routing.allocation.disk.watermark.high=3gb
+      - cluster.routing.allocation.disk.watermark.flood_stage=1gb
     ports:
       - "5065:9200"
+    networks:
+      - elk_network
   kibana:
     image: docker.elastic.co/kibana/kibana:8.12.0
     ports:
       - "5601:5601"
     depends_on:
       - elasticsearch
+    networks:
+      - elk_network
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.12.0
     user: root
@@ -115,6 +122,8 @@ services:
       - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
     depends_on:
       - elasticsearch
+    networks:
+      - elk_network
   auth_db:
     container_name: auth_db
     build: ./containers/databases/auth_db
@@ -186,4 +195,6 @@ networks:
   auth_db_network:
     driver: bridge
   user_db_network:
+    driver: bridge
+  elk_network:
     driver: bridge
