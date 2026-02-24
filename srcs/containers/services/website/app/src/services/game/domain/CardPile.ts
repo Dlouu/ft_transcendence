@@ -5,6 +5,7 @@ export class CardPile extends Container {
 	private _card: UnoCard | null = null;
 
     private _isInteractive: boolean = false; // Only the deck should be interactive
+    private _onPileClick?: () => void;
 
     // Dimensions
     private _canvasWidth: number = 0;
@@ -13,11 +14,13 @@ export class CardPile extends Container {
 	constructor(
 		card: UnoCard | null = null,
 		isVisible: boolean = false,
-		isInteractive: boolean = false
+		isInteractive: boolean = false,
+		onPileClick?: () => void
 	)
 	{
 		super();
 		this.visible = isVisible;
+		this._onPileClick = onPileClick;
 		this.setInteractivity(isInteractive);
 		this.setCard(card);
 	}
@@ -77,8 +80,10 @@ export class CardPile extends Container {
 
 	private onPileClick(): void
 	{
-		// Placeholder: Emit event or callback for deck click
-		console.log('CardPile clicked');
+		if (this._onPileClick && this._isInteractive)
+		{
+			this._onPileClick();
+		}
 	}
 
 	private onPileHover(): void

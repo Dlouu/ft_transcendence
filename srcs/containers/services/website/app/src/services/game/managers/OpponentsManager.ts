@@ -146,6 +146,21 @@ export class OpponentsManager extends Container
         return null;
     }
 
+    public addOpponentCard(playerName: string): void
+    {
+        for (const opponent of this._opponents.values())
+        {
+            if (opponent.name !== playerName)
+            {
+                continue;
+            }
+
+            const card = this._cardPool.getCard();
+            opponent.addCard(card);
+            return;
+        }
+    }
+
     public destroy(): void
     {
         this._opponents.forEach((opp) => {

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { CreateGameDto } from "./dto/create-game.dto";
 import { Game } from "./domain/UnoGame";
 import { GameState } from "./domain/GameEnums";
@@ -20,11 +20,16 @@ export class GameService {
 		private readonly gameRepository: GameRepositoryService,
 		private readonly gameLogic: GameLogicService,
 		private readonly deckService: DeckService,
+		@Inject(forwardRef(() => GamePlayService))
 		private readonly gamePlay: GamePlayService,
 	) {}
 
 	setServer(io: Server): void {
 		this.io = io;
+	}
+
+	getServer(): Server | undefined {
+		return this.io;
 	}
 
 	create(dto: CreateGameDto): Game {
@@ -144,6 +149,28 @@ export class GameService {
 		};
 
 		this.io?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
-    console.log("Next turn !");
+  }
+
+  drawCard(playerId: string): void {
+		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
+		if (!game || game.state !== GameState.PLAYING) {
+			return;
+		}
+
+    if (!this.gamePlay.drawCard(playerId, game, 1))
+      return ;
+
+    this.gameLogic.goToNextPlayerIndex(game);
+
+    const now = Date.now();
+    game.lastActionTime = now;
+    game.turnStartTime = now;
+
+		const nextTurnDto: NextTurnDto = {
+			currentPlayerIndex: game.currentPlayerIndex,
+			turnDirection: game.currentDirection,
+		};
+
+		this.io?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
   }
 }

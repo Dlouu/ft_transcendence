@@ -6,7 +6,7 @@ import { CardsTheme } from "./game/domain/GameEnums";
 import { TableManager } from "./game/managers/TableManager";
 import { InitGameDto } from "./game/dto/init-game.dto";
 import { UnoCard } from "./game/domain/UnoCard";
-import { handlePlayerCardClicked } from "./gameInputCallbacks";
+import { handleDeckClicked, handlePlayerCardClicked } from "./gameInputCallbacks";
 import { registerServerEventCallbacks } from "./gameServerEventCallbacks";
 
 interface IGameInitOptions {
@@ -61,7 +61,8 @@ export class GameService {
 		this._tableManager = new TableManager(
 			this._cardPool,
 			this._assetsMangr,
-			(card) => this.onPlayerCardClicked(card)
+			(card) => this.onPlayerCardClicked(card),
+			() => this.onDeckClicked(),
 		);
 
 		this._isInitialized = true;
@@ -127,6 +128,10 @@ export class GameService {
 
 	private onPlayerCardClicked(card: UnoCard): void {
 		handlePlayerCardClicked(card, this._socket);
+	}
+
+	private onDeckClicked(): void {
+		handleDeckClicked(this._socket);
 	}
 }
 

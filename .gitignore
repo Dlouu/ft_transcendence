@@ -14,8 +14,7 @@
 
 # Ignore custom files
 ./srcs/volumes
-./srcs/containers/services/game/**/dist/
-./srcs/containers/services/game/**/dist/**
+**/dist
 ***/.venv/
 ***/.env/
 ***/volumes/

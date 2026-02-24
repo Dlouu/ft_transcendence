@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Game } from "./domain/UnoGame";
-import { GameState, CardCode } from "./domain/GameEnums";
+import { GameState, CardCode, CardFamily } from "./domain/GameEnums";
 import { DeckService } from "./deck.service";
 import { GameRepositoryService } from "./game-repository";
 import { UnoPlayer } from "./domain/UnoPlayer";
@@ -10,6 +10,8 @@ import { Card } from "./domain/UnoCard";
 // Handles the rules of the game (turns, UNO shouts, card validation).
 @Injectable()
 export class GameLogicService {
+	private colorPickCallbacks = new Map<string, (color: CardFamily) => void>();
+
 	constructor(
 		private readonly deckService: DeckService,
 		private readonly gameRepository: GameRepositoryService,
@@ -143,7 +145,7 @@ export class GameLogicService {
 	 * @param game Current game instance containing direction state.
 	 * @returns void
 	 */
-	reverseTurnOrder(game: Game) {
+	reverseTurnOrder(game: Game): void {
 		game.currentDirection =
 			game.currentDirection === "CLOCKWISE" ? "COUNTER-CLOCKWISE" : "CLOCKWISE";
 	}
@@ -153,7 +155,7 @@ export class GameLogicService {
 	 * @param game Current game instance containing player order and turn index.
 	 * @returns void
 	 */
-	goToNextPlayerIndex(game: Game) {
+	goToNextPlayerIndex(game: Game): void {
 		if (game.currentDirection === "CLOCKWISE") {
 			game.currentPlayerIndex =
 				(game.currentPlayerIndex + 1) % game.players.length;
@@ -163,4 +165,55 @@ export class GameLogicService {
 				game.players.length;
 		}
 	}
+
+	getNextPlayer(game: Game): UnoPlayer {
+		if (game.currentDirection === "CLOCKWISE") {
+			const nextIndex = (game.currentPlayerIndex + 1) % game.players.length;
+			return game.players[nextIndex];
+		}
+
+		const nextIndex =
+			(game.currentPlayerIndex - 1 + game.players.length) % game.players.length;
+		return game.players[nextIndex];
+	}
+
+	private randomCardFamily(): CardFamily {
+		const playableFamilies: CardFamily[] = [
+			CardFamily.ONE,
+			CardFamily.TWO,
+			CardFamily.THREE,
+			CardFamily.FOUR,
+		];
+
+		const randomIndex = Math.floor(Math.random() * playableFamilies.length);
+		return playableFamilies[randomIndex];
+	}
+
+	async askPlayerColor(game: Game, player: UnoPlayer): Promise<CardFamily> {
+		if (!player._socket) {
+			return this.randomCardFamily();
+		}
+
+		player._socket.emit("game:wild:choose-color");
+
+		return new Promise<CardFamily>((resolve) => {
+			const timeout = setTimeout(() => {
+				this.colorPickCallbacks.delete(player._id);
+				resolve(this.randomCardFamily());
+			}, 10000);
+
+			this.colorPickCallbacks.set(player._id, (color: CardFamily) => {
+				clearTimeout(timeout);
+				this.colorPickCallbacks.delete(player._id);
+				resolve(color);
+			});
+		});
+	}
+	
+	onColorPicked(playerId: string, color: CardFamily): void {
+    const callback = this.colorPickCallbacks.get(playerId);
+    if (callback) {
+        callback(color);
+    }
+}
 }

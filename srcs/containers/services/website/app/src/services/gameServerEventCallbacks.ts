@@ -3,6 +3,8 @@ import { InitGameDto } from "./game/dto/init-game.dto";
 import { NextTurnDto } from "./game/dto/next-turn.dto";
 import { PlayedCardDto } from "./game/dto/played-card.dto";
 import { TableManager } from "./game/managers/TableManager";
+import { DrawnCardDto } from "./game/dto/drawn-card.dto";
+import { CardFamily } from "./game/domain/GameEnums";
 
 interface RegisterServerEventCallbacksOptions {
 	socket: Socket;
@@ -66,12 +68,34 @@ export function registerServerEventCallbacks({
 
 	socket.on("game:played:card:self", async (_payload: PlayedCardDto) => {
 		getTableManager()?.removePlayerCard(_payload.cardIndex);
+		getTableManager()?.updateDiscardCard(_payload.card);
 		console.log(`${_payload.name} played the card:`, _payload);
 	});
 
 	socket.on("game:played:card:others", async (_payload: PlayedCardDto) => {
 		getTableManager()?.removeOpponentCard(_payload.name, _payload.cardIndex);
+		getTableManager()?.updateDiscardCard(_payload.card);
 		console.log(`${_payload.name} played the card:`, _payload);
+	});
+
+	socket.on("game:draw:self", async (_payload: DrawnCardDto) => {
+		getTableManager()?.addPlayerCard(_payload.card);
+		console.log(`${_payload.name} drawn the card:`, _payload.card);
+	});
+
+	socket.on("game:draw:others", async (_payload: DrawnCardDto) => {
+		getTableManager()?.addOpponentCard(_payload.name);
+		console.log(`${_payload.name} drawn a card:`, _payload);
+	});
+
+	socket.on("game:turn:reverse", async (_payload) => {
+		// TODO: Add the turn order sprite
+		console.log(`Turn order reversed:`, _payload);
+	});
+
+	socket.on("game:wild:choose-color", async (_payload) => {
+		socket.emit("game:wild:color-picked", {cardFamily: CardFamily.ONE}); //TODO: Replace by a true color picker
+		console.log(`Turn order reversed:`, _payload);
 	});
 
 	socket.on("game:nextTurn", async (_payload: NextTurnDto) => {

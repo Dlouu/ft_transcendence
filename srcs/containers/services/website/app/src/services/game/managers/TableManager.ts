@@ -1,3 +1,4 @@
+import { CardDto } from "../dto/card.dto"; 
 import { Container } from "pixi.js";
 import { Hand } from "../domain/Hand";
 import { CardPile } from "../domain/CardPile";
@@ -22,7 +23,8 @@ export class TableManager extends Container
     constructor(
         cardPool: CardPool,
         assetsManager: AssetsManager,
-        onPlayerCardClick?: (card: UnoCard) => void
+        onPlayerCardClick?: (card: UnoCard) => void,
+        onDeckClick?: () => void,
     )
     {
         super();
@@ -30,7 +32,7 @@ export class TableManager extends Container
         this._cardPool = cardPool;
         this._assetsManager = assetsManager;
 
-        this._deck = new CardPile(null, true, true);
+        this._deck = new CardPile(null, true, true, onDeckClick);
         this._discard = new CardPile(null, true, false);
 
         this._playerHand = new Hand(
@@ -89,6 +91,22 @@ export class TableManager extends Container
         this._cardPool.returnCard(removedCard);
     }
 
+    public addPlayerCard(cardDto: CardDto | undefined): void
+    {
+        if (!cardDto)
+            return ;
+
+        const card = this._cardPool.getCard();
+        const cardModel = new Card(cardDto.cardFamily, cardDto.cardCode);
+        const texture = this._assetsManager.getCardTexture(
+            cardDto.cardFamily,
+            cardDto.cardCode
+        );
+
+        card.setFaceUpCard(texture, true, cardModel);
+        this._playerHand.addCard(card);
+    }
+
     public removeOpponentCard(playerName: string, cardIndex: number): void
     {
         const removedCard = this._opponentsManager.removeOpponentCard(playerName, cardIndex);
@@ -98,6 +116,30 @@ export class TableManager extends Container
         }
 
         this._cardPool.returnCard(removedCard);
+    }
+
+    public addOpponentCard(playerName: string): void
+    {
+        this._opponentsManager.addOpponentCard(playerName);
+    }
+
+    public updateDiscardCard(cardDto: CardDto): void
+    {
+        const oldCard = this._discard.card;
+        if (oldCard)
+        {
+            this._discard.setCard(null);
+            this._cardPool.returnCard(oldCard);
+        }
+
+        const newDiscardCard = this._cardPool.getCard();
+        const discardCardModel = new Card(cardDto.cardFamily, cardDto.cardCode);
+        const texture = this._assetsManager.getCardTexture(
+            cardDto.cardFamily,
+            cardDto.cardCode
+        );
+        newDiscardCard.setFaceUpCard(texture, true, discardCardModel);
+        this._discard.setCard(newDiscardCard);
     }
 
     public resize(width: number, height: number): void

@@ -25,3 +25,14 @@ export function handlePlayerCardClicked(card: UnoCard, socket: Socket | null): v
 		value: payload.cardCode,
 	});
 }
+
+export function handleDeckClicked(socket: Socket | null): void {
+	if (!socket) {
+		console.warn("GameService: socket unavailable, cannot play card");
+		return;
+	}
+
+	socket.emit("game:play:draw");
+
+	console.log("GameService: player clicked deck");
+}
