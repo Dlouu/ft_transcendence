@@ -41,7 +41,7 @@ def jwt_required(self):
 				g.token = response.json().get("token")
 				g.token_payload = st.decode_session_token(g.token)
 			except Exception as e:
-				logger.critical(f"Undefined error happened in the jwt check. {e}", extra=logger.extra(request=request))
+				logger.critical(f"Undefined error happened in the jwt check.", extra=logger.extra(request=request, exception=e))
 				return {"message": "Missing or invalid token."}, 401
 
 			return f(*args, **kwargs)

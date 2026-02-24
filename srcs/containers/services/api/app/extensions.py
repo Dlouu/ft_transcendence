@@ -36,5 +36,5 @@ try:
 		s3.upload_file(f"app/{image_name}", bucket_name, s3_key, ExtraArgs={'ContentType': 'image/jpeg'})
 
 except Exception as e:
-	logger.fatal(f"A problem occured while initializing the s3 client, to avoid any undefined behavior the API will stop ({e})", extra=logger.extra(target_service="aws"))
+	logger.fatal("A problem occured while initializing the s3 client, to avoid any undefined behavior the API will stop.", extra=logger.extra(target_service="aws", exception=e))
 	exit(1)

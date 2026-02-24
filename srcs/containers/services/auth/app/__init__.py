@@ -25,16 +25,3 @@ def create_app():
 	app.register_blueprint(oauth, url_prefix='/')
 
 	return app
-
-
-# def hourly_task():
-#     print("Running hourly task...", flush=True)
-#     # your logic here
-
-# scheduler = BackgroundScheduler()
-# scheduler.add_job(hourly_task, 'interval', hours=1)
-# scheduler.start()
-
-# # Optional: shut down scheduler on exit
-# import atexit
-# atexit.register(lambda: scheduler.shutdown())

@@ -1,10 +1,11 @@
-from apscheduler.schedulers.background import BackgroundScheduler
-from app.models.refresh_tokens import RefreshToken
-from app.extensions import db
-
 from datetime import datetime, timezone
 from sqlalchemy.orm import joinedload
 import atexit, os
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from app.utils.logger import logger
+from app.models.refresh_tokens import RefreshToken
+from app.extensions import db
 
 def init_schedulers(app):
 	"""
@@ -38,8 +39,9 @@ def init_schedulers(app):
 
 				db.session.commit()
 				refresh_token_expired += 1
+				refresh_token_without_active += 1
 
-			print(f"Refresh token scheduler done. Number of existing token: {refresh_token_count}, Number of expired token: {refresh_token_expired}, Number of inactive token: {refresh_token_without_active}", flush=True)
+			logger.info(f"Refresh token scheduler: {refresh_token_count - refresh_token_without_active} active, {refresh_token_without_active} inactive, {refresh_token_expired} expired.", extra=logger.extra(category="token"))
 
 	scheduler = BackgroundScheduler(timezone=timezone.utc)
 	scheduler.add_job(refresh_token_expiration_check, "interval", seconds=int(os.getenv("REFRESH_TOKEN_EXPIRATION_CHECK_DELAY")))

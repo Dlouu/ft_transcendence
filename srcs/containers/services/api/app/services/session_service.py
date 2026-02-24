@@ -19,6 +19,7 @@ def does_session_token_exist(key):
 		r.ping()
 	except ConnectionError:
 		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
+		return None
 
 	return r.exists(f"token:{key}")
 
@@ -36,6 +37,7 @@ def decode_session_token(key):
 		r.ping()
 	except ConnectionError:
 		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
+		return None
 
 	if not does_session_token_exist(key):
 		return None

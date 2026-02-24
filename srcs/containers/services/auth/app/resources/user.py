@@ -140,7 +140,7 @@ def delete_account():
 	if token is not None and token.startswith("Bearer "):
 		token = token.split(" ", 1)[1]
 		if ss.does_session_token_exist(token):
-			ss.delete_session_token(token)
+			ss.delete_session_token(token, data["user_id"])
 
 	return {"message": "success"}, 200
 

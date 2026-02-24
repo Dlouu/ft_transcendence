@@ -1,6 +1,10 @@
-import logging
-import os
 from ecs_logging import StdlibFormatter
+from requests import Response
+from flask import Request
+import traceback
+import logging
+import json
+import os
 
 SERVICE_NAME = os.getenv("SERVICE_NAME", "auth")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
@@ -26,16 +30,24 @@ from flask import Request
 from requests import Response
 
 key_checker = {
-	"request": lambda x: True if isinstance(x, Request) else False,
-	"response": lambda x: True if isinstance(x, Response) else False,
-	"user_id": lambda x: True if isinstance(x, str) and x.isdigit() else False,
-	"more": lambda x: True if isinstance(x, dict) and all(isinstance(k, str) for k in x.keys()) else False
+	"request": lambda x: isinstance(x, Request),
+	"response": lambda x: isinstance(x, Response),
+	"user_id": lambda x: isinstance(x, str) and x.isdigit(),
+	"category": lambda x: isinstance(x, str),
+	"target_service": lambda x: isinstance(x, str),
+	"exception": lambda x: isinstance(x, Exception),
+	"more": lambda x: isinstance(x, dict) and all(isinstance(k, str) for k in x.keys())
 }
 
 key_manager = {
 	"request": lambda x: {"url.path": x.path, "client.ip": x.remote_addr, "user_agent.original": x.headers.get("User-Agent")},
 	"response": lambda x: {"http.response.status_code": x.status_code},
-	"user_id": lambda x: {"user.id": x},
+	"user_id": lambda x: {"log.user.id": x},
+	"category": lambda x: {"event.category": x},
+	"exception": lambda x: {"error.type": x.__class__.__name__, "error.message": str(x), "error.args": x.args,
+								"error.stack_trace": "".join(traceback.format_exception(type(x), x, x.__traceback__)
+							)},
+	"target_service": lambda x: {"service.target.name": x},
 	"more": lambda x: x
 }
 
@@ -43,8 +55,7 @@ def logger_extra(**kwargs):
 	extras = {}
 
 	for k, v in kwargs.items():
-		check = key_checker.get(k)
-		if not check:
+		if not key_checker.get(k):
 			continue
 
 		extras.update(key_manager[k](v))

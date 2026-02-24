@@ -36,7 +36,7 @@ def s3_bucket_health_check(self):
 				logger.critical("Parameter error.", extra=logger.extra(target_service="aws"))
 				return {"message": "This service is temporary unavailable."}, 503
 			except Exception as e:
-				logger.critical(f"Unhandled error. ({e})", extra=logger.extra(target_service="aws"))
+				logger.critical(f"Unhandled error happened in the s3 bucket health check.", extra=logger.extra(target_service="aws", exception=e))
 				return {"message": "This service is temporary unavailable."}, 503
 
 			return f(*args, **kwargs)

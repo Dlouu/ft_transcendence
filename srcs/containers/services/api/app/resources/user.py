@@ -129,7 +129,7 @@ class UpdateProfilePicture(Resource):
 			if image_file.content_type not in {"image/jpeg", "image/png"}:
 				return {"message": "File format not supported."}, 400
 		except Exception as e:
-			logger.warning("Request validation error.", extra=logger.extra(request=request))
+			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
 			return {"message": "Content invalid or wrong type."}, 400
 
 		user_id = g.token_payload["user_id"]
@@ -289,7 +289,7 @@ class UploadCardImage(Resource):
 			if image_file.content_type not in {"image/jpeg", "image/png"}:
 				return {"message": "File format not supported."}, 400
 		except Exception as e:
-			logger.warning("Request validation error.", extra=logger.extra(request=request))
+			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
 			return {"message": "Content invalid or wrong type."}, 400
 
 		user_id = g.token_payload["user_id"]
@@ -306,7 +306,7 @@ class UploadCardImage(Resource):
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 		except Exception as e:
 			db.session.rollback()
-			logger.critical(f"Unhandled error happened while creating image database's object. ({e})", extra=extra_logger)
+			logger.critical(f"Unhandled error happened while creating image database's object.", extra=extra_logger | logger.extra(exception=e))
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 
 		if not s3s.add_resource(image_file, s3_url):

@@ -60,12 +60,12 @@ class UserRegistration(Resource):
 			db.session.add(user)
 			db.session.commit()
 		except Exception as e:
-			logger.critical(f"Unhandled error happened: {e}", extra=logger.extra(request=request))
+			logger.critical(f"Unhandled error happened.", extra=logger.extra(request=request, exception=e))
 			return {"message": "Error while creating the user."}, 401
 
 		g.x_new_token = json_response["token"]
 
-		logger.info("Registration successful.", extra=logger.extra(request=request))
+		logger.info("Registration successful.", extra=logger.extra(request=request, user_id=json_response["id"]))
 		return ms.me(json_response["id"])
 
 
@@ -115,7 +115,7 @@ class UserLogin(Resource):
 				db.session.add(user)
 				db.session.commit()
 			except Exception as e:
-				logger.critical(f"Unhandled error happened: {e}", extra=logger.extra(request=request))
+				logger.critical(f"Unhandled error happened: {e}", extra=logger.extra(request=request, exception=e))
 				return {"message": "The user exist but something went wrong while initializing his metadata. If the problem persist contact an admin."}, 401
 
 		user.is_active = True
@@ -124,5 +124,5 @@ class UserLogin(Resource):
 		db.session.commit()
 		g.x_new_token = json_response["token"]
 
-		logger.info("Login successful.", extra=logger.extra(request=request))
+		logger.info("Login successful.", extra=logger.extra(request=request, user_id=json_response["id"]))
 		return ms.me(json_response["id"])

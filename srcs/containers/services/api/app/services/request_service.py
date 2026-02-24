@@ -35,7 +35,7 @@ def make_request(url, method):
 		logger.warning(f"Unable to establish a connection with the url {url}", extra=logger.extra(target_service="auth"))
 		return make_custom_response(response, 503,{"message": "Service currently unavailable."})
 	except Exception as e:
-		logger.critical(f"unhandled error happened {e}", extra=logger.extra(target_service="auth"))
+		logger.critical(f"unhandled error happened.", extra=logger.extra(target_service="auth", exception=e))
 		return make_custom_response(response, 401, {"message": "Failed to update user's data."})
 
 	try:

@@ -47,10 +47,11 @@ def registration():
 		db.session.commit()
 	except IntegrityError:
 		db.session.rollback()
-		return {"message": "email already exists"}, 401
-	except Exception as exc:
+		return {"message": "email already exists."}, 401
+	except Exception as e:
 		db.session.rollback()
-		return {"message": str(exc)}, 500
+		logger.critical(f"unhandled error happened.", extra=logger.extra(target_service="auth", exception=e))
+		return {"message": "A unknow error happened while creating the user."}, 401
 
 	success, tid = rt.initialize_new_refresh_token(user.id, request)
 	if not success:
