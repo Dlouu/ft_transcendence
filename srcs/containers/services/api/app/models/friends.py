@@ -1,6 +1,8 @@
 from app.extensions import db
 from datetime import datetime
 
+#database model (how I create it)
+
 class Friends(db.Model):
 	__bind_key__ = "user"
 	__tablename__ = "friends"
@@ -12,8 +14,9 @@ class Friends(db.Model):
 
 	status = db.Column(db.String(20), nullable=False, default="pending")
 
-	created_at = db.Column(db.datetime, default=datetime.utcnow)
-	updated_at = db.Column(db.datetime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+	created_at = db.Column(db.DateTime, server_default=func.now())
+	updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 
 	__table_args__ = (
 		db.UniqueConstraint('requester_id', 'accepter_id', name='unique_friendship'),

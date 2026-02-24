@@ -7,8 +7,8 @@ USE users_data;
 CREATE TABLE IF NOT EXISTS users (
 	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-	user_id BIGINT UNSIGNED NOT NULL UNIQUE, #?
-	username VARCHAR(255) NULL, #????????????????????????????
+	user_id BIGINT UNSIGNED NOT NULL UNIQUE,
+	username VARCHAR(255) NOT NULL,
 	profile_picture_url VARCHAR(255) NOT NULL,
 
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
