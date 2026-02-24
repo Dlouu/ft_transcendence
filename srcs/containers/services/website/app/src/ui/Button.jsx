@@ -12,7 +12,8 @@ function Button({ children, onClick, type, disabled = false, variant = "primary"
 				? "bg-white text-black"
 				: "bg-gray-700 hover:bg-gray-600"
 		}`,
-		iconDisabled: `sm:w-8 sm:h-8 w-6 h-6 font-icon transition rounded bg-gray-700`
+		iconDisabled: `sm:w-8 sm:h-8 w-6 h-6 font-icon transition rounded bg-gray-700`,
+		iconEdit: `sm:w-10 sm:h-10 w-8 h-8 font-icon transition rounded`
 	};
 
 	return (

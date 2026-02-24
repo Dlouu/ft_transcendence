@@ -7,6 +7,7 @@ services:
       - .env
     volumes:
       - nginx_data:/var/www/nginx
+      - service_logs:/logs
     depends_on:
       - website
     networks:
@@ -16,6 +17,8 @@ services:
     image: redis:8.4
     networks:
       - redis_network
+    volumes:
+      - service_logs:/logs
   website:
     container_name: service_website
     build: ./containers/services/website
@@ -24,6 +27,7 @@ services:
       - .env
     volumes:
       - website_data:/var/www/website
+      - service_logs:/logs
     depends_on:
       - api
     ports:
@@ -44,8 +48,10 @@ services:
       CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
       USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
       S3_BUCKET_NAME: s3-transcendence-bucket
+      MAX_IMAGE_SIZE: 2097152
     volumes:
       - api_data:/var/www/api
+      - service_logs:/logs
     ports:
       - 5050:5050
     networks:
@@ -72,6 +78,8 @@ services:
       TZ: UTC
     depends_on:
       - auth_db
+    volumes:
+      - service_logs:/logs
     networks:
       - auth_network
       - redis_network
@@ -82,6 +90,8 @@ services:
     restart: on-failure
     env_file:
       - .env
+    volumes:
+      - service_logs:/logs
     networks:
       - game_network
   lobby:
@@ -94,6 +104,37 @@ services:
       - .env
     networks:
       - lobby_network
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - cluster.routing.allocation.disk.watermark.low=5gb
+      - cluster.routing.allocation.disk.watermark.high=3gb
+      - cluster.routing.allocation.disk.watermark.flood_stage=1gb
+    ports:
+      - "5065:9200"
+    networks:
+      - elk_network
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk_network
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.12.0
+    user: root
+    volumes:
+      - service_logs:/logs
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk_network
   auth_db:
     container_name: auth_db
     build: ./containers/databases/auth_db
@@ -107,6 +148,7 @@ services:
       MYSQL_PASSWORD: auth_pwd
     volumes:
       - auth_db_data:/var/lib/mysql
+      - service_logs:/logs
     networks:
       - auth_db_network
   user_db:
@@ -122,6 +164,7 @@ services:
       - .env
     volumes:
       - user_db_data:/var/lib/mysql
+      - service_logs:/logs
     networks:
       - user_db_network
 
@@ -141,6 +184,13 @@ volumes:
       type: none
       o: bind
       device: ${VOLUME_PATH}/user_db_volume
+  service_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${VOLUME_PATH}/service_logs
+
 
 networks:
   mariadb_network:
@@ -158,4 +208,6 @@ networks:
   redis_network:
     driver: bridge
   lobby_network:
+    driver: bridge
+  elk_network:
     driver: bridge
