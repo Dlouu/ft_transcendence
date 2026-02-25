@@ -13,13 +13,13 @@ def redis_health_check(self):
 					extensions.r = redis.from_url(os.getenv("REDIS_URL", ""), decode_responses=True)
 				extensions.r.ping()
 			except ValueError as e:
-				logger.fatal("A problem occured when trying to connect to redis from url.", extra=logger.extra(target_service="redis", exception=e))
+				logger.fatal("A problem occured when trying to connect to redis from url.", extra=logger.extra(target="redis", exception=e))
 				return {"message": "Service unavailable."}, 503
 			except ConnectionError as e:
-				logger.fatal("Connection error with redis's service.", extra=logger.extra(target_service="redis", exception=e))
+				logger.fatal("Connection error with redis's service.", extra=logger.extra(target="redis", exception=e))
 				return {"message": "Service unavailable."}, 503
 			except Exception as e:
-				logger.fatal("Undefined error happened while trying to ping redis's service.", extra=logger.extra(target_service="redis", exception=e))
+				logger.fatal("Undefined error happened while trying to ping redis's service.", extra=logger.extra(target="redis", exception=e))
 				return {"message": "Service unavailable."}, 503
 			return f(*args, **kwargs)
 		return decorated

@@ -74,7 +74,7 @@ class UpdateInformation(Resource):
 		extra_logger = logger.extra(request=request, response=response, user_id=user_id)
 		if response.status_code != 200:
 			logger.warning("server refused, unable to update user's information in the auth service.",
-				  extra=extra_logger | logger.extra(target_service="auth"))
+				  extra=extra_logger | logger.extra(target="auth"))
 			return response.json(), response.status_code
 
 		user = User.query.filter_by(user_id=user_id).first()
@@ -134,7 +134,7 @@ class UpdateProfilePicture(Resource):
 
 		user_id = g.token_payload["user_id"]
 		user = User.query.filter_by(user_id=user_id).first()
-		extra_logger = logger.extra(request=request, user_id=user_id, target_service="aws")
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
 		if not user:
 			logger.critical("The user does not exist in the user database.", extra=extra_logger)
@@ -191,7 +191,7 @@ class UpdatePassword(Resource):
 
 		response = rs.make_request("/user/update_password", "POST")
 		if response.status_code != 200:
-			logger.warning("server refused, unable to update the user's password.", extra=logger.extra(request=request, response=response, target_service="auth"))
+			logger.warning("server refused, unable to update the user's password.", extra=logger.extra(request=request, response=response, target="auth"))
 			return response.json(), response.status_code
 
 		logger.info("User's password updated.", extra=logger.extra(request=request, user_id=user_id))
@@ -295,7 +295,7 @@ class UploadCardImage(Resource):
 		user_id = g.token_payload["user_id"]
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
 		s3_url = f"card_gallery/{user_id}/{uuid4()}.{file_ext}"
-		extra_logger = logger.extra(request=request, user_id=user_id, target_service="aws")
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
 		try:
 			image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
@@ -350,7 +350,7 @@ class RemoveCardImage(Resource):
 
 		user_id = g.token_payload["user_id"]
 		card = CardGallery.query.filter_by(user_id=user_id, id=data["card_id"]).first()
-		extra_logger = logger.extra(request=request, user_id=user_id, target_service="aws")
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
 		if not card:
 			logger.warning("A non-existent card was attempted to be deleted.", extra=extra_logger)
@@ -393,5 +393,5 @@ class GetCardImage(Resource):
 				images_url.append({"url": url, "image_id": row.id})
 
 		logger.info(f"Cards successfully retrieved for the user id {user_id}.",
-			  extra=logger.extra(request=request, user_id=user_id, target_service="aws"))
+			  extra=logger.extra(request=request, user_id=user_id, target="aws"))
 		return {"message": "success", "images_url": images_url}, 200

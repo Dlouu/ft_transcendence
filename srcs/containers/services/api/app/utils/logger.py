@@ -31,7 +31,7 @@ key_checker = {
 	"response": lambda x: isinstance(x, Response),
 	"user_id": lambda x: isinstance(x, str) and x.isdigit(),
 	"category": lambda x: isinstance(x, str),
-	"target_service": lambda x: isinstance(x, str),
+	"target": lambda x: isinstance(x, str),
 	"exception": lambda x: isinstance(x, Exception),
 	"more": lambda x: isinstance(x, dict) and all(isinstance(k, str) for k in x.keys())
 }
@@ -44,7 +44,7 @@ key_manager = {
 	"exception": lambda x: {"error.type": x.__class__.__name__, "error.message": str(x), "error.args": x.args,
 								"error.stack_trace": "".join(traceback.format_exception(type(x), x, x.__traceback__)
 							)},
-	"target_service": lambda x: {"service.target.name": x},
+	"target": lambda x: {"service.target.name": x},
 	"more": lambda x: x
 }
 

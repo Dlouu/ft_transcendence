@@ -53,7 +53,7 @@ def registration():
 		return {"message": "email already exists."}, 401
 	except Exception as e:
 		db.session.rollback()
-		logger.critical(f"unhandled error happened.", extra=logger.extra(target_service="auth", exception=e))
+		logger.critical(f"unhandled error happened.", extra=logger.extra(target="auth", exception=e))
 		return {"message": "A unknow error happened while creating the user."}, 401
 
 	success, tid = rt.initialize_new_refresh_token(user.id, request)

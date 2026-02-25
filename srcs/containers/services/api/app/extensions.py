@@ -16,11 +16,11 @@ try:
 	r = redis.from_url(os.getenv("REDIS_URL", ""), decode_responses=True)
 	r.ping()
 except ValueError as e:
-	logger.fatal("A problem occured when trying to connect to redis from url.", extra=logger.extra(target_service="redis", exception=e))
+	logger.fatal("A problem occured when trying to connect to redis from url.", extra=logger.extra(target="redis", exception=e))
 except ConnectionError as e:
-	logger.fatal("Failed to ping redis.", extra=logger.extra(target_service="redis", exception=e))
+	logger.fatal("Failed to ping redis.", extra=logger.extra(target="redis", exception=e))
 except Exception as e:
-	logger.fatal("Undefined error happened while trying to ping redis's service.", extra=logger.extra(target_service="redis", exception=e))
+	logger.fatal("Undefined error happened while trying to ping redis's service.", extra=logger.extra(target="redis", exception=e))
 
 def s3_init_app():
 	try:
@@ -38,7 +38,7 @@ def s3_init_app():
 			return None
 
 	except Exception as e:
-		logger.fatal("A problem occured while initializing the s3 client.", extra=logger.extra(target_service="aws", exception=e))
+		logger.fatal("A problem occured while initializing the s3 client.", extra=logger.extra(target="aws", exception=e))
 		return None
 
 	return s3

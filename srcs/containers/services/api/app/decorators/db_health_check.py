@@ -13,7 +13,7 @@ def db_health_check(self):
 				db.session.execute(text("SELECT 1;"))
 			except SQLAlchemyError as e:
 				logger.fatal("Unable to communicate with the user database. Service might be down.",
-					extra=logger.extra(target_service="user_db", more={"error.args": e.args}))
+					extra=logger.extra(target="user_db", more={"error.args": e.args}))
 				return {"message": "Service currently unavailable."}, 503
 			return f(*args, **kwargs)
 		return decorated

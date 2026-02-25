@@ -18,5 +18,5 @@ def safe_request(query, method="first"):
 	try:
 		return func(query)
 	except SQLAlchemyError as e:
-		logger.fatal("Unable to request the credentials database, the service might be down.", extra=logger.extra(target_service="auth_db"))
+		logger.fatal("Unable to request the credentials database, the service might be down.", extra=logger.extra(target="auth_db"))
 		return False

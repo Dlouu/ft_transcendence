@@ -66,7 +66,7 @@ def store_session_token(key, public, user_id):
 	try:
 		r.ping()
 	except ConnectionError:
-		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
+		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target="redis"))
 		return False
 
 	r.hset(f"token:{key}", mapping={"public": public, "user_id": user_id})
@@ -88,7 +88,7 @@ def delete_session_token(key, user_id=None):
 	try:
 		r.ping()
 	except ConnectionError:
-		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
+		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target="redis"))
 		return False
 
 	r.delete(f"token:{key}")
@@ -110,7 +110,7 @@ def does_session_token_exist(key):
 	try:
 		r.ping()
 	except ConnectionError:
-		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
+		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target="redis"))
 		return None
 
 	return r.exists(f"token:{key}")
@@ -129,7 +129,7 @@ def decode_session_token(key):
 	try:
 		r.ping()
 	except ConnectionError:
-		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
+		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target="redis"))
 		return None
 
 	if not does_session_token_exist(key):
@@ -154,7 +154,7 @@ def get_token_associated_data(key):
 	try:
 		r.ping()
 	except ConnectionError:
-		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
+		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target="redis"))
 		return None
 
 	if not does_session_token_exist(key):

@@ -49,7 +49,7 @@ class UserRegistration(Resource):
 		json_response = response.json()
 
 		if (response.status_code != 201):
-			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target_service="auth"))
+			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target="auth"))
 			return json_response, response.status_code
 
 		try:
@@ -105,7 +105,7 @@ class UserLogin(Resource):
 		json_response = response.json()
 
 		if response.status_code != 200:
-			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target_service="auth"))
+			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target="auth"))
 			return json_response, response.status_code
 
 		user = User.query.filter_by(user_id=json_response["id"]).first()
