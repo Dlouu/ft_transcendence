@@ -9,7 +9,6 @@ import { Card } from './domain/UnoCard';
 import { UnoPlayer } from './domain/UnoPlayer';
 import { toPlayedCardDto } from './dto/played-card.dto';
 import { GameService } from './game.service';
-import { getServers } from 'dns';
 import { toDrewCardDto } from './dto/drawn-card.dto';
 
 // Handles the inputs of the players of the game (play card, draw, uno).
@@ -65,7 +64,7 @@ export class GamePlayService {
 		game.discard.push(playedCard);
 		game.currentFamily = playedCard.family;
 
-		this.drawCard(playerId, game, 2);
+		this.drawCard(this.gameLogicService.getNextPlayer(game)._id, game, 2, true);
 		this.gameLogicService.goToNextPlayerIndex(game);
 
 		return true;
@@ -73,25 +72,34 @@ export class GamePlayService {
 
 	async playWildCard(game: Game, playedCard: Card, player: UnoPlayer): Promise<boolean> {
 		game.discard.push(playedCard);
-		game.currentFamily = playedCard.family;
 
 		const chosenFamily = await this.gameLogicService.askPlayerColor(game, player);
 		console.log(`Choosen color: ${chosenFamily}`);
+		game.currentFamily = chosenFamily;
+		playedCard.family = chosenFamily;
+		this.getIoServer()?.to(game.roomName).emit("game:wild:new-color", { chosenFamily });
+		console.log(`Wild current family : ${game.currentFamily}`);
 
 		return true;
 	}
 
 	async playWildDrawFourCard(game: Game, playedCard: Card, player: UnoPlayer): Promise<boolean> {
 		game.discard.push(playedCard);
-		game.currentFamily = playedCard.family;
+		const targetPlayer = this.gameLogicService.getNextPlayer(game);
 
 		const chosenFamily = await this.gameLogicService.askPlayerColor(game, player);
 		console.log(`Choosen color: ${chosenFamily}`);
+		this.drawCard(targetPlayer._id, game, 4, true);
+		this.gameLogicService.goToNextPlayerIndex(game);
+		game.currentFamily = chosenFamily;
+		playedCard.family = chosenFamily;
+		this.getIoServer()?.to(game.roomName).emit("game:wild:new-color", { chosenFamily });
+		console.log(`Wild current family : ${game.currentFamily}`);
 
 		return true;
 	}
 
-	playCard(playerId: string, game: Game, dto: CardDto): boolean {
+	async playCard(playerId: string, game: Game, dto: CardDto): Promise<boolean> {
 		const player = this.gameRepository.getPlayerInGame(game, playerId);
 		if (!player)
 		{
@@ -131,23 +139,23 @@ export class GamePlayService {
 		switch (dto.cardCode) {
 			case CardCode.Reverse:
 				this.playReverseCard(game, playedCard)
-				break;
+				return true;
 			case CardCode.Skip:
 				this.playSkipCard(game, playedCard);
-				break;
+				return true;
 			case CardCode.DrawTwo:
 				this.playDrawTwoCard(playerId, game, playedCard);
-				break;
+				return true;
 			case CardCode.Wild:
-				this.playWildCard(game, playedCard, player);
-				break;
+				await this.playWildCard(game, playedCard, player);
+				return true;
 			case CardCode.WildDrawFour:
-				this.playWildDrawFourCard(game, playedCard, player);
-				break;
+				await this.playWildDrawFourCard(game, playedCard, player);
+				return true;
 
 			default:
 				this.playValueCard(game, playedCard);
-				break;
+				return true;
 		}
 
 		return true;
@@ -168,7 +176,7 @@ export class GamePlayService {
 	// ======= DECK DRAW EFFECT =======
 	// ================================
 
-	drawCard(playerId: string, game: Game, iterNbr: number): boolean
+	drawCard(playerId: string, game: Game, iterNbr: number, isDrawCard: boolean): boolean
 	{
 		// TODO: Do the function.
 		const player = this.gameRepository.getPlayerInGame(game, playerId);
@@ -178,7 +186,7 @@ export class GamePlayService {
 			return false;
 		}
 
-		if (!this.gameLogicService.isPlayersTurn(game, player))
+		if (!this.gameLogicService.isPlayersTurn(game, player) && !isDrawCard)
 		{
 			console.log(`It's not player ${playerId}'s turn is not in the game ${game.roomName}`); // TODO: Replace this console log
 			return false;

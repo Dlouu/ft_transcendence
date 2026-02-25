@@ -11,28 +11,14 @@ export class Card {
 export class UnoCard extends Container {
 	private _faceSprite: Sprite;
 	private _backSprite: Sprite;
-	private _shadowSprite: Sprite;
 
 	private _isFaceUp: boolean = false;
-	private _shadowActive: boolean = false;
 	private _card: Card | null = null;
-
-	private _shadowOffsetX: number = 0;
-	private _shadowOffsetY: number = 0;
 
 	constructor() {
 		super();
 
 		this.sortableChildren = true;
-
-		this._shadowSprite = new Sprite();
-		this._shadowSprite.anchor.set(0.5);
-		this._shadowSprite.tint = "#000000";
-		this._shadowSprite.alpha = 0.4;
-
-		this._shadowSprite.position.set(this._shadowOffsetX, this._shadowOffsetY);
-
-		this._shadowSprite.zIndex = 0;
 
 		this._backSprite = new Sprite();
 		this._backSprite.anchor.set(0.5);
@@ -42,7 +28,7 @@ export class UnoCard extends Container {
 		this._faceSprite.anchor.set(0.5);
 		this._faceSprite.zIndex = 1;
 
-		this.addChild(this._shadowSprite, this._backSprite, this._faceSprite);
+		this.addChild(this._backSprite, this._faceSprite);
 
 		this.visible = false;
 		this.reset();
@@ -58,9 +44,6 @@ export class UnoCard extends Container {
 		this._isFaceUp = false;
 		this._card = null;
 
-		this.setShadowOffset(5, 5);
-		this.setShadow(false);
-
 		this.updateVisibility();
 	}
 
@@ -70,12 +53,6 @@ export class UnoCard extends Container {
 
 	public setCard(card: Card | null): void {
 		this._card = card;
-	}
-
-	public setShadowOffset(x: number, y: number): void {
-		this._shadowOffsetX = x;
-		this._shadowOffsetY = y;
-		this._shadowSprite.position.set(x, y);
 	}
 
 	public setBackTexture(texture: Texture, card: Card | null = null): void {
@@ -90,27 +67,20 @@ export class UnoCard extends Container {
 		this.updateVisibility();
 	}
 
-	public setShadow(isActive: boolean): void {
-		this._shadowActive = isActive;
-		this.updateVisibility();
-	}
-
 	public setIsFaceUp(isFaceUp: boolean): void {
 		this._isFaceUp = isFaceUp;
 		this.updateVisibility();
 	}
 
-	public setFaceUpCard(texture: Texture, isShadow: boolean, card: Card): void {
+	public setFaceUpCard(texture: Texture, card: Card): void {
 		this._card = card;
-		this._shadowActive = isShadow;
 		this._isFaceUp = true;
 		this._faceSprite.texture = texture;
 		this.updateVisibility();
 	}
 
-	public setFaceBackCard(texture: Texture, isShadow: boolean, card: Card | null = null): void {
+	public setFaceBackCard(texture: Texture, card: Card | null = null): void {
 		this._card = card;
-		this._shadowActive = isShadow;
 		this._isFaceUp = false;
 		this._backSprite.texture = texture;
 		this.updateVisibility();
@@ -120,13 +90,9 @@ export class UnoCard extends Container {
 		if (this._isFaceUp) {
 			this._faceSprite.visible = true;
 			this._backSprite.visible = false;
-			this._shadowSprite.texture = this._faceSprite.texture;
 		} else {
 			this._faceSprite.visible = false;
 			this._backSprite.visible = true;
-			this._shadowSprite.texture = this._backSprite.texture;
 		}
-
-		this._shadowSprite.visible = this._shadowActive;
 	}
 }

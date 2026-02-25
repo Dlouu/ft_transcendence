@@ -132,5 +132,13 @@
     "format": "RGBA8888",
     "size": { "w": 440, "h": 1768 },
     "scale": "1"
+  },
+  "uno": {
+    "sets": {
+      "set-one":   { "set": "one",    "hex": "#2c7fe5" },
+      "set-two":   { "set": "two", "hex": "#26cd00" },
+      "set-three": { "set": "three",  "hex": "#ff1249" },
+      "set-four":  { "set": "four",   "hex": "#ffc412" }
+    }
   }
 }

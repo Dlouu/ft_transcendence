@@ -61,16 +61,16 @@ export class GameGateway
 	}
 
 	@SubscribeMessage("game:play:card")
-	handlePlayCard(
+	async handlePlayCard(
 		@MessageBody() payload: CardDto,
 		@ConnectedSocket() socket: Socket,
-	): void {
+	): Promise<void> {
 		const playerId = socket.data.playerId;
 		if (typeof playerId !== "string" || playerId.trim() === "") {
 			return;
 		}
 
-		this.gameService.playCard(playerId, payload);
+		await this.gameService.playCard(playerId, payload);
 		console.log(
 			`Player ${playerId} play the card ${payload.cardCode} ${payload.cardFamily}`,
 		);

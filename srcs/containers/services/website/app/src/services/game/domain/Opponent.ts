@@ -38,7 +38,7 @@ export class Opponent
         {
             const card = pool.getCard();
             // Opponents cards are always face down for us
-            card.setFaceBackCard(this._cardBack, true, null);
+            card.setFaceBackCard(this._cardBack, null);
             card.setIsFaceUp(false);
             this._hand.addCard(card);
         }
@@ -46,7 +46,7 @@ export class Opponent
 
     public addCard(card: UnoCard): void
     {
-        card.setFaceBackCard(this._cardBack, true, null);
+        card.setFaceBackCard(this._cardBack, null);
         this._hand.addCard(card);
     }
 

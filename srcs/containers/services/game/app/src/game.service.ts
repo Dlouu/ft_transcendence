@@ -128,13 +128,13 @@ export class GameService {
 		}
 	}
 
-  playCard(playerId: string, dto: CardDto): void {
+	async playCard(playerId: string, dto: CardDto): Promise<void> {
 		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
 		if (!game || game.state !== GameState.PLAYING) {
 			return;
 		}
 
-    if (!this.gamePlay.playCard(playerId, game, dto))
+		if (!await this.gamePlay.playCard(playerId, game, dto))
       return ;
 
     this.gameLogic.goToNextPlayerIndex(game);
@@ -157,7 +157,7 @@ export class GameService {
 			return;
 		}
 
-    if (!this.gamePlay.drawCard(playerId, game, 1))
+    if (!this.gamePlay.drawCard(playerId, game, 1, false))
       return ;
 
     this.gameLogic.goToNextPlayerIndex(game);

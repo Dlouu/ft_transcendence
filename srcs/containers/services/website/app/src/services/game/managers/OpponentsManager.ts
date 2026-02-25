@@ -86,7 +86,8 @@ export class OpponentsManager extends Container
             0.4, 
             0.66, 
             config.rotation,
-            false
+            false,
+            true
         );
 
         this.addChild(hand);

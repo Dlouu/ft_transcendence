@@ -15,6 +15,7 @@ export class Hand extends Container
     private _overlapPercent: number;
     private _cardRatio: number;
     private _isInteractive: boolean;
+    private _reverseCards: boolean;
 
     // Responsiveness
     private _hoverJumpPercent: number = 0.25;
@@ -30,6 +31,7 @@ export class Hand extends Container
         cardRatio: number = 0.66,
         rotation: HandRotation = HandRotation.Bottom,
         isInteractive: boolean = false,
+        reverseCards: boolean = false,
         isVisible: boolean = true,
         onCardClick?: (card: UnoCard) => void
     )
@@ -39,6 +41,7 @@ export class Hand extends Container
         this._overlapPercent = overlapPercent;
         this._cardRatio = cardRatio;
         this._isInteractive = isInteractive;
+        this._reverseCards = reverseCards;
         this._onCardClick = onCardClick;
         this.visible = isVisible;
         
@@ -233,7 +236,7 @@ export class Hand extends Container
 
             card.width = cardWidth;
             card.height = cardHeight;
-            card.rotation = 0;
+            card.rotation = this._reverseCards ? Math.PI : 0;
 
             // --- Layout Logic ---
             let nextGap = step;

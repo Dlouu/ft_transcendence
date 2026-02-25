@@ -89,13 +89,21 @@ export function registerServerEventCallbacks({
 	});
 
 	socket.on("game:turn:reverse", async (_payload) => {
-		// TODO: Add the turn order sprite
+		getTableManager()?.mirrorMiddleArrow();
 		console.log(`Turn order reversed:`, _payload);
 	});
 
 	socket.on("game:wild:choose-color", async (_payload) => {
-		socket.emit("game:wild:color-picked", {cardFamily: CardFamily.ONE}); //TODO: Replace by a true color picker
+		getTableManager()?.showCardFamilySelector((cardFamily) => {
+			socket.emit("game:wild:color-picked", { cardFamily });
+		});
 		console.log(`Turn order reversed:`, _payload);
+	});
+
+	socket.on("game:wild:new-color", async (_payload: { chosenFamily: CardFamily }) => {
+		getTableManager()?.setPilesBackdropColorByCardSet(_payload.chosenFamily);
+		getTableManager()?.hideCardFamilySelector();
+		console.log(`Wild color changed:`, _payload);
 	});
 
 	socket.on("game:nextTurn", async (_payload: NextTurnDto) => {

@@ -1,9 +1,36 @@
 import { Assets, Spritesheet, Texture } from "pixi.js";
 import { CardCode, CardFamily, CardsTheme } from "../domain/GameEnums";
 
+type ThemeSetMetadata = {
+	hex?: string;
+};
+
+type ThemeMetadata = {
+	uno?: {
+		sets?: Partial<Record<CardFamily, ThemeSetMetadata>>;
+	};
+};
+
 export class AssetsManager {
 	private _spritesheet: Spritesheet | null = null;
 	private _backTextures: Map<string, Texture> = new Map();
+	private _arrowTexture: Texture = Texture.EMPTY;
+	private _themeBackdropColors: Partial<Record<CardFamily, string>> = {};
+
+	constructor() {
+		this._loadArrowTexture();
+	}
+
+	private async _loadArrowTexture(): Promise<void> {
+		try {
+			const texture = await Assets.load<Texture>("game/arrow.png");
+			if (texture) {
+				this._arrowTexture = texture;
+			}
+		} catch (error) {
+			console.error("Error loading arrow texture:", error);
+		}
+	}
 
 	private _normalizeThemeFileName(theme: CardsTheme): string {
 		switch (theme) {
@@ -44,6 +71,7 @@ export class AssetsManager {
 
 		try {
 			this._spritesheet = await Assets.load(assetPath);
+			this._themeBackdropColors = this._extractThemeBackdropColors(this._spritesheet?.data as ThemeMetadata);
 
 			if (!this._spritesheet) {
 				console.error(`Failed to load spritesheet for theme: ${theme}`);
@@ -51,6 +79,25 @@ export class AssetsManager {
 		} catch (error) {
 			console.error(`Error loading theme ${theme}:`, error);
 		}
+	}
+
+	private _extractThemeBackdropColors(metadata: ThemeMetadata | undefined): Partial<Record<CardFamily, string>> {
+		const sets = metadata?.uno?.sets;
+
+		if (!sets) {
+			return {};
+		}
+
+		const colors: Partial<Record<CardFamily, string>> = {};
+
+		for (const family of [CardFamily.ONE, CardFamily.TWO, CardFamily.THREE, CardFamily.FOUR]) {
+			const hex = sets[family]?.hex;
+			if (hex) {
+				colors[family] = hex;
+			}
+		}
+
+		return colors;
 	}
 
 	public async loadCardBacks(variants: string[] = ["uwu"]): Promise<void> {
@@ -104,5 +151,13 @@ export class AssetsManager {
 
 	public get isLoaded(): boolean {
 		return this._spritesheet !== null;
+	}
+
+	public get arrowTexture(): Texture {
+		return this._arrowTexture;
+	}
+
+	public getThemeBackdropColors(): Partial<Record<CardFamily, string>> {
+		return { ...this._themeBackdropColors };
 	}
 }
