@@ -3,7 +3,7 @@ from functools import wraps
 import os
 
 from app.utils.logger import logger
-from app.extensions import s3
+from app import extensions
 
 def s3_bucket_health_check(self):
 	"""
@@ -13,11 +13,10 @@ def s3_bucket_health_check(self):
 	def decorator(f):
 		@wraps(f)
 		def decorated(*args, **kwargs):
-			if not s3:
-				return {"message": "This service is temporary unavailable."}, 503
-
+			if not extensions.s3:
+				extensions.s3 = extensions.s3_init_app()
 			try:
-				s3.head_bucket(Bucket=os.getenv("S3_BUCKET_NAME", ""))
+				extensions.s3.head_bucket(Bucket=os.getenv("S3_BUCfKET_NAME", ""))
 			except ClientError as e:
 				code = e.response['Error']['Code']
 				if code in ["403", "AccessDenied"]:
@@ -30,10 +29,10 @@ def s3_bucket_health_check(self):
 					logger.critical(f"Service unavailable. (code: {code})", extra=logger.extra(target_service="aws"))
 					return {"message": "This service is temporary unavailable."}, 503
 			except EndpointConnectionError as e:
-				logger.critical("Network error..", extra=logger.extra(target_service="aws"))
+				logger.critical("S3 network error..", extra=logger.extra(target_service="aws"))
 				return {"message": "This service is temporary unavailable."}, 503
 			except ParamValidationError as e:
-				logger.critical("Parameter error.", extra=logger.extra(target_service="aws"))
+				logger.critical("S3 parameter error.", extra=logger.extra(target_service="aws"))
 				return {"message": "This service is temporary unavailable."}, 503
 			except Exception as e:
 				logger.critical(f"Unhandled error happened in the s3 bucket health check.", extra=logger.extra(target_service="aws", exception=e))

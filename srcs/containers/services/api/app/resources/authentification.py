@@ -22,6 +22,7 @@ user_registration_model = ns.model("UserRegistration", {
 @ns.route("/registration")
 class UserRegistration(Resource):
 	@ns.expect(user_registration_model)
+	@ns.db_health_check()
 	def post(self):
 		"""
 		Prepare the communication with the authentification service to create a new user.
@@ -77,6 +78,7 @@ user_login_model = ns.model("UserLogin", {
 @ns.route("/login")
 class UserLogin(Resource):
 	@ns.expect(user_login_model)
+	@ns.db_health_check()
 	def patch(self):
 		"""
 		Prepare the communication with the authentification service to login the user.

@@ -6,6 +6,9 @@ Namespace.jwt_required = jwt_required
 from app.decorators.s3_bucket_health_check import s3_bucket_health_check
 Namespace.s3_bucket_health_check = s3_bucket_health_check
 
+from app.decorators.db_health_check import db_health_check
+Namespace.db_health_check = db_health_check
+
 from app.resources.authentification import ns as authentification_ns
 from app.resources.user import ns as user_ns
 from app.resources.test import ns as test_ns

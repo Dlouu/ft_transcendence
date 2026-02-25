@@ -26,7 +26,11 @@ def me(user_id, email=None):
 		if response.status_code != 200:
 			return response.json(), response.status_code
 
-	profile_picture_url = s3s.get_resource_url(user.profile_picture_url)
+	try:
+		profile_picture_url = s3s.get_resource_url(user.profile_picture_url)
+	except Exception as e:
+		profile_picture_url = None
+
 	return {
 		"message": "success",
 		"user_id": user_id,

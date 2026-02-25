@@ -22,20 +22,25 @@ except ConnectionError as e:
 except Exception as e:
 	logger.fatal("Undefined error happened while trying to ping redis's service.", extra=logger.extra(target_service="redis", exception=e))
 
-s3 = None
-try:
-	AWS_REGION = os.getenv("AWS_REGION", "")
-	s3 = boto3.client("s3", region_name=AWS_REGION)
-
-	image_name = os.getenv("DEFAULT_PROFILE_PICTURE", "")
-	bucket_name = os.getenv("S3_BUCKET_NAME", "")
-	s3_key = os.getenv("DEFAULT_IMG_PATH") + "/" + image_name
-
+def s3_init_app():
 	try:
-		s3.head_object(Bucket=bucket_name, Key=s3_key)
-	except ClientError as e:
-		s3.upload_file(f"app/{image_name}", bucket_name, s3_key, ExtraArgs={'ContentType': 'image/jpeg'})
+		AWS_REGION = os.getenv("AWS_REGION", "")
+		s3 = boto3.client("s3", region_name=AWS_REGION)
 
-except Exception as e:
-	logger.fatal("A problem occured while initializing the s3 client, to avoid any undefined behavior the API will stop.", extra=logger.extra(target_service="aws", exception=e))
-	exit(1)
+		image_name = os.getenv("DEFAULT_PROFILE_PICTURE", "")
+		bucket_name = os.getenv("S3_BUCKET_NAME", "")
+		s3_key = os.getenv("DEFAULT_IMG_PATH") + "/" + image_name
+
+		try:
+			s3.head_object(Bucket=bucket_name, Key=s3_key)
+		except ClientError as e:
+			s3.upload_file(f"app/{image_name}", bucket_name, s3_key, ExtraArgs={'ContentType': 'image/jpeg'})
+			return None
+
+	except Exception as e:
+		logger.fatal("A problem occured while initializing the s3 client.", extra=logger.extra(target_service="aws", exception=e))
+		return None
+
+	return s3
+
+s3 = s3_init_app()
