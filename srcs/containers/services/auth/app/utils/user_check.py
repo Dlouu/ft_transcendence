@@ -1,9 +1,10 @@
 from marshmallow import ValidationError
 import re, os
 
-from app.extensions import db
-from app.models.user import User
+from app.services.sql_service import safe_request
 from app.schemas.user import user_schema
+from app.models.user import User
+from app.extensions import db
 
 
 def is_email_valid(email):

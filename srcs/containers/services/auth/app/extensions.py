@@ -12,8 +12,8 @@ try:
 	r.ping()
 	logger.info("Redis ready.", extra=logger.extra(target_service="redis"))
 except ValueError as e:
-	logger.fatal(f"A problem occured when trying to connect to redis from url, to avoid any undefined behavior the API will stop. ({e})", extra=logger.extra(target_service="redis"))
-	exit(1)
+	logger.fatal("A problem occured when trying to connect to redis from url.", extra=logger.extra(target_service="redis", exception=e))
 except ConnectionError as e:
-	logger.fatal(f"Failed to ping redis, to avoid any undefined behavior the API will stop ({e})", extra=logger.extra(target_service="redis"))
-	exit(1)
+	logger.fatal("Connection error with redis's service.", extra=logger.extra(target_service="redis", exception=e))
+except Exception as e:
+	logger.fatal("Undefined error happened while trying to ping redis's service.", extra=logger.extra(target_service="redis", exception=e))

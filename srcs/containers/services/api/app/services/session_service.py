@@ -1,5 +1,6 @@
-import jwt
+from redis.exceptions import ConnectionError
 from app.extensions import cache_token, r
+import jwt
 
 from app.utils.logger import logger
 

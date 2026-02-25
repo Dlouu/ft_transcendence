@@ -1,6 +1,11 @@
-import logging
-import os
 from ecs_logging import StdlibFormatter
+from requests import Response
+from flask import Request
+import traceback
+import logging
+import json
+import os
+
 
 SERVICE_NAME = os.getenv("SERVICE_NAME", "api")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
@@ -20,10 +25,6 @@ logger.addHandler(file_handler)
 
 logger.USER_ID = "log.user.id"
 logger.USER_EMAIL = "log.user.email"
-
-import json
-from flask import Request
-from requests import Response
 
 key_checker = {
 	"request": lambda x: isinstance(x, Request),
@@ -58,6 +59,3 @@ def logger_extra(**kwargs):
 	return extras
 
 logger.extra = logger_extra
-
-
-logger_extra(k='wegjewgi')

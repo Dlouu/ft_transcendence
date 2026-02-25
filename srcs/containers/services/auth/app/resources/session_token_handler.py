@@ -9,6 +9,8 @@ from app.utils.logger import logger
 ns = Blueprint("TokenValidationHandler", __name__)
 
 @ns.route("/update", methods=["GET"])
+@ns.db_health_check()
+@ns.redis_health_check()
 def update_token():
 	"""
 	This endpoint is used to create a new session token for a user, it check whether the user's session has its

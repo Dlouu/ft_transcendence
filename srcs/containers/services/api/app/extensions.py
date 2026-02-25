@@ -1,3 +1,4 @@
+from redis.exceptions import ConnectionError
 from botocore.exceptions import ClientError
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
@@ -15,11 +16,11 @@ try:
 	r = redis.from_url(os.getenv("REDIS_URL", ""), decode_responses=True)
 	r.ping()
 except ValueError as e:
-	logger.fatal(f"A problem occured when trying to connect to redis from url, to avoid any undefined behavior the API will stop. ({e})", extra=logger.extra(target_service="redis"))
-	exit(1)
+	logger.fatal("A problem occured when trying to connect to redis from url.", extra=logger.extra(target_service="redis", exception=e))
 except ConnectionError as e:
-	logger.fatal(f"Failed to ping redis, to avoid any undefined behavior the API will stop ({e})", extra=logger.extra(target_service="redis"))
-	exit(1)
+	logger.fatal("Failed to ping redis.", extra=logger.extra(target_service="redis", exception=e))
+except Exception as e:
+	logger.fatal("Undefined error happened while trying to ping redis's service.", extra=logger.extra(target_service="redis", exception=e))
 
 s3 = None
 try:

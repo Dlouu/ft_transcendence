@@ -66,7 +66,7 @@ class UserRegistration(Resource):
 		g.x_new_token = json_response["token"]
 
 		logger.info("Registration successful.", extra=logger.extra(request=request, user_id=json_response["id"]))
-		return ms.me(json_response["id"])
+		return ms.me(json_response["id"], json_response["email"])
 
 
 user_login_model = ns.model("UserLogin", {
@@ -125,4 +125,4 @@ class UserLogin(Resource):
 		g.x_new_token = json_response["token"]
 
 		logger.info("Login successful.", extra=logger.extra(request=request, user_id=json_response["id"]))
-		return ms.me(json_response["id"])
+		return ms.me(json_response["id"], json_response["email"])

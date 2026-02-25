@@ -6,6 +6,7 @@ import requests
 from app.services import request_service as rs
 from app.services import session_service as st
 from app.utils.logger import logger
+from app import extensions
 
 def jwt_required(self):
 	"""
@@ -22,6 +23,20 @@ def jwt_required(self):
 				return {"message": "No token provided."}, 401
 
 			token = auth_header.split(" ", 1)[1]
+
+			try:
+				if extensions.r is None:
+					extensions.r = redis.from_url(os.getenv("REDIS_URL", ""), decode_responses=True)
+				extensions.r.ping()
+			except ValueError as e:
+				logger.fatal("A problem occured when trying to connect to redis from url.", extra=logger.extra(target_service="redis", exception=e))
+				return {"message": "Service unavailable."}, 503
+			except ConnectionError as e:
+				logger.fatal("Connection error with redis's service.", extra=logger.extra(target_service="redis", exception=e))
+				return {"message": "Service unavailable."}, 503
+			except Exception as e:
+				logger.fatal("Undefined error happened while trying to ping redis's service.", extra=logger.extra(target_service="redis", exception=e))
+				return {"message": "Service unavailable."}, 503
 
 			if not st.does_session_token_exist(token):
 				logger.info("A client own an unknow session token.", extra=logger.extra(request=request))

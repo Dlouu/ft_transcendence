@@ -25,10 +25,6 @@ logger.addHandler(file_handler)
 logger.USER_ID = "log.user.id"
 logger.USER_EMAIL = "log.user.email"
 
-import json
-from flask import Request
-from requests import Response
-
 key_checker = {
 	"request": lambda x: isinstance(x, Request),
 	"response": lambda x: isinstance(x, Response),

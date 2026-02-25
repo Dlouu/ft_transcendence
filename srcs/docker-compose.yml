@@ -74,6 +74,7 @@ services:
       REFRESH_TOKEN_EXPIRATION: 3600
       REFRESH_TOKEN_EXPIRATION_CHECK_DELAY: 120
       SESSION_TOKEN_EXPIRATION: 10
+      DB_CONNECT_TIMEOUT: 5
       TZ: UTC
     depends_on:
       - auth_db

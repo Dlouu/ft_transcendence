@@ -1,6 +1,7 @@
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from datetime import datetime, timedelta, timezone
+from redis.exceptions import ConnectionError
 import jwt, hashlib, os
 
 from app.utils.logger import logger
@@ -66,6 +67,7 @@ def store_session_token(key, public, user_id):
 		r.ping()
 	except ConnectionError:
 		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
+		return False
 
 	r.hset(f"token:{key}", mapping={"public": public, "user_id": user_id})
 	r.expire(f"token:{key}", int(os.getenv("TOKEN_CACHE_LIFETIME", os.getenv("REFRESH_TOKEN_EXPIRATION", "3600"))))
@@ -87,6 +89,7 @@ def delete_session_token(key, user_id=None):
 		r.ping()
 	except ConnectionError:
 		logger.critical(UNAVAILABLE_MESSAGE, extra=logger.extra(target_service="redis"))
+		return False
 
 	r.delete(f"token:{key}")
 	logger.info("Session token deleted" + "." if user_id is None else f" for user id {user_id}.",

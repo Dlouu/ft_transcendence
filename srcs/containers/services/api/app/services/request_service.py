@@ -29,11 +29,14 @@ def make_request(url, method):
 			url="http://auth:5055" + url,
 			json=request.get_json(silent=True),
 			cookies=request.cookies,
-			timeout=5
+			timeout=20
 		)
 	except requests.exceptions.ConnectionError as e:
-		logger.warning(f"Unable to establish a connection with the url {url}", extra=logger.extra(target_service="auth"))
+		logger.warning(f"Unable to establish a connection with the URL {url}.", extra=logger.extra(target_service="auth", exception=e))
 		return make_custom_response(response, 503,{"message": "Service currently unavailable."})
+	except requests.exceptions.ReadTimeout as e:
+		logger.critical(f"The request timeout for the URL {url}.", extra=logger.extra(target_service="auth", exception=e))
+		return make_custom_response(response, 408, {"message": "Request time out."})
 	except Exception as e:
 		logger.critical(f"unhandled error happened.", extra=logger.extra(target_service="auth", exception=e))
 		return make_custom_response(response, 401, {"message": "Failed to update user's data."})

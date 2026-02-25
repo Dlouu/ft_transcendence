@@ -1,6 +1,12 @@
+from flask import Flask, Blueprint
 from .extensions import db
-from flask import Flask
 import os
+
+from app.decorators.db_health_check import db_health_check
+Blueprint.db_health_check = db_health_check
+
+from app.decorators.redis_health_check import redis_health_check
+Blueprint.redis_health_check = redis_health_check
 
 from app.resources.authentification import ns as authentification_ns
 from app.resources.session_token_handler import ns as token_ns
@@ -15,6 +21,14 @@ def create_app():
 		"mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data",
 	)
 	app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+	app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+		"pool_pre_ping": True,
+		"pool_recycle": 280,
+		"connect_args": {
+			"connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT"))
+		}
+	}
 
 	db.init_app(app)
 	init_schedulers(app)
