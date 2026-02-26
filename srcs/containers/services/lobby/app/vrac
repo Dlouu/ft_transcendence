@@ -1,4 +1,4 @@
-from flask import render_template, Blueprint, request, redirect, url_for, g, session
+""" from flask import render_template, Blueprint, request, redirect, url_for, g, session
 import threading
 from flask_socketio import join_room, emit, SocketIO
 from functools import wraps
@@ -146,7 +146,7 @@ def starting_game(code):
 
 
 """
-Just here for prod
+Just here for dev
 GET /
 📥 Receives:
 - HTTP GET request
@@ -645,4 +645,4 @@ def add_friend(data):
     db.sessino.commit()
 
     emit("friend_request_sent", {"username": username, "status": "pending", "type": "sent"}, to=request.sid)
-    emit("friend_request_sent", {"username": session.get("username"), "status": "pending", "type": "received", "user_id": requester_id}, to=user.sid)
+    emit("friend_request_sent", {"username": session.get("username"), "status": "pending", "type": "received", "user_id": requester_id}, to=user.sid) """

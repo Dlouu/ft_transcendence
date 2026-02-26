@@ -11,6 +11,7 @@
   <p>Total joueurs (humains + bots) : <span id="player-count">0</span> / 4</p>
 
   <p>Theme : <span id="theme-label">basic</span></p>
+  <p>Privacy : <span id="privacy-label">prive</span></p>
 
   <ul id="player-list"></ul>
 
@@ -20,6 +21,9 @@
     <button id="theme-uwu">Theme uwu</button>
     <button id="theme-basic">Theme basic</button>
 
+    <button id="privacy-public">Public</button>
+    <button id="privacy-private">Prive</button>
+
     <button id="add-bot">+ Bot</button>
     <button id="remove-bot">- Bot</button>
     <button id="start-btn">Start</button>
@@ -28,7 +32,7 @@
 
   <div id="add-friend-panel">
     <input type="text" id="friend-username" placeholder="Nom d'utilisateur à ajouter" />
-    <button onclick="add_friend">Ajouter ami</button>
+    <button id="add-friend">Ajouter ami</button>
   </div>
 
 <ul id="friend-requests-list"></ul>
@@ -41,6 +45,9 @@ const socket = io();
 const readyBtn = document.getElementById("ready-btn");
 const masterPanel = document.getElementById("master-panel");
 const themeLabel = document.getElementById("theme-label");
+const privacyLabel = document.getElementById("privacy-label");
+const privacyPublicBtn = document.getElementById("privacy-public");
+const privacyPrivateBtn = document.getElementById("privacy-private");
 
 socket.on("connect", () => {
   socket.emit("join_lobby", { code: code });
@@ -57,6 +64,12 @@ socket.on("lobby_state", (data) => {
 
   // theme affiché pour tout le monde
   themeLabel.textContent = data.theme ? "uwu" : "basic";
+
+  // privacy affichée pour tout le monde
+  const isPrivate = (typeof data.privacy === "boolean") ? data.privacy : true;
+  privacyLabel.textContent = isPrivate ? "prive" : "public";
+  privacyPublicBtn.disabled = isPrivate === false;
+  privacyPrivateBtn.disabled = isPrivate === true;
 
   // panel visible seulement pour l'hôte
   masterPanel.style.display = (socket.id === data.supreme_master_sid) ? "block" : "none";
@@ -92,6 +105,15 @@ document.getElementById("theme-basic").addEventListener("click", () => {
   socket.emit("set_theme", { theme: false });
 });
 
+// PRIVACY (host only - le serveur re-vérifie)
+document.getElementById("privacy-public").addEventListener("click", () => {
+  socket.emit("set_privacy", { privacy: false });
+});
+
+document.getElementById("privacy-private").addEventListener("click", () => {
+  socket.emit("set_privacy", { privacy: true });
+});
+
 // BOTS + START
 document.getElementById("add-bot").addEventListener("click", () => {
   socket.emit("add_bot");
@@ -113,8 +135,14 @@ socket.on("error", (data) => {
   alert(data.message || "Error");
 });
 
+socket.on("room_expired", (data) => {
+  const message = data?.message || "Lobby closed due to inactivity";
+  alert(message);
+  window.location.href = "/";
+});
+
 // friends
-document.getElementById("remove-bot").addEventListener("click", () => {
+document.getElementById("add-friend").addEventListener("click", () => {
   const username = document.getElementById("friend-username").value.trim();
   if (!username) return alert("Veuillez entrer un nom d'utilisateur");
 
