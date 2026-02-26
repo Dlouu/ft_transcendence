@@ -9,9 +9,14 @@ services:
       - nginx_data:/var/www/nginx
       - service_logs:/logs
     depends_on:
-      - website
+      - api
+    ports:
+      - 8080:80
+      - 4443:443
     networks:
+      - api_network
       - website_network
+      - lobby_network
   redis:
     container_name: service_redis
     image: redis:8.4
@@ -55,11 +60,13 @@ services:
     ports:
       - 5050:5050
     networks:
+      - api_network
       - auth_network
       - website_network
       - game_network
       - redis_network
       - user_db_network
+      - lobby_network
   auth:
     container_name: service_auth
     build: ./containers/services/auth
@@ -197,6 +204,8 @@ networks:
   mariadb_network:
     driver: bridge
   auth_network:
+    driver: bridge
+  api_network:
     driver: bridge
   game_network:
     driver: bridge
