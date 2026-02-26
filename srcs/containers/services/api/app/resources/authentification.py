@@ -23,6 +23,7 @@ user_registration_model = ns.model("UserRegistration", {
 @ns.route("/registration")
 class UserRegistration(Resource):
 	@ns.expect(user_registration_model)
+	@ns.db_health_check()
 	def post(self):
 		"""
 		Prepare the communication with the authentification service to create a new user.
@@ -49,7 +50,7 @@ class UserRegistration(Resource):
 		json_response = response.json()
 
 		if (response.status_code != 201):
-			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target_service="auth"))
+			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target="auth"))
 			return json_response, response.status_code
 
 		try:
@@ -61,13 +62,13 @@ class UserRegistration(Resource):
 			db.session.add(user)
 			db.session.commit()
 		except Exception as e:
-			logger.critical(f"Unhandled error happened: {e}", extra=logger.extra(request=request))
+			logger.critical(f"Unhandled error happened.", extra=logger.extra(request=request, exception=e))
 			return {"message": "Error while creating the user."}, 401
 
 		g.x_new_token = json_response["token"]
 
-		logger.info("Registration successful.", extra=logger.extra(request=request))
-		return ms.me(json_response["id"])
+		logger.info("Registration successful.", extra=logger.extra(request=request, user_id=json_response["id"]))
+		return ms.me(json_response["id"], json_response["email"])
 
 
 user_login_model = ns.model("UserLogin", {
@@ -78,6 +79,7 @@ user_login_model = ns.model("UserLogin", {
 @ns.route("/login")
 class UserLogin(Resource):
 	@ns.expect(user_login_model)
+	@ns.db_health_check()
 	def patch(self):
 		"""
 		Prepare the communication with the authentification service to login the user.
@@ -104,7 +106,7 @@ class UserLogin(Resource):
 		json_response = response.json()
 
 		if response.status_code != 200:
-			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target_service="auth"))
+			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target="auth"))
 			return json_response, response.status_code
 
 		user = User.query.filter_by(user_id=json_response["id"]).first()
@@ -116,7 +118,7 @@ class UserLogin(Resource):
 				db.session.add(user)
 				db.session.commit()
 			except Exception as e:
-				logger.critical(f"Unhandled error happened: {e}", extra=logger.extra(request=request))
+				logger.critical(f"Unhandled error happened: {e}", extra=logger.extra(request=request, exception=e))
 				return {"message": "The user exist but something went wrong while initializing his metadata. If the problem persist contact an admin."}, 401
 
 		user.is_active = True

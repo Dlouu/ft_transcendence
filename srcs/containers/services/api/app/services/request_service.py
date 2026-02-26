@@ -29,19 +29,22 @@ def make_request(url, method):
 			url="http://auth:5055" + url,
 			json=request.get_json(silent=True),
 			cookies=request.cookies,
-			timeout=5
+			timeout=20
 		)
 	except requests.exceptions.ConnectionError as e:
-		logger.warning(f"Unable to establish a connection with the url {url}", extra=logger.extra(target_service="auth"))
+		logger.warning(f"Unable to establish a connection with the URL {url}.", extra=logger.extra(target="auth", exception=e))
 		return make_custom_response(response, 503,{"message": "Service currently unavailable."})
+	except requests.exceptions.ReadTimeout as e:
+		logger.critical(f"The request timeout for the URL {url}.", extra=logger.extra(target="auth", exception=e))
+		return make_custom_response(response, 408, {"message": "Request time out."})
 	except Exception as e:
-		logger.critical(f"unhandled error happened {e}", extra=logger.extra(target_service="auth"))
+		logger.critical(f"unhandled error happened.", extra=logger.extra(target="auth", exception=e))
 		return make_custom_response(response, 401, {"message": "Failed to update user's data."})
 
 	try:
 		json_response = response.json()
 	except requests.exceptions.JSONDecodeError as e:
-		logger.critical("Something went wrong while decoding the response to json.", extra=logger.extra(target_service="auth"))
+		logger.critical("Something went wrong while decoding the response to json.", extra=logger.extra(target="auth"))
 		return make_custom_response(response, 400, {"message": "Something wrong while trying to update user's information."})
 
 	return response

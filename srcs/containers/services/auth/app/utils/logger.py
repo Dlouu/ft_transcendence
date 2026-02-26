@@ -6,11 +6,10 @@ import logging
 import json
 import os
 
-
-SERVICE_NAME = os.getenv("SERVICE_NAME", "api")
+SERVICE_NAME = os.getenv("SERVICE_NAME", "auth")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
 
-logger = logging.getLogger("api_logger")
+logger = logging.getLogger("auth_logger")
 logger.setLevel(logging.INFO)
 logger.propagate = False
 logger.handlers.clear()
@@ -19,7 +18,7 @@ stdout_handler = logging.StreamHandler()
 stdout_handler.setFormatter(logging.Formatter('%(message)s'))
 logger.addHandler(stdout_handler)
 
-file_handler = logging.FileHandler("/logs/api.log")
+file_handler = logging.FileHandler("/logs/auth.log")
 file_handler.setFormatter(StdlibFormatter())
 logger.addHandler(file_handler)
 

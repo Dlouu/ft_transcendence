@@ -5,7 +5,6 @@ from app.utils.logger import logger
 from app.extensions import db
 
 class User(db.Model):
-	__bind_key__ = "user"
 	__tablename__ = "users"
 
 	id = db.Column(db.BigInteger, primary_key=True)

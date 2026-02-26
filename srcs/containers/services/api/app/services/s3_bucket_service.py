@@ -1,7 +1,7 @@
 from botocore.exceptions import ParamValidationError, ClientError
 import os
 
-from app.extensions import s3
+from app import extensions
 
 def add_resource(image_file, url):
 	"""
@@ -15,7 +15,7 @@ def add_resource(image_file, url):
 		True if the file have beend added otherwise False.
 	"""
 	try:
-		s3.upload_fileobj(image_file, os.getenv("S3_BUCKET_NAME", ""), url, ExtraArgs={"ContentType": image_file.content_type})
+		extensions.s3.upload_fileobj(image_file, os.getenv("S3_BUCKET_NAME", ""), url, ExtraArgs={"ContentType": image_file.content_type})
 	except AttributeError:
 		return False
 	except ParamValidationError:
@@ -33,7 +33,7 @@ def does_resource_exist(key):
 		True if exist otherwise False.
 	"""
 	try:
-		s3.head_object(Bucket=os.getenv("S3_BUCKET_NAME", ""), Key=key)
+		extensions.s3.head_object(Bucket=os.getenv("S3_BUCKET_NAME", ""), Key=key)
 	except ClientError as e:
 		if e.response["Error"]["Code"] == "404":
 			return False
@@ -54,7 +54,7 @@ def get_resource_url(key, expire=3600):
 	if not does_resource_exist(key):
 		return None
 
-	resource = s3.generate_presigned_url(
+	resource = extensions.s3.generate_presigned_url(
 		ClientMethod="get_object",
 		Params={"Bucket": os.getenv("S3_BUCKET_NAME", ""), "Key": key},
 		ExpiresIn = expire
@@ -73,7 +73,7 @@ def delete_resource(key):
 		True if the file have been deleted (also True if the file don't exist), if a problem occured False.
 	"""
 	try:
-		s3.delete_object(Bucket=os.getenv("S3_BUCKET_NAME", ""), Key=key)
+		extensions.s3.delete_object(Bucket=os.getenv("S3_BUCKET_NAME", ""), Key=key)
 	except Exception as e:
 		return False
 	return True
@@ -89,7 +89,7 @@ def delete_all_resources(prefix):
 		True if the resources have been deleted otherwise False.
 	"""
 	try:
-		response = s3.list_objects_v2(Bucket=os.getenv("S3_BUCKET_NAME", ""), Prefix=prefix)
+		response = extensions.s3.list_objects_v2(Bucket=os.getenv("S3_BUCKET_NAME", ""), Prefix=prefix)
 	except ParamValidationError:
 		return False
 

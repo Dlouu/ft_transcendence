@@ -76,7 +76,7 @@ class UpdateInformation(Resource):
 		extra_logger = logger.extra(request=request, response=response, user_id=user_id)
 		if response.status_code != 200:
 			logger.warning("server refused, unable to update user's information in the auth service.",
-				  extra=extra_logger | logger.extra(target_service="auth"))
+				  extra=extra_logger | logger.extra(target="auth"))
 			return response.json(), response.status_code
 
 		user = User.query.filter_by(user_id=user_id).first()
@@ -131,7 +131,7 @@ class UpdateProfilePicture(Resource):
 			if image_file.content_type not in {"image/jpeg", "image/png"}:
 				return {"message": "File format not supported."}, 400
 		except Exception as e:
-			logger.warning("Request validation error.", extra=logger.extra(request=request))
+			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
 			return {"message": "Content invalid or wrong type."}, 400
 
 		image_file.stream.seek(0, 2)
@@ -145,7 +145,7 @@ class UpdateProfilePicture(Resource):
 
 		user_id = g.token_payload["user_id"]
 		user = User.query.filter_by(user_id=user_id).first()
-		extra_logger = logger.extra(request=request, user_id=user_id, target_service="aws")
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
 		if not user:
 			logger.critical("The user does not exist in the user database.", extra=extra_logger)
@@ -226,7 +226,7 @@ class UpdatePassword(Resource):
 
 		response = rs.make_request("/user/update_password", "POST")
 		if response.status_code != 200:
-			logger.warning("server refused, unable to update the user's password.", extra=logger.extra(request=request, response=response, target_service="auth"))
+			logger.warning("server refused, unable to update the user's password.", extra=logger.extra(request=request, response=response, target="auth"))
 			return response.json(), response.status_code
 
 		logger.info("User's password updated.", extra=logger.extra(request=request, user_id=user_id))
@@ -324,13 +324,13 @@ class UploadCardImage(Resource):
 			if image_file.content_type not in {"image/jpeg", "image/png"}:
 				return {"message": "File format not supported."}, 400
 		except Exception as e:
-			logger.warning("Request validation error.", extra=logger.extra(request=request))
+			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
 			return {"message": "Content invalid or wrong type."}, 400
 
 		user_id = g.token_payload["user_id"]
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
 		s3_url = f"card_gallery/{user_id}/{uuid4()}.{file_ext}"
-		extra_logger = logger.extra(request=request, user_id=user_id, target_service="aws")
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
 		try:
 			image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
@@ -341,7 +341,7 @@ class UploadCardImage(Resource):
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 		except Exception as e:
 			db.session.rollback()
-			logger.critical(f"Unhandled error happened while creating image database's object. ({e})", extra=extra_logger)
+			logger.critical(f"Unhandled error happened while creating image database's object.", extra=extra_logger | logger.extra(exception=e))
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 
 		if not s3s.add_resource(image_file, s3_url):
@@ -385,7 +385,7 @@ class RemoveCardImage(Resource):
 
 		user_id = g.token_payload["user_id"]
 		card = CardGallery.query.filter_by(user_id=user_id, id=data["card_id"]).first()
-		extra_logger = logger.extra(request=request, user_id=user_id, target_service="aws")
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
 		if not card:
 			logger.warning("A non-existent card was attempted to be deleted.", extra=extra_logger)
@@ -428,5 +428,5 @@ class GetCardImage(Resource):
 				images_url.append({"url": url, "image_id": row.id})
 
 		logger.info(f"Cards successfully retrieved for the user id {user_id}.",
-			  extra=logger.extra(request=request, user_id=user_id, target_service="aws"))
+			  extra=logger.extra(request=request, user_id=user_id, target="aws"))
 		return {"message": "success", "images_url": images_url}, 200
