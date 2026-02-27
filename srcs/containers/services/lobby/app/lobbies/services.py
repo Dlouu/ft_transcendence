@@ -32,22 +32,25 @@ def emit_lobby_state(code):
     data = lobbies[code]
 
     humans_sids = [sid for sid, p in data["players"].items() if p["connected"]]
+    humans_ids = [data["players"][sid].get("user_id") for sid in humans_sids]
     ready_sids = [sid for sid, p in data["players"].items() if p["ready"]]
 
     payload = {
-        "code": code,
-        "humans": humans_sids,
+        "code": code, # what Yohann needs
+        "bots_count": data.get("bots", 0), # what Yohann needs
+        "humans_id": humans_ids, # user_id # what Yohann needs
+        "theme": data.get("theme", False), # what Yohann needs
+        "game_ended": data.get("game_ended", False),
+        "humans_sid": humans_sids, # socketid
         "ready_humans": ready_sids,
         "bots": [f"BOT#{i+1}" for i in range(data.get("bots", 0))],
-        "theme": data.get("theme", False),
+        "privacy": data.get("privacy", True),
         "humans_count": len(humans_sids),
-        "bots_count": data.get("bots", 0),
         "total_count": len(humans_sids) + data.get("bots", 0),
         "max_players": max_players,
         "supreme_master_sid": data.get("supreme_master_sid"),
         "game_started": data.get("game_started", False),
-        "supreme_master_starts": data.get("supreme_master_starts", False),
-        "privacy": data.get("privacy", True),
+        "supreme_master_starts": data.get("supreme_master_starts", False)
     }
 
     socketio.emit("lobby_state", payload, room=code)

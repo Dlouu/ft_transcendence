@@ -1,9 +1,64 @@
-from flask import request
-from flask_socketio import join_room, emit
+import os
+import secrets
 
-from app.core.extensions import socketio
+from flask import request, session
+from flask_socketio import join_room, emit
+from sqlalchemy.exc import IntegrityError
+
+from app.core.extensions import socketio, db
 from app.core.state import lobbies, socketid_lobby, max_players
 from app.lobbies.services import emit_lobby_state, remove_lobby
+from app.models.user import User
+
+def _ensure_socket_user(socket_id: str) -> User | None:
+    if not socket_id:
+        return None
+
+    existing = User.query.filter_by(username=socket_id).first()
+    if existing:
+        existing.is_active = True
+        db.session.commit()
+        session["user_id"] = existing.id
+        session["username"] = existing.username
+        return existing
+
+    default_picture = os.getenv("DEFAULT_PROFILE_PICTURE", "default_profile_picture.jpg")
+
+    for _ in range(5):
+        candidate_user_id = SOCKET_USER_ID_BASE + secrets.randbelow(SOCKET_USER_ID_RANGE)
+        user = User(
+            user_id=candidate_user_id,
+            username=socket_id,
+            profile_picture_url=default_picture,
+            is_active=True
+        )
+        db.session.add(user)
+        try:
+            db.session.commit()
+            session["user_id"] = user.id
+            session["username"] = user.username
+            return user
+        except IntegrityError:
+            db.session.rollback()
+            continue
+    return None
+
+
+"""
+SocketIO event: "connect"
+
+📥 Receives:
+- Automatic connection event
+
+🎯 Purpose:
+Store the socket id in users DB for testing.
+"""
+@socketio.on("connect")
+def on_connect():
+    try:
+        _ensure_socket_user(request.sid)
+    except Exception as exc:
+        print(f"Lobby: failed to store socket user ({exc})", flush=True)
 
 """
 SocketIO event: "add_bot"
@@ -24,7 +79,6 @@ def add_bot():
     code = socketid_lobby.get(sid)
     if not code or code not in lobbies:
         return
-
     data = lobbies[code]
     if data["game_started"] or sid != data["supreme_master_sid"]:
         emit("error", {"message": "Only host can add bots"})
@@ -35,6 +89,7 @@ def add_bot():
         return
 
     data["bots"] += 1
+    print("bot added", flush=True)
     emit_lobby_state(code)
 
 
@@ -103,6 +158,10 @@ def master_start():
         emit("error", {"message": "Too many players"})
         return
 
+    if len(data["players"]) + data.get("bots", 0) < 2:
+        emit("error", {"message": "You can't start the game alone. Add at least one bot or invite someone"})
+        return
+    
     if all(p["ready"] for p in data["players"].values()):
         data["game_started"] = True
         socketio.emit("game_start", {"code": code}, room=code)
@@ -214,7 +273,7 @@ and synchronizes all clients.
 def join_lobby_socket(data):
     code = (data.get("code") or "").strip().upper()
     if code not in lobbies:
-        emit("error", {"message": "Room doesn't exist"})
+        emit("error", {"message": "Room doesn't eexist"})
         return
 
     lobby_data = lobbies[code]
@@ -223,6 +282,8 @@ def join_lobby_socket(data):
         if request.sid in lobby_data["players"]:
             # Reconnexion autorisee
             lobby_data["players"][request.sid]["connected"] = True
+            if lobby_data["players"][request.sid].get("user_id") is None:
+                lobby_data["players"][request.sid]["user_id"] = session.get("user_id")
             join_room(code)
             socketid_lobby[request.sid] = code
             emit_lobby_state(code)
@@ -238,7 +299,11 @@ def join_lobby_socket(data):
     # Ajout du joueur
     join_room(code)
     socketid_lobby[request.sid] = code
-    lobby_data["players"][request.sid] = {"ready": False, "connected": True}
+    lobby_data["players"][request.sid] = {
+        "ready": False,
+        "connected": True,
+        "user_id": session.get("user_id")
+    }
 
     # Definir le host si inexistant
     if lobby_data["supreme_master_sid"] is None:

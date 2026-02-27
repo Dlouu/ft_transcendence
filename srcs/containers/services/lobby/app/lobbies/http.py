@@ -36,7 +36,7 @@ def create_lobby():
         room_name = random.choice(four_letters)
     room_name = room_name.upper()
     user_id = session.get("user_id")
-
+    socket_id = session.get
     if room_name in lobbies:
         return "Room already exists", 602
     if len(lobbies) >= 1679616:
@@ -46,6 +46,7 @@ def create_lobby():
         "players": {}, # --> {sid, ready, connected}
         "bots": 0,
         "game_started": False,
+        "game_ended": False,
         "theme": False,
         "supreme_master_user_id": user_id,
         "supreme_master_sid": None,
