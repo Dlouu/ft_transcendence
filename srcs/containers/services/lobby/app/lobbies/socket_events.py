@@ -77,6 +77,7 @@ Allows the host to add a bot to the lobby.
 def add_bot():
     sid = request.sid
     code = socketid_lobby.get(sid)
+    print("cookieeeee", dict(request.cookies), flush=True) 
     if not code or code not in lobbies:
         return
     data = lobbies[code]

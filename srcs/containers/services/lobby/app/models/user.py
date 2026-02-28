@@ -1,5 +1,6 @@
 from app.core.extensions import db
 
+#json serialization
 
 class User(db.Model):
 	__tablename__ = "users"

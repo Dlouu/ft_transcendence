@@ -21,7 +21,3 @@ four_letters = [
 "luna", "pika", "mojo", "mist", "fluf", "glow", "tofu", "pixl", "chip"
 ]
 
-'''
-dans mon service de lobby, jai une app flask avec des endpoints ainsi quun web socket. mes endpoints peuvent etre accessibles depuis un seul service mais mon websocket depuis un webservice (app web)
-
-'''
