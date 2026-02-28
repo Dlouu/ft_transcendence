@@ -1,10 +1,14 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, make_response
 from app.core.state import lobbies, three_letters, four_letters
 from app.lobbies.services import lobby_removal
+from app.services import session_service as st
 import random
 import string
+import os
 
 lobby = Blueprint("lobby", __name__)
+MAX_LOBBIES = 36 ** 4
+MAX_RANDOM_ATTEMPTS = 100
 
 def generate_room_code_second_edition():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=4)).upper()
@@ -22,8 +26,7 @@ def generate_room_code_first_edition():
 
 
 def generate_code():
-    for _ in range(100):
-        print("lennnnnn", len(lobbies), flush=True)
+    for _ in range(MAX_RANDOM_ATTEMPTS):
         if len(lobbies) < 1015:
             room_name = generate_room_code_first_edition()
         else:
@@ -33,13 +36,24 @@ def generate_code():
             return room_name, None
     return None, ("Failed to generate unique room", 602)
 
-def create_lobby_or_error():
-    if len(lobbies) > 1679616:
+def create_lobby_or_error(requested_code=None):
+    if len(lobbies) > MAX_LOBBIES:
         return None, ("No more rooms available", 603)
-    
-    room_name, error = generate_code()
-    if error:
-        return None, error
+
+    if requested_code is not None:
+        room_name = str(requested_code).strip().upper()
+        if not room_name or not room_name.isalnum() or len(room_name) != 4:
+            return None, (
+                "Room name must contain only alphanumeric characters and be exactly 4 characters long",
+                601,
+            )
+        if room_name in lobbies:
+            return None, ("Room already exists", 602)
+    else:
+        room_name, error = generate_code()
+        if error:
+            return None, error
+
     lobbies[room_name] = {
         "players": {},  # {sid: {ready, connected, user_id}}
         "bots": 0,
@@ -54,6 +68,24 @@ def create_lobby_or_error():
 
     lobby_removal(room_name, delay=600)
     return room_name, None
+
+
+def _set_session_cookie(response, token):
+    if not token:
+        return response
+    secure_cookie = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+    samesite_policy = "None" if secure_cookie else "Lax"
+    max_age = int(os.getenv("SESSION_TOKEN_EXPIRATION", "3600"))
+    response.set_cookie(
+        "session_token",
+        f"Bearer {token}",
+        httponly=True,
+        secure=secure_cookie,
+        samesite=samesite_policy,
+        max_age=max_age,
+        path="/",
+    )
+    return response
 
 """
 Just here for dev
@@ -92,11 +124,27 @@ Initializes lobby data and starts an expiration timer.
 """
 @lobby.route("/create_lobby", methods=["POST"])
 def create_lobby():
-    room_name, error = create_lobby_or_error()
+    payload = request.get_json(silent=True) or {}
+    requested_code = (
+        request.form.get("code")
+        or request.form.get("room_name")
+        or payload.get("code")
+        or payload.get("room_name")
+    )
+    room_name, error = create_lobby_or_error(requested_code)
     if error:
         message, status = error
         return message, status
-    return redirect(url_for("lobby.lobby_room", code=room_name))
+
+    token, public, private, created_at = st.generate_session_token(
+        session.get("user_id"),
+        request.headers,
+        request.remote_addr,
+        room_name,
+    )
+    st.store_session_token(token, public, session.get("user_id"), room_name)
+    response = make_response(redirect(url_for("lobby.lobby_room", code=room_name)))
+    return _set_session_cookie(response, token)
 
 """
 GET /lobby/<code>
@@ -135,14 +183,23 @@ or join an existing one (with code).
 def join_lobby():
     code = request.args.get("code") or request.form.get("code")
     if not code:
-        room_name, error = _create_lobby_or_error()
+        room_name, error = create_lobby_or_error()
         if error:
-            return error
+            message, status = error
+            return message, status
         code = room_name
     else:
         code = code.strip().upper()
 
-    return redirect(url_for("lobby.lobby_room", code=code))
+    token, public, private, created_at = st.generate_session_token(
+        session.get("user_id"),
+        request.headers,
+        request.remote_addr,
+        code,
+    )
+    st.store_session_token(token, public, session.get("user_id"), code)
+    response = make_response(redirect(url_for("lobby.lobby_room", code=code)))
+    return _set_session_cookie(response, token)
 
 """
 GET /game/<code>
