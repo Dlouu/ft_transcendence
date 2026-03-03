@@ -1,17 +1,4 @@
 services:
-  nginx:
-    container_name: service_nginx
-    build: ./containers/services/nginx
-    restart: on-failure
-    env_file:
-      - .env
-    volumes:
-      - nginx_data:/var/www/nginx
-      - service_logs:/logs
-    depends_on:
-      - website
-    networks:
-      - website_network
   redis:
     container_name: service_redis
     image: redis:8.4
@@ -103,8 +90,13 @@ services:
       - "5002:5002"
     env_file:
       - .env
+    environment:
+      USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
+      REDIS_URL: redis://redis:6379/0
     networks:
       - lobby_network
+      - redis_network
+      - user_db_network
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     environment:
@@ -170,7 +162,6 @@ services:
       - user_db_network
 
 volumes:
-  nginx_data:
   website_data:
   api_data:
   auth_db_data:

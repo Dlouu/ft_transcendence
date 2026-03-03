@@ -87,7 +87,8 @@ export class GameService
             transports: ['websocket']
         };
 
-        this.socket = io('http://localhost:3000', socketOptions);
+        const socketBaseUrl = import.meta.env.VITE_GAME_SOCKET_URL || window.location.origin;
+        this.socket = io(socketBaseUrl, { ...socketOptions, path: '/socket.io' });
 
         this.socket.on('connect', () =>
         {

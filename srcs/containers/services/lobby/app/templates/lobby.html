@@ -1,14 +1,188 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login API</title>
-  </head>
-  <body>
-    <div class="lobby">
-      <h1>Lobby code</h1>
-      <p>Oui ca a marche {{ code }}</p>
-    </div>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lobby</title>
+</head>
+<body>
+
+  <h1>Nom de la room : {{ code }}</h1>
+
+  <p>Total joueurs (humains + bots) : <span id="player-count">0</span> / 4</p>
+
+  <p>Theme : <span id="theme-label">basic</span></p>
+  <p>Privacy : <span id="privacy-label">prive</span></p>
+
+  <ul id="player-list"></ul>
+
+  <button id="ready-btn">Ready?</button>
+
+  <div id="master-panel" style="display:none;">
+    <button id="theme-uwu">Theme uwu</button>
+    <button id="theme-basic">Theme basic</button>
+
+    <button id="privacy-public">Public</button>
+    <button id="privacy-private">Prive</button>
+
+    <button id="add-bot">+ Bot</button>
+    <button id="remove-bot">- Bot</button>
+    <button id="start-btn">Start</button>
+  </div>
+
+
+  <div id="add-friend-panel">
+    <input type="text" id="friend-username" placeholder="Socket ID à ajouter" />
+    <button id="add-friend">Ajouter ami</button>
+  </div>
+
+<ul id="friend-requests-list"></ul>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+const code = "{{ code }}";
+const socket = io();
+
+const readyBtn = document.getElementById("ready-btn");
+const masterPanel = document.getElementById("master-panel");
+const themeLabel = document.getElementById("theme-label");
+const privacyLabel = document.getElementById("privacy-label");
+const privacyPublicBtn = document.getElementById("privacy-public");
+const privacyPrivateBtn = document.getElementById("privacy-private");
+
+socket.on("connect", () => {
+  socket.emit("join_lobby", { code: code });
+});
+
+socket.on("room_full", (data) => {
+    const message = data?.message || "Room is full, returning to lobby";
+    alert(message);
+    window.location.href = "/";
+});
+
+socket.on("lobby_state", (data) => {
+  document.getElementById("player-count").textContent = data.total_count;
+
+  // theme affiché pour tout le monde
+  themeLabel.textContent = data.theme ? "uwu" : "basic";
+
+  // privacy affichée pour tout le monde
+  const isPrivate = (typeof data.privacy === "boolean") ? data.privacy : true;
+  privacyLabel.textContent = isPrivate ? "prive" : "public";
+  privacyPublicBtn.disabled = isPrivate === false;
+  privacyPrivateBtn.disabled = isPrivate === true;
+
+  // panel visible seulement pour l'hôte
+  masterPanel.style.display = (socket.id === data.supreme_master_sid) ? "block" : "none";
+
+  const list = document.getElementById("player-list");
+  list.innerHTML = "";
+
+  data.humans_sid.forEach(player => {
+    const li = document.createElement("li");
+    const ready = data.ready_humans.includes(player);
+    const crown = (player === data.supreme_master_sid) ? " 👑" : "";
+    li.textContent = player + (ready ? " ✅" : " ❌") + crown;
+    list.appendChild(li);
+  });
+
+  data.bots.forEach(bot => {
+    const li = document.createElement("li");
+    li.textContent = bot + " 🤖 ✅";
+    list.appendChild(li);
+  });
+});
+
+readyBtn.addEventListener("click", () => {
+  socket.emit("player_ready");
+});
+
+// THEME (host only - le serveur re-vérifie)
+document.getElementById("theme-uwu").addEventListener("click", () => {
+  socket.emit("set_theme", { theme: true });
+});
+
+document.getElementById("theme-basic").addEventListener("click", () => {
+  socket.emit("set_theme", { theme: false });
+});
+
+// PRIVACY (host only - le serveur re-vérifie)
+document.getElementById("privacy-public").addEventListener("click", () => {
+  socket.emit("set_privacy", { privacy: false });
+});
+
+document.getElementById("privacy-private").addEventListener("click", () => {
+  socket.emit("set_privacy", { privacy: true });
+});
+
+// BOTS + START
+document.getElementById("add-bot").addEventListener("click", () => {
+  socket.emit("add_bot");
+});
+
+document.getElementById("remove-bot").addEventListener("click", () => {
+  socket.emit("remove_bot");
+});
+
+document.getElementById("start-btn").addEventListener("click", () => {
+  socket.emit("master_start");
+});
+
+socket.on("game_start", (data) => {
+  window.location.href = `/game/${data.code}`;
+});
+
+socket.on("error", (data) => {
+  alert(data.message || "Error");
+});
+
+socket.on("room_expired", (data) => {
+  const message = data?.message || "Lobby closed due to inactivity";
+  alert(message);
+  window.location.href = "/";
+});
+
+// friends
+document.getElementById("add-friend").addEventListener("click", () => {
+  const username = document.getElementById("friend-username").value.trim();
+  if (!username) return alert("Veuillez entrer un nom d'utilisateur");
+
+  socket.emit("add_friend", {username: username});
+
+  document.getElementById("friend-username").value = "";
+
+});
+
+
+socket.on("friend_request_sent", (data) => {
+  const list = document.getElementById("friend-requests-list");
+
+  const li = document.createElement("li");
+  li.id = `req-${data.username}`;
+  li.textContent = `${data.username} - ${data.status} `;
+
+  if (data.type === "received") {
+    const acceptbtn = document.createElement("button");
+    acceptbtn.textContent = "✅";
+    acceptbtn.onclick = () => socket.emit("accept_friend", {requester_id: data.user_id});
+
+    const rejectbtn = document.createElement("button");
+    rejectbtn.textContent = "❌";
+    rejectbtn.onclick = () => socket.emit("reject_friend", {requester_id: data.user_id});
+
+    li.appendChild(acceptbtn);
+      li.appendChild(rejectbtn);
+    }
+
+    list.appendChild(li);
+  });
+
+  socket.on("friend_updated", (data) => {
+    const li = document.getElementById(`req-${data.username}`);
+    if (li) {
+      li.textContent = `${data.username} - ${data.status}`;
+    }
+  });
+  </script>
+
   </body>
-</html>
+  </html>
