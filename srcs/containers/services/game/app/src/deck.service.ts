@@ -118,7 +118,7 @@ export class DeckService {
 	 * @returns Nothing.
 	 */
 	startDeal(game: Game): void {
-		const cardsPerPlayer = 7;
+		const cardsPerPlayer = 2;
 
 		game.state = GameState.DEALING;
 

@@ -4,6 +4,7 @@ import { Game } from "./domain/UnoGame";
 import { GameState } from "./domain/GameEnums";
 import { UnoPlayer } from "./domain/UnoPlayer";
 import { CreateGameDto } from "./dto/create-game.dto";
+import { toRejoinGameDto } from "./dto/rejoin-game.dto";
 
 // Handles the storage and retrieval of Game and Player objects
 @Injectable()
@@ -76,6 +77,10 @@ export class GameRepositoryService {
 		const game = this.getGameByExpectedPlayer(playerId);
 		if (!game) throw new Error("Player's not in a game.");
 
+		if (game.connectedPlayers.has(playerId)) {
+			throw new ConflictException("Player is already connected in this game");
+		}
+
 		if (!game.expectedPlayers.includes(playerId)) {
 			throw new ConflictException("Player is not expected in this game");
 		}
@@ -120,13 +125,15 @@ export class GameRepositoryService {
 	}
 
 	rejoin(player: UnoPlayer, game: Game): void {
-		if (!player) return;
+		if (!player || !player._socket) return;
 
 		game.connectedPlayers.add(player._id);
 
-		// TODO: Send everything need by the reconnecting player.
-		// Current hand, opponents hand sizes, currentPlayerIndex,
-		// currentDirection, currentDiscardCard
+		const rejoinDto = toRejoinGameDto(player, game);
+		if (!rejoinDto) return;
+
+		player._socket.emit("game:rejoin", rejoinDto);
+		console.log(`Player ${player._name} rejoined the game ${game.roomName}`);
 	}
 
 	/**

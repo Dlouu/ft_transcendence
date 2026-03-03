@@ -36,3 +36,14 @@ export function handleDeckClicked(socket: Socket | null): void {
 
 	console.log("GameService: player clicked deck");
 }
+
+export function handleUnoClicked(socket: Socket | null): void {
+	if (!socket) {
+		console.warn("GameService: socket unavailable, cannot play UNO");
+		return;
+	}
+
+	socket.emit("game:play:uno");
+
+	console.log("GameService: player clicked UNO");
+}

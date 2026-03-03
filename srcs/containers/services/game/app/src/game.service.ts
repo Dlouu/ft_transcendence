@@ -10,6 +10,7 @@ import { GamePlayService } from "./game-play.service";
 import { toCardDtoArray } from "./dto/init-game.dto";
 import { CardDto } from "./dto/card.dto";
 import { NextTurnDto } from "./dto/next-turn.dto";
+import { BotLogicService } from "./bot-logic.service";
 
 @Injectable()
 export class GameService {
@@ -22,6 +23,7 @@ export class GameService {
 		private readonly deckService: DeckService,
 		@Inject(forwardRef(() => GamePlayService))
 		private readonly gamePlay: GamePlayService,
+		private readonly botLogic: BotLogicService,
 	) {}
 
 	setServer(io: Server): void {
@@ -72,6 +74,8 @@ export class GameService {
 			return;
 		}
 
+    game.createdAt = Date.now();
+
 		this.io.to(game.roomName).emit("game:start");
 
 		this.gameInitReadyByRoom.delete(game.roomName);
@@ -110,15 +114,18 @@ export class GameService {
 	}
 
 	leave(playerId: string, socket: Socket): void {
-		const game = this.gameRepository.leave(playerId, socket);
+		if (typeof playerId !== "string" || playerId.trim() === "") {
+			return;
+		}
 
-    // Deletion of game it there is no player in it
-    // TODO: Check if we do like that or let the bot play for the win
-		if (
-      game &&
-			game.connectedPlayers.size === 0 &&
-			game.state != GameState.WAITING_FOR_PLAYERS
-		) {
+		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
+		if (!game) {
+			return;
+		}
+
+		this.gameRepository.leave(playerId, socket);
+
+		if (game && game.connectedPlayers.size === 0) {
 			this.gameInitReadyByRoom.delete(game.roomName);
 
 			console.log(
@@ -134,8 +141,26 @@ export class GameService {
 			return;
 		}
 
-		if (!await this.gamePlay.playCard(playerId, game, dto))
+		const player = this.gameRepository.getPlayerInGame(game, playerId);
+		if (!player) {
+			return;
+		}
+
+		if (game.pendingUnoPlayerIndex !== null) {
+			return;
+		}
+
+		if (!await this.gamePlay.playCard(game, dto, player))
       return ;
+
+		if (player._hand.length === 0) {
+			this.gameLogic.onVictory(game, player);
+			return;
+		}
+
+		if (player._hand.length === 1) {
+			this.gameLogic.onUno(game, player);
+		}
 
     this.gameLogic.goToNextPlayerIndex(game);
 
@@ -157,7 +182,16 @@ export class GameService {
 			return;
 		}
 
-    if (!this.gamePlay.drawCard(playerId, game, 1, false))
+		const player = this.gameRepository.getPlayerInGame(game, playerId);
+		if (!player) {
+			return;
+		}
+
+		if (game.pendingUnoPlayerIndex !== null) {
+			return;
+		}
+
+    if (!this.gamePlay.drawCard(game, 1, false, player))
       return ;
 
     this.gameLogic.goToNextPlayerIndex(game);
@@ -173,4 +207,18 @@ export class GameService {
 
 		this.io?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
   }
+
+	shoutUno(playerId: string): void {
+		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
+		if (!game || game.state !== GameState.PLAYING) {
+			return ;
+		}
+
+		const player = this.gameRepository.getPlayerInGame(game, playerId);
+		if (!player) {
+			return ;
+		}
+
+		this.gamePlay.shoutUno(game, player);
+	}
 }

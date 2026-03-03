@@ -5,10 +5,13 @@ import { PlayedCardDto } from "./game/dto/played-card.dto";
 import { TableManager } from "./game/managers/TableManager";
 import { DrawnCardDto } from "./game/dto/drawn-card.dto";
 import { CardFamily } from "./game/domain/GameEnums";
+import { GameWinDto } from "./game/dto/game-win.dto";
+import { RejoinGameDto } from "./game/dto/rejoin-game.dto";
 
 interface RegisterServerEventCallbacksOptions {
 	socket: Socket;
 	ready: Promise<void>;
+	getPlayerId: () => string | null;
 	hasHandInitialized: () => boolean;
 	setHandInitialized: (value: boolean) => void;
 	hasGameStarted: () => boolean;
@@ -20,6 +23,7 @@ interface RegisterServerEventCallbacksOptions {
 export function registerServerEventCallbacks({
 	socket,
 	ready,
+	getPlayerId,
 	hasHandInitialized,
 	setHandInitialized,
 	hasGameStarted,
@@ -46,7 +50,16 @@ export function registerServerEventCallbacks({
 		console.log(`You have joined:`, _payload);
 	});
 
-	socket.once("game:rejoin", (_payload) => {
+	socket.once("game:rejoin", async (_payload: RejoinGameDto) => {
+		await ready;
+
+		if (!hasGameStarted()) {
+			await startGame();
+		}
+
+		getTableManager()?.applyRejoinState(_payload);
+		setHandInitialized(true);
+
 		console.log(`You have rejoined:`, _payload);
 	});
 
@@ -109,6 +122,38 @@ export function registerServerEventCallbacks({
 	socket.on("game:nextTurn", async (_payload: NextTurnDto) => {
 		getTableManager()?.setActivePlayer(_payload.currentPlayerIndex);
 		console.log(`Next turn:`, _payload);
+	});
+
+	socket.on("game:deck:empty", async (_payload) => {
+		getTableManager()?.setDeckVisible(false);
+		console.log(`Deck empty:`);
+	});
+
+	socket.on("game:deck:shuffled", async (_payload) => {
+		getTableManager()?.setDeckVisible(true);
+		console.log(`Deck shuffled:`);
+	});
+
+	socket.on("game:uno:pending:self", async (_payload) => {
+		getTableManager()?.setUnoButtonText("UNO");
+		getTableManager()?.setUnoButtonVisible(true);
+		console.log(`Uno shout pending.`);
+	});
+
+	socket.on("game:uno:pending:others", async (_payload) => {
+		getTableManager()?.setUnoButtonText("UWU");
+		getTableManager()?.setUnoButtonVisible(true);
+		console.log(`Uno shout pending.`);
+	});
+
+	socket.on("game:uno:catched", async (_payload) => {
+		getTableManager()?.setUnoButtonVisible(false);
+		console.log(`Counter uno catched.`);
+	});
+
+	socket.on("game:win", async (_payload: GameWinDto) => {
+		getTableManager()?.showVictoryScreen(_payload, getPlayerId() ?? undefined);
+		console.log(`Game won:`, _payload);
 	});
 
 	socket.on("game:error", (payload) => {

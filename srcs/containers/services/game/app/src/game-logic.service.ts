@@ -6,11 +6,13 @@ import { GameRepositoryService } from "./game-repository";
 import { UnoPlayer } from "./domain/UnoPlayer";
 import { CardDto } from "./dto/card.dto";
 import { Card } from "./domain/UnoCard";
+import { GameWinDto, GameWinPlayerDto } from "./dto/game-win.dto";
 
 // Handles the rules of the game (turns, UNO shouts, card validation).
 @Injectable()
 export class GameLogicService {
 	private colorPickCallbacks = new Map<string, (color: CardFamily) => void>();
+	private readonly unoRevealDelayMs = 500;
 
 	constructor(
 		private readonly deckService: DeckService,
@@ -189,6 +191,22 @@ export class GameLogicService {
 		return playableFamilies[randomIndex];
 	}
 
+	private formatDurationToDdHhMmSs(durationMs: number): number {
+		const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+		const days = Math.min(99, Math.floor(totalSeconds / 86400));
+		const hours = Math.floor((totalSeconds % 86400) / 3600);
+		const minutes = Math.floor((totalSeconds % 3600) / 60);
+		const seconds = totalSeconds % 60;
+
+		return Number(
+			`${days.toString().padStart(2, "0")}${hours
+				.toString()
+				.padStart(2, "0")}${minutes.toString().padStart(2, "0")}${seconds
+				.toString()
+				.padStart(2, "0")}`,
+		);
+	}
+
 	async askPlayerColor(game: Game, player: UnoPlayer): Promise<CardFamily> {
 		if (!player._socket) {
 			return this.randomCardFamily();
@@ -209,11 +227,88 @@ export class GameLogicService {
 			});
 		});
 	}
-	
+
 	onColorPicked(playerId: string, color: CardFamily): void {
-    const callback = this.colorPickCallbacks.get(playerId);
-    if (callback) {
-        callback(color);
-    }
-}
+		const callback = this.colorPickCallbacks.get(playerId);
+		if (callback) {
+			callback(color);
+		}
+	}
+
+	onUno(game: Game, player: UnoPlayer): void {
+		if (!player._socket) {
+			return;
+		}
+
+		const playerIndex = game.players.findIndex((p) => p._id === player._id);
+		if (playerIndex === -1) {
+			return;
+		}
+
+		game.pendingUnoPlayerIndex = playerIndex;
+		player.hasShoutedUno = false;
+
+		player._socket.emit("game:uno:pending:self");
+
+		setTimeout(() => {
+			const pendingIndex = game.pendingUnoPlayerIndex;
+			if (pendingIndex === null) {
+				return;
+			}
+
+			const pendingPlayer = game.players[pendingIndex];
+			if (!pendingPlayer || pendingPlayer._id !== player._id || pendingPlayer._hand.length !== 1) {
+				return;
+			}
+
+			player._socket?.to(game.roomName).emit("game:uno:pending:others");
+		}, this.unoRevealDelayMs);
+	}
+
+	onVictory(game: Game, winner: UnoPlayer): void {
+		if (!game || !winner || game.state === GameState.GAME_OVER) {
+			return;
+		}
+
+		const winnerStillInGame = game.players.some((p) => p._id === winner._id);
+		if (!winnerStillInGame || winner._hand.length !== 0) {
+			return;
+		}
+
+		game.state = GameState.GAME_OVER;
+		game.pendingUnoPlayerIndex = null;
+
+		for (const player of game.players) {
+			this.colorPickCallbacks.delete(player._id);
+		}
+
+		const durationDdHhMmSs = this.formatDurationToDdHhMmSs(
+			Date.now() - game.createdAt,
+		);
+		const dto: GameWinDto = {
+			winner: winner._name,
+			players: game.players.map(
+				(player): GameWinPlayerDto => ({
+					name: player._name,
+					id: player._id,
+					isBot: player._isBot,
+					cardsLeft: player._hand.length,
+				}),
+			),
+			gameDuration: durationDdHhMmSs,
+			turnNbr: Math.max(0, game.discard.length - 1),
+		};
+
+		const emitterPlayer = game.players.find((player) => !!player._socket);
+		if (emitterPlayer?._socket) {
+			emitterPlayer._socket.emit("game:win", dto);
+			emitterPlayer._socket.to(game.roomName).emit("game:win", dto);
+		}
+
+		this.gameRepository.deleteGame(game);
+
+		console.log(
+			`Game '${game.roomName}' won by '${winner._name}'. Game closed.`,
+		);
+	}
 }

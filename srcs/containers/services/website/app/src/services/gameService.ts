@@ -6,7 +6,7 @@ import { CardsTheme } from "./game/domain/GameEnums";
 import { TableManager } from "./game/managers/TableManager";
 import { InitGameDto } from "./game/dto/init-game.dto";
 import { UnoCard } from "./game/domain/UnoCard";
-import { handleDeckClicked, handlePlayerCardClicked } from "./gameInputCallbacks";
+import { handleDeckClicked, handlePlayerCardClicked, handleUnoClicked } from "./gameInputCallbacks";
 import { registerServerEventCallbacks } from "./gameServerEventCallbacks";
 
 interface IGameInitOptions {
@@ -17,6 +17,7 @@ interface IGameInitOptions {
 export class GameService {
 	private _app: Application | null = null;
 	private _socket: Socket | null = null;
+	private _playerId: string | null = null;
 
 	private _isInitialized: boolean = false;
 	private _hasGameStarted: boolean = false;
@@ -41,6 +42,8 @@ export class GameService {
 			throw new Error("GameService.init: canvas is required");
 		}
 
+		this._playerId = playerId;
+
 		this._app = new Application();
 
 		await this._app.init({
@@ -63,6 +66,7 @@ export class GameService {
 			this._assetsMangr,
 			(card) => this.onPlayerCardClicked(card),
 			() => this.onDeckClicked(),
+			() => this.onUnoClicked(),
 		);
 
 		this._isInitialized = true;
@@ -87,6 +91,7 @@ export class GameService {
 		registerServerEventCallbacks({
 			socket: this._socket,
 			ready: this._ready,
+			getPlayerId: () => this._playerId,
 			hasHandInitialized: () => this._hasHandInitialized,
 			setHandInitialized: (value) => {
 				this._hasHandInitialized = value;
@@ -121,6 +126,17 @@ export class GameService {
 		if (this._pendingInitGameDto) {
 			await this.initGame(this._pendingInitGameDto);
 			this._pendingInitGameDto = null;
+		} else if (this._tableManager && this._app) {
+			if (!this._assetsMangr.isLoaded) {
+				await this._assetsMangr.loadTheme(CardsTheme.Basic);
+				await this._assetsMangr.loadCardBacks(["uwu"]);
+			}
+
+			if (this._tableManager.parent !== this._app.stage) {
+				this._app.stage.addChild(this._tableManager);
+			}
+
+			this._tableManager.resize(this._app.screen.width, this._app.screen.height);
 		}
 
 		this._hasGameStarted = true;
@@ -132,6 +148,10 @@ export class GameService {
 
 	private onDeckClicked(): void {
 		handleDeckClicked(this._socket);
+	}
+
+	private onUnoClicked(): void {
+		handleUnoClicked(this._socket);
 	}
 }
 

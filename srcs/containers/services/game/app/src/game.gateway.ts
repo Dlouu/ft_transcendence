@@ -84,7 +84,16 @@ export class GameGateway
 		}
 
 		this.gameService.drawCard(playerId);
-		console.log(`Player ${playerId} drew.`);
+	}
+
+	@SubscribeMessage("game:play:uno")
+	handleShoutUno(@ConnectedSocket() socket: Socket): void {
+		const playerId = socket.data.playerId;
+		if (typeof playerId !== "string" || playerId.trim() === "") {
+			return;
+		}
+
+		this.gameService.shoutUno(playerId);
 	}
 
 	@SubscribeMessage("game:wild:color-picked")

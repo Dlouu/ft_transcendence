@@ -46,8 +46,6 @@ export class Game {
 
     this.discard = new DeckPile();
 
-    this.createdAt = Date.now();
-
     this.connectedPlayers = new Set<string>();
 
     this.lastActionTime = 0;

@@ -1,5 +1,5 @@
 import { CardDto } from "../dto/card.dto"; 
-import { Container, Graphics, Sprite, Texture } from "pixi.js";
+import { Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import { Hand } from "../domain/Hand";
 import { CardPile } from "../domain/CardPile";
 import { OpponentsManager } from "./OpponentsManager";
@@ -9,46 +9,50 @@ import { Card, UnoCard } from "../domain/UnoCard";
 import { InitGameDto } from "../dto/init-game.dto";
 import { CardFamily, HandRotation } from "../domain/GameEnums";
 import { CardFamilySelector, SelectableCardFamily } from "./CardFamilySelector";
+import { TableCenterArea } from "./TableCenterArea";
+import { GameWinDto, GameWinPlayerDto } from "../dto/game-win.dto";
+import { VictoryScreen } from "./VictoryScreen";
+import { RejoinGameDto } from "../dto/rejoin-game.dto";
 
 export class TableManager extends Container
 {
-    private static readonly PILES_BACKDROP_WIDTH_RATIO: number = 0.35;
-    private static readonly PILES_BACKDROP_ASPECT_RATIO: number = 8 / 16;
-    private static readonly PILES_BACKDROP_BORDER_DARKEN: number = 0.12;
-    private static readonly DEFAULT_PILES_BACKDROP_COLORS: Record<CardFamily, string> = {
-        [CardFamily.ONE]: "#2c7fe5",
-        [CardFamily.TWO]: "#26cd00",
-        [CardFamily.THREE]: "#ff1249",
-        [CardFamily.FOUR]: "#ffc412",
-        [CardFamily.WILD]: "#9a9a9a",
-    };
+    private static readonly UNO_BUTTON_BASE_WIDTH = 96;
+    private static readonly UNO_BUTTON_ASPECT_RATIO = 16 / 9;
+    private static readonly UNO_BUTTON_FONT_CSS_VARIABLE = "--font-pixelhb";
+    private static readonly UNO_BUTTON_FONT_FALLBACK = "PixelHB";
 
-    private _playerHand: Hand;
-    private _deck: CardPile;
-    private _discard: CardPile;
-    private _opponentsManager: OpponentsManager;
     private _playerIndex: number = -1;
-    private _pilesBackdrop: Graphics;
     private _middleArrow: Sprite;
-    private _pilesBackdropColor: string = "#3e295d";
+    private _unoButton: Container;
+    private _unoButtonBackground: Graphics;
+    private _unoButtonLabel: Text;
     private _tableWidth: number = 0;
     private _tableHeight: number = 0;
     private _middleArrowYRatio: number = 0.43;
     private _middleArrowSizeRatio: number = 0.08;
+    private _unoButtonYRatio: number = 0.57;
+    private _unoButtonWidthRatio: number = 0.08;
     private _isMiddleArrowMirrored: boolean = false;
+    
+    private _tableCenterArea: TableCenterArea;
     private _cardFamilySelector: CardFamilySelector | null = null;
-    private _pilesBackdropColors: Record<CardFamily, string> = {
-        ...TableManager.DEFAULT_PILES_BACKDROP_COLORS,
-    };
+    private _victoryScreen: VictoryScreen;
 
+    private _playerHand: Hand;
+    private _deck: CardPile;
+    private _discard: CardPile;
+    private _localPlayerName: string | null = null;
+    
     private _cardPool: CardPool;
     private _assetsManager: AssetsManager;
+    private _opponentsManager: OpponentsManager;
 
     constructor(
         cardPool: CardPool,
         assetsManager: AssetsManager,
         onPlayerCardClick?: (card: UnoCard) => void,
         onDeckClick?: () => void,
+        onUnoButtonClick?: () => void,
     )
     {
         super();
@@ -58,9 +62,36 @@ export class TableManager extends Container
 
         this._deck = new CardPile(null, true, true, onDeckClick);
         this._discard = new CardPile(null, true, false);
-        this._pilesBackdrop = new Graphics();
+        this._tableCenterArea = new TableCenterArea();
+        this._victoryScreen = new VictoryScreen();
         this._middleArrow = new Sprite(this._assetsManager.arrowTexture);
         this._middleArrow.anchor.set(0.5);
+        this._unoButton = new Container();
+        this._unoButtonBackground = new Graphics();
+        this._unoButtonLabel = new Text("UNO", {
+            fill: 0xffffff,
+            fontSize: 26,
+            fontWeight: "bold",
+            align: "center",
+            fontFamily: this.resolveUnoButtonFontFamily(),
+        });
+        this._unoButtonLabel.anchor.set(0.5);
+        this._unoButton.addChild(this._unoButtonBackground);
+        this._unoButton.addChild(this._unoButtonLabel);
+        this._unoButton.eventMode = "none";
+        this._unoButton.cursor = "default";
+        this._unoButton.visible = false;
+
+        if (onUnoButtonClick)
+        {
+            this._unoButton.eventMode = "static";
+            this._unoButton.cursor = "pointer";
+            this._unoButton.on("pointertap", () => {
+                onUnoButtonClick();
+            });
+        }
+
+        this.drawUnoButton();
 
         this._playerHand = new Hand(
             0.7,
@@ -79,20 +110,23 @@ export class TableManager extends Container
         );
 
         this.addChild(this._opponentsManager);
-        this.addChild(this._pilesBackdrop);
+        this.addChild(this._tableCenterArea);
         this.addChild(this._middleArrow);
+        this.addChild(this._unoButton);
         this.addChild(this._deck);
         this.addChild(this._discard);
         this.addChild(this._playerHand);
+        this.addChild(this._victoryScreen);
     }
 
     public initializeGame(initGameDto: InitGameDto): void
     {
         this._playerIndex = initGameDto.playerIndex;
+        this._localPlayerName = initGameDto.players[initGameDto.playerIndex]?.name ?? null;
 
-        this.initializePilesBackdropColors(
-            this._assetsManager.getThemeBackdropColors()
-        );
+        this._tableCenterArea.setColors({
+            ...this._assetsManager.getThemeBackdropColors(),
+        });
 
         this._opponentsManager.initializeOpponents(initGameDto);
 
@@ -103,10 +137,28 @@ export class TableManager extends Container
         this._playerHand.setVisible(true);
         this._deck.setVisible(true);
         this._discard.setVisible(true);
-        this._pilesBackdrop.visible = true;
+        this._tableCenterArea.visible = true;
         this.hideCardFamilySelector();
+        this.setUnoButtonVisible(false);
+        this._victoryScreen.hide();
 
         this.setActivePlayer(initGameDto.firstPlayerIndex);
+    }
+
+    public showVictoryScreen(dto: GameWinDto, localPlayerId?: string): void
+    {
+        const localPlayer = this.resolveLocalPlayer(dto.players, localPlayerId);
+        const isVictory = localPlayer
+            ? dto.winner === localPlayer.id || dto.winner === localPlayer.name
+            : false;
+
+        this.hideCardFamilySelector();
+        this.setUnoButtonVisible(false);
+        this._playerHand.setTurnActive(false);
+        this._opponentsManager.setActivePlayer(-1);
+
+        this._victoryScreen.show(dto, isVictory);
+        this._victoryScreen.resize(this._tableWidth, this._tableHeight);
     }
 
     public showCardFamilySelector(onSelect: (cardFamily: SelectableCardFamily) => void): void
@@ -115,10 +167,10 @@ export class TableManager extends Container
 
         this._cardFamilySelector = new CardFamilySelector(
             {
-                [CardFamily.ONE]: this._pilesBackdropColors[CardFamily.ONE],
-                [CardFamily.TWO]: this._pilesBackdropColors[CardFamily.TWO],
-                [CardFamily.THREE]: this._pilesBackdropColors[CardFamily.THREE],
-                [CardFamily.FOUR]: this._pilesBackdropColors[CardFamily.FOUR],
+                [CardFamily.ONE]: this._tableCenterArea.getColorForFamily(CardFamily.ONE),
+                [CardFamily.TWO]: this._tableCenterArea.getColorForFamily(CardFamily.TWO),
+                [CardFamily.THREE]: this._tableCenterArea.getColorForFamily(CardFamily.THREE),
+                [CardFamily.FOUR]: this._tableCenterArea.getColorForFamily(CardFamily.FOUR),
             },
             Math.min(this._tableWidth, this._tableHeight) * 0.18,
             (cardFamily) => {
@@ -192,6 +244,30 @@ export class TableManager extends Container
         this._opponentsManager.addOpponentCard(playerName);
     }
 
+    public setDeckVisible(isVisible: boolean): void {
+        this._deck.setVisible(isVisible);
+    }
+
+    public setUnoButtonVisible(isVisible: boolean): void
+    {
+        this._unoButton.visible = isVisible;
+
+        if (isVisible)
+        {
+            this._unoButton.eventMode = "static";
+            this._unoButton.cursor = "pointer";
+            return;
+        }
+
+        this._unoButton.eventMode = "none";
+        this._unoButton.cursor = "default";
+    }
+
+    public setUnoButtonText(text: string): void
+    {
+        this._unoButtonLabel.text = text;
+    }
+
     public updateDiscardCard(cardDto: CardDto): void
     {
         const oldCard = this._discard.card;
@@ -225,7 +301,7 @@ export class TableManager extends Container
 
         this._opponentsManager.resize(width, height);
 
-        this.updatePilesBackdrop(width, height);
+        this._tableCenterArea.update(width, height);
 
         const pilesOffset = width / 9;
 
@@ -235,10 +311,14 @@ export class TableManager extends Container
         this._discard.position.set(width / 2 + pilesOffset, height / 2);
         this._discard.resize(width, height);
 
+        this.updateUnoButton(width, height);
+
         if (this._cardFamilySelector)
         {
             this._cardFamilySelector.position.set(width / 2, height / 2);
         }
+
+        this._victoryScreen.resize(width, height);
     }
 
     private updateMiddleArrow(width: number, height: number): void
@@ -262,20 +342,131 @@ export class TableManager extends Container
         this._middleArrow.scale.x = Math.abs(this._middleArrow.scale.x) * (this._isMiddleArrowMirrored ? -1 : 1);
     }
 
+    public setTurnDirection(turnDirection: "CLOCKWISE" | "COUNTER-CLOCKWISE"): void
+    {
+        this._isMiddleArrowMirrored = turnDirection === "COUNTER-CLOCKWISE";
+        this._middleArrow.scale.x = Math.abs(this._middleArrow.scale.x) * (this._isMiddleArrowMirrored ? -1 : 1);
+    }
+
+    public applyRejoinState(dto: RejoinGameDto): void
+    {
+        this._playerIndex = this.resolveRejoinPlayerIndex(dto);
+
+        this._tableCenterArea.setColors({
+            ...this._assetsManager.getThemeBackdropColors(),
+        });
+
+        this.ensureDeckCardForRejoin();
+        this._opponentsManager.ensureOpponentsForRejoin(dto.opponents);
+        this.resetPlayerHand(dto);
+        this._opponentsManager.syncOpponentHandSizes(dto.opponents);
+        this.updateDiscardCard(dto.currentDiscardCard);
+        this.setTurnDirection(dto.turnDirection);
+        this.setActivePlayer(dto.currentPlayerIndex);
+
+        if (this._tableWidth > 0 && this._tableHeight > 0)
+        {
+            this._opponentsManager.resize(this._tableWidth, this._tableHeight);
+        }
+
+        this._playerHand.setVisible(true);
+        this._deck.setVisible(true);
+        this._discard.setVisible(true);
+        this.hideCardFamilySelector();
+        this.setUnoButtonVisible(false);
+        this._victoryScreen.hide();
+    }
+
+    private resolveRejoinPlayerIndex(dto: RejoinGameDto): number
+    {
+        if (typeof dto.playerIndex === "number" && dto.playerIndex >= 0)
+        {
+            return dto.playerIndex;
+        }
+
+        const usedIndexes = new Set<number>();
+        dto.opponents.forEach((opponent) => {
+            if (typeof opponent.index === "number" && opponent.index >= 0)
+            {
+                usedIndexes.add(opponent.index);
+            }
+        });
+
+        let inferredIndex = 0;
+        while (usedIndexes.has(inferredIndex))
+        {
+            inferredIndex += 1;
+        }
+
+        return inferredIndex;
+    }
+
+    private ensureDeckCardForRejoin(): void
+    {
+        if (this._deck.card)
+        {
+            return;
+        }
+
+        const deckCard = this._cardPool.getCard();
+        deckCard.setFaceBackCard(this._assetsManager.getCardBack("uwu"), null);
+        this._deck.setCard(deckCard);
+    }
+
+    private drawUnoButton(): void
+    {
+        const w = TableManager.UNO_BUTTON_BASE_WIDTH;
+        const h = w / TableManager.UNO_BUTTON_ASPECT_RATIO;
+        const cornerRadius = Math.min(w, h) * 0.16;
+
+        this._unoButtonBackground.clear();
+        this._unoButtonBackground.lineStyle(5, 0xffffff, 1);
+        this._unoButtonBackground.beginFill(0xdb1b2f, 1);
+        this._unoButtonBackground.drawRoundedRect(-w / 2, -h / 2, w, h, cornerRadius);
+        this._unoButtonBackground.endFill();
+    }
+
+    private resolveUnoButtonFontFamily(): string
+    {
+        if (typeof window === "undefined" || typeof document === "undefined")
+        {
+            return TableManager.UNO_BUTTON_FONT_FALLBACK;
+        }
+
+        const cssValue = window
+            .getComputedStyle(document.documentElement)
+            .getPropertyValue(TableManager.UNO_BUTTON_FONT_CSS_VARIABLE)
+            .trim();
+
+        if (!cssValue)
+        {
+            return TableManager.UNO_BUTTON_FONT_FALLBACK;
+        }
+
+        return cssValue
+            .split(",")[0]
+            .trim()
+            .replace(/^['\"]|['\"]$/g, "") || TableManager.UNO_BUTTON_FONT_FALLBACK;
+    }
+
+    private updateUnoButton(width: number, height: number): void
+    {
+        const targetWidth = width * this._unoButtonWidthRatio;
+        const baseWidth = TableManager.UNO_BUTTON_BASE_WIDTH;
+        const scale = baseWidth > 0 ? targetWidth / baseWidth : 1;
+
+        this._unoButton.position.set(width / 2, height * this._unoButtonYRatio);
+        this._unoButton.scale.set(scale);
+    }
+
     public setPilesBackdropColorByCardSet(cardFamily: CardFamily): void
     {
         console.log(`New color : ${cardFamily}`);
-        const color = this._pilesBackdropColors[cardFamily] ?? "#9a9a9a";
+        const color = this._tableCenterArea.getColorForFamily(cardFamily);
         this.setPilesBackdropColor(color);
     }
 
-    public initializePilesBackdropColors(colors: Partial<Record<CardFamily, string>>): void
-    {
-        this._pilesBackdropColors = {
-            ...TableManager.DEFAULT_PILES_BACKDROP_COLORS,
-            ...colors,
-        };
-    }
+
 
     public setPilesBackdropGrey(): void
     {
@@ -316,76 +507,55 @@ export class TableManager extends Container
         this.setPilesBackdropColorByCardSet(dto.discardTopCard.cardFamily);
     }
 
+    private resetPlayerHand(dto: RejoinGameDto): void
+    {
+        const currentCards = this._playerHand.children.filter((child) => child instanceof UnoCard) as UnoCard[];
+
+        currentCards.forEach((card) => {
+            this._playerHand.removeCard(card);
+            this._cardPool.returnCard(card);
+        });
+
+        for (const cardData of dto.playerHand)
+        {
+            const card = this._cardPool.getCard();
+            const cardModel = new Card(cardData.cardFamily, cardData.cardCode);
+            const texture = this._assetsManager.getCardTexture(
+                cardData.cardFamily,
+                cardData.cardCode
+            );
+
+            card.setFaceUpCard(texture, cardModel);
+            this._playerHand.addCard(card);
+        }
+    }
+
     private setPilesBackdropColor(color: string): void
     {
-        if (this._pilesBackdropColor === color)
-        {
-            return;
-        }
-
-        this._pilesBackdropColor = color;
-
-        if (this._tableWidth > 0 && this._tableHeight > 0)
-        {
-            this.updatePilesBackdrop(this._tableWidth, this._tableHeight);
-        }
+        this._tableCenterArea.setMainColor(color);
     }
 
-    private updatePilesBackdrop(width: number, height: number): void
+    private resolveLocalPlayer(players: GameWinPlayerDto[], localPlayerId?: string): GameWinPlayerDto | null
     {
-        if (width <= 0 || height <= 0)
+        if (localPlayerId)
         {
-            return;
+            const byId = players.find((player) => player.id === localPlayerId);
+            if (byId)
+            {
+                return byId;
+            }
         }
 
-        const rectWidth = width * TableManager.PILES_BACKDROP_WIDTH_RATIO;
-        const rectHeight = rectWidth * TableManager.PILES_BACKDROP_ASPECT_RATIO;
-        const fillColor = this.parseHexColor(this._pilesBackdropColor);
-        const borderColor = this.darkenColor(
-            fillColor,
-            TableManager.PILES_BACKDROP_BORDER_DARKEN
-        );
-        const radius = Math.min(rectWidth, rectHeight) * 0.12;
-
-        this._pilesBackdrop.clear();
-        this._pilesBackdrop.lineStyle(2, borderColor, 1);
-        this._pilesBackdrop.beginFill(fillColor, 1);
-        this._pilesBackdrop.drawRoundedRect(
-            -rectWidth / 2,
-            -rectHeight / 2,
-            rectWidth,
-            rectHeight,
-            radius
-        );
-        this._pilesBackdrop.endFill();
-        this._pilesBackdrop.position.set(width / 2, height / 2);
-    }
-
-    private darkenColor(color: number, amount: number): number
-    {
-        const r = (color >> 16) & 0xff;
-        const g = (color >> 8) & 0xff;
-        const b = color & 0xff;
-
-        const darken = (value: number) => Math.max(0, Math.round(value * (1 - amount)));
-
-        return (darken(r) << 16) + (darken(g) << 8) + darken(b);
-    }
-
-    private parseHexColor(color: string): number
-    {
-        if (color.startsWith("#"))
+        if (!this._localPlayerName)
         {
-            return parseInt(color.slice(1), 16);
+            return null;
         }
 
-        if (color.startsWith("0x"))
-        {
-            return parseInt(color.slice(2), 16);
-        }
-
-        return parseInt(color, 16);
+        const byName = players.find((player) => player.name === this._localPlayerName);
+        return byName ?? null;
     }
+
+
 
     public destroy(): void
     {

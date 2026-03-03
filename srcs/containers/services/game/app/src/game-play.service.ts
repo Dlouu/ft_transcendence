@@ -1,23 +1,23 @@
 import { GameLogicService } from './game-logic.service';
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { DeckService } from "./deck.service";
-import { GameRepositoryService } from "./game-repository";
 import { CardDto } from './dto/card.dto';
 import { Game } from './domain/UnoGame';
-import { CardCode, CardFamily } from './domain/GameEnums';
+import { CardCode, GameState } from './domain/GameEnums';
 import { Card } from './domain/UnoCard';
 import { UnoPlayer } from './domain/UnoPlayer';
 import { toPlayedCardDto } from './dto/played-card.dto';
 import { GameService } from './game.service';
 import { toDrewCardDto } from './dto/drawn-card.dto';
+import { GameRepositoryService } from './game-repository';
 
 // Handles the inputs of the players of the game (play card, draw, uno).
 @Injectable()
 export class GamePlayService {
 	constructor(
 		private readonly deckService: DeckService,
-		private readonly gameRepository: GameRepositoryService,
 		private readonly gameLogicService: GameLogicService,
+		private readonly gameRepository: GameRepositoryService,
 		@Inject(forwardRef(() => GameService))
 		private readonly gameService: GameService,
 	) {}
@@ -60,11 +60,11 @@ export class GamePlayService {
 		return true;
 	}
 
-	playDrawTwoCard(playerId: string, game: Game, playedCard: Card): boolean {
+	playDrawTwoCard(game: Game, playedCard: Card): boolean {
 		game.discard.push(playedCard);
 		game.currentFamily = playedCard.family;
 
-		this.drawCard(this.gameLogicService.getNextPlayer(game)._id, game, 2, true);
+		this.drawCard(game, 2, true, this.gameLogicService.getNextPlayer(game));
 		this.gameLogicService.goToNextPlayerIndex(game);
 
 		return true;
@@ -89,7 +89,7 @@ export class GamePlayService {
 
 		const chosenFamily = await this.gameLogicService.askPlayerColor(game, player);
 		console.log(`Choosen color: ${chosenFamily}`);
-		this.drawCard(targetPlayer._id, game, 4, true);
+		this.drawCard(game, 4, true, targetPlayer);
 		this.gameLogicService.goToNextPlayerIndex(game);
 		game.currentFamily = chosenFamily;
 		playedCard.family = chosenFamily;
@@ -99,24 +99,17 @@ export class GamePlayService {
 		return true;
 	}
 
-	async playCard(playerId: string, game: Game, dto: CardDto): Promise<boolean> {
-		const player = this.gameRepository.getPlayerInGame(game, playerId);
-		if (!player)
-		{
-			console.log(`Player ${playerId} is not in the game ${game.roomName}`); // TODO: Replace this console log
-			return false;
-		}
-
+	async playCard(game: Game, dto: CardDto, player: UnoPlayer): Promise<boolean> {
 		if (!this.gameLogicService.isPlayersTurn(game, player))
 		{
-			console.log(`It's not player ${playerId}'s turn is not in the game ${game.roomName}`); // TODO: Replace this console log
+			console.log(`It's not player ${player._name}'s turn is not in the game ${game.roomName}`); // TODO: Replace this console log
 			return false;
 		}
 
 		const cardIndex = this.gameLogicService.doesPlayerHaveCard(dto, player);
 		if (cardIndex === -1)
 		{
-			console.log(`Player ${playerId} is not in the game ${game.roomName} does not have the card ${dto.cardCode} ${dto.cardFamily}`); // TODO: Replace this console log
+			console.log(`Player ${player._name} is not in the game ${game.roomName} does not have the card ${dto.cardCode} ${dto.cardFamily}`); // TODO: Replace this console log
 			return false;
 		}
 
@@ -128,7 +121,7 @@ export class GamePlayService {
 		const topCard = game.discard.peek();
 		if (!this.gameLogicService.isPlayable(topCard, dto))
 		{
-			console.log(`Player ${playerId}'s card is not playable in the game ${game.roomName}`); // TODO: Replace this console log
+			console.log(`Player ${player._name}'s card is not playable in the game ${game.roomName}`); // TODO: Replace this console log
 			player._hand.splice(cardIndex, 0, playedCard);
 			return false;
 		}
@@ -136,26 +129,38 @@ export class GamePlayService {
 		player._socket?.emit("game:played:card:self", toPlayedCardDto(player._name, playedCard, cardIndex));
 		player._socket?.to(game.roomName).emit("game:played:card:others", toPlayedCardDto(player._name, playedCard, cardIndex));
 
+		if (game.deck.length === 0)
+		{
+			this.deckService.discardToDeck(game);
+			this.getIoServer()?.to(game.roomName).emit("game:deck:shuffled");
+		}
+
+		let hasBeenPlayed = false;
 		switch (dto.cardCode) {
 			case CardCode.Reverse:
-				this.playReverseCard(game, playedCard)
-				return true;
+				hasBeenPlayed = this.playReverseCard(game, playedCard);
+				break;
 			case CardCode.Skip:
-				this.playSkipCard(game, playedCard);
-				return true;
+				hasBeenPlayed = this.playSkipCard(game, playedCard);
+				break;
 			case CardCode.DrawTwo:
-				this.playDrawTwoCard(playerId, game, playedCard);
-				return true;
+				hasBeenPlayed = this.playDrawTwoCard(game, playedCard);
+				break;
 			case CardCode.Wild:
-				await this.playWildCard(game, playedCard, player);
-				return true;
+				hasBeenPlayed = await this.playWildCard(game, playedCard, player);
+				break;
 			case CardCode.WildDrawFour:
-				await this.playWildDrawFourCard(game, playedCard, player);
-				return true;
+				hasBeenPlayed = await this.playWildDrawFourCard(game, playedCard, player);
+				break;
 
 			default:
-				this.playValueCard(game, playedCard);
-				return true;
+				hasBeenPlayed = this.playValueCard(game, playedCard);
+				break;
+		}
+
+		if (!hasBeenPlayed) {
+			player._hand.splice(cardIndex, 0, playedCard);
+			return false;
 		}
 
 		return true;
@@ -165,9 +170,37 @@ export class GamePlayService {
 	// ======= BUTTON UNO EFFECT =======
 	// =================================
 
-	shoutUno(playerId: string): boolean
+	shoutUno(game: Game, player: UnoPlayer): boolean
 	{
-		// TODO: Do the function.
+		const unoPenaltyCards = 2;
+
+		const pendingIndex = game.pendingUnoPlayerIndex;
+		if (pendingIndex === null) {
+			return false;
+		}
+
+		const pendingPlayer = game.players[pendingIndex];
+		if (!pendingPlayer || pendingPlayer._hand.length !== 1) {
+			game.pendingUnoPlayerIndex = null;
+			return false;
+		}
+
+		if (pendingPlayer._id === player._id) {
+			pendingPlayer.hasShoutedUno = true;
+			game.pendingUnoPlayerIndex = null;
+
+			this.getIoServer()?.to(game.roomName).emit("game:uno:catched");
+
+			return true;
+		}
+
+		game.pendingUnoPlayerIndex = null;
+		if (!this.drawCard(game, unoPenaltyCards, true, pendingPlayer)) {
+			this.getIoServer()?.to(game.roomName).emit("game:uno:catched");
+			return false;
+		}
+
+		this.getIoServer()?.to(game.roomName).emit("game:uno:catched");
 
 		return true;
 	}
@@ -176,27 +209,22 @@ export class GamePlayService {
 	// ======= DECK DRAW EFFECT =======
 	// ================================
 
-	drawCard(playerId: string, game: Game, iterNbr: number, isDrawCard: boolean): boolean
+	drawCard(game: Game, iterNbr: number, isDrawCard: boolean, player: UnoPlayer): boolean
 	{
 		// TODO: Do the function.
-		const player = this.gameRepository.getPlayerInGame(game, playerId);
-		if (!player)
-		{
-			console.log(`Player ${playerId} is not in the game ${game.roomName}`); // TODO: Replace this console log
-			return false;
-		}
-
 		if (!this.gameLogicService.isPlayersTurn(game, player) && !isDrawCard)
 		{
-			console.log(`It's not player ${playerId}'s turn is not in the game ${game.roomName}`); // TODO: Replace this console log
+			console.log(`It's not player ${player._id}'s turn is not in the game ${game.roomName}`); // TODO: Replace this console log
 			return false;
 		}
 
 		if (game.deck.length === 0)
 		{
 			this.deckService.discardToDeck(game);
-			this.getIoServer()?.to(game.roomName).emit("game:deck:discard")
-			this.getIoServer()?.to(game.roomName).emit("game:deck:shuffled")
+			if (game.deck.length === 0)
+				this.getIoServer()?.to(game.roomName).emit("game:deck:empty");
+			else
+				this.getIoServer()?.to(game.roomName).emit("game:deck:shuffled");
 		}
 
 		for (let i = 0; i < iterNbr; i++) {
@@ -209,6 +237,8 @@ export class GamePlayService {
 	
 			player._hand.push(card);
 			player.hasDrawThisTurn = true;
+
+			console.log(`Player ${player._name} drew the card ${card.value} ${card.family}`);
 	
 			player._socket?.emit("game:draw:self", toDrewCardDto(player._name, card));
 			player._socket?.to(game.roomName).emit("game:draw:others", toDrewCardDto(player._name, undefined));

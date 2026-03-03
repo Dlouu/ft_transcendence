@@ -6,6 +6,7 @@ import { GameLogicService } from "./game-logic.service";
 import { GamePlayService } from "./game-play.service";
 import { DeckService } from "./deck.service";
 import { GameRepositoryService } from "./game-repository";
+import { BotLogicService } from "./bot-logic.service";
 
 @Module({
 	providers: [
@@ -15,6 +16,7 @@ import { GameRepositoryService } from "./game-repository";
 		GamePlayService,
 		DeckService,
 		GameRepositoryService,
+		BotLogicService,
 	],
 	controllers: [GameController],
 	exports: [
@@ -24,6 +26,7 @@ import { GameRepositoryService } from "./game-repository";
 		GamePlayService,
 		DeckService,
 		GameRepositoryService,
+		BotLogicService,
 	],
 })
 export class GameModule {}
