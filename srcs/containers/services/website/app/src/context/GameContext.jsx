@@ -12,6 +12,11 @@ export function GameProvider({ children }) {
 			gamesPlayed: 0,
 			gamesWon: 0,
 			winRate: 0,
+			unoCount: 0,
+			uwuCount: 0,
+			plus4count: 0,
+			cardsDrew: 0,
+			biggestHand: 0,
 		},
 	});
 
@@ -23,6 +28,11 @@ export function GameProvider({ children }) {
 				gamesPlayed: 10,
 				gamesWon: 5,
 				winRate: 50, //faire un calcul ici plus tard
+				unoCount: 5,
+				uwuCount: 2,
+				plus4count: 4,
+				cardsDrew: 124,
+				biggestHand: 26,
 			},
 		});
 	}, []);

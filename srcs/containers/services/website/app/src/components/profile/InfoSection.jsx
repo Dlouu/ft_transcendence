@@ -10,6 +10,20 @@ function InfoSection({ user }) {
 	const { notify } = useNotifications();
 	const { updateUser } = useUser();
 
+	const updateUserAccount = async (field, value) => {
+
+		if (!value) {
+			notify("Please type something", "error");
+			return;
+		}
+		if (value === user[field]) {
+			notify("No changes detected", "info");
+			return;
+		}
+
+		await updateUser(field, value);
+	};
+
 	return (
 		<>
 			<EditableField
@@ -18,7 +32,7 @@ function InfoSection({ user }) {
 				isEditing={editingField === "username"}
 				onEdit={() => setEditingField("username")}
 				onCancel={() => setEditingField(null)}
-				onSave={(newValue) => updateUser("username", newValue)}
+				onSave={(newValue) => updateUserAccount("username", newValue)}
 			/>
 
 			<EditableField
@@ -27,7 +41,7 @@ function InfoSection({ user }) {
 				isEditing={editingField === "email"}
 				onEdit={() => setEditingField("email")}
 				onCancel={() => setEditingField(null)}
-				onSave={(newValue) => updateUser("email", newValue)}
+				onSave={(newValue) => updateUserAccount("email", newValue)}
 			/>
 		</>
 	);

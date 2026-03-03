@@ -36,12 +36,16 @@ function GalleryImage() {
 
 					</div>
 
-					<div className="flex flex-col gap-4">
+					<div className="flex flex-col gap-1">
 						<p className="text-gray-400">
 							Author: {image.author}
 						</p>
 						<Button>
 							EDIT
+						</Button>
+
+						<Button>
+							DUPLICATE
 						</Button>
 
 						{/* {canDelete && ( */}

@@ -21,7 +21,7 @@ function ToolSelector({ tool, setTool }) {
 	}, []);
 
 	return (
-		<div className="flex gap-1">
+		<div className="flex sm:flex-col gap-1">
 			<Tooltip message = "pen [Z] [.]">
 				<Button
 					variant="icon"

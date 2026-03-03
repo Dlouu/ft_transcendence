@@ -21,9 +21,10 @@ function Me() {
 					<div>
 						<AvatarSection user={user}/>
 						<InfoSection user={user}/>
-						<PasswordSection />
-						<DeleteAccount logout={logout}/>
-						<PersonalGallery/>
+						<div className="flex flex-col sm:w-1/2 w-full">
+							<PasswordSection />
+							<DeleteAccount logout={logout}/>
+						</div>
 					</div>
 
 					<Sidebar profile={profile}/>

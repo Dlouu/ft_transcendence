@@ -26,13 +26,17 @@ function DeleteAccount({ profile }) {
 	};
 
 	return (
-		<div>	
+		<>	
 			{!isDeletingAccount ? (
-				<Button variant="secondary" onClick={() => setIsDeletingAccount(true)}>
+				<Button variant="red" onClick={() => setIsDeletingAccount(true)}>
 					DELETE ACCOUNT
-					</Button>
+				</Button>
 			) : (
-				<div className="flex flex-col gap-2 mt-4">
+				<div className="flex flex-col gap-2">
+					<Button variant="red" onClick={() => setIsDeletingAccount(false)}>
+						DELETE ACCOUNT
+					</Button>
+
 					<Input
 						type="password"
 						placeholder="Type your password"
@@ -50,11 +54,11 @@ function DeleteAccount({ profile }) {
 					/>
 
 					<div className="flex gap-2">
-						<Button onClick={deleteUserAccount}>
+						<Button variant="password" onClick={deleteUserAccount}>
 							DELETE
 						</Button>
 						<Button
-							variant="secondary"
+							variant="password"
 							onClick={() => {
 								setIsDeletingAccount(false);
 								setPassword("");
@@ -66,7 +70,7 @@ function DeleteAccount({ profile }) {
 					</div>
 				</div>
 			)}
-		</div>
+		</>
 	);
 }
 

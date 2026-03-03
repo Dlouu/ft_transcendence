@@ -1,11 +1,15 @@
 export const WIDTH = 88;
 export const HEIGHT = 136;
-export const MAX_HEIGHT_RATIO = 0.7;
+export const MAX_HEIGHT_RATIO = 0.8;
+export const MAX_WIDTH_RATIO = 0.9;
 
 export const COLORS = [
 	"#000000",
 	"#ffffff",
 	"#8a3887",
+	"#ff00ff",
+	"#f0000f",
+	"#fff00f",
 ];
 
 export const BRUSH_SIZES = [1, 2, 3, 4];
