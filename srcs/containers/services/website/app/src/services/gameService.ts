@@ -1,293 +1,158 @@
-import { Application, Assets, Graphics, Sprite, Texture } from 'pixi.js';
-import { io, Socket } from 'socket.io-client';
-import { Hand, HandRotation } from './game/Hand';
-import { UnoCard } from './game/UnoCard';
-import { CardPool } from './game/CardPool';
-import { AssetsManager, CardSet, CardsTheme, CardValue } from './game/AssetsManager';
-import { CardPile } from './game/CardPile';
+import { Application } from "pixi.js";
+import { io, Socket } from "socket.io-client";
+import { CardPool } from "./game/domain/CardPool";
+import { AssetsManager } from "./game/managers/AssetsManager";
+import { CardsTheme } from "./game/domain/GameEnums";
+import { TableManager } from "./game/managers/TableManager";
+import { InitGameDto } from "./game/dto/init-game.dto";
+import { UnoCard } from "./game/domain/UnoCard";
+import { handleDeckClicked, handlePlayerCardClicked, handleUnoClicked } from "./gameInputCallbacks";
+import { registerServerEventCallbacks } from "./gameServerEventCallbacks";
 
-interface IGameInitOptions
-{
-    canvas: HTMLCanvasElement;
-    playerId: string;
+interface IGameInitOptions {
+	canvas: HTMLCanvasElement;
+	playerId: string;
 }
 
-export class GameService
-{
-    private app: Application | null = null;
-    private socket: Socket | null = null;
+export class GameService {
+	private _app: Application | null = null;
+	private _socket: Socket | null = null;
+	private _playerId: string | null = null;
 
-    private _isInitialized: boolean = false;
+	private _isInitialized: boolean = false;
+	private _hasGameStarted: boolean = false;
+	private _hasHandInitialized: boolean = false;
+	private _ready: Promise<void>;
+	private _resolveReady!: () => void;
 
-    private _playerHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Bottom, true);
-    private _topOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Top);
-    private _leftOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Left);
-    private _rightOppHand: Hand = new Hand(0.7, 0.4, 0.66, HandRotation.Right);
+	private _cardPool!: CardPool;
+	private _assetsMangr: AssetsManager = new AssetsManager();
+	private _tableManager: TableManager | null = null;
+	private _pendingInitGameDto: InitGameDto | null = null;
 
-    private _deck: CardPile = new CardPile(null, true, true);
-    private _discard: CardPile = new CardPile(null, true, false);
+	constructor() {
+		this._app = null;
+		this._ready = new Promise((resolve) => {
+			this._resolveReady = resolve;
+		});
+	}
 
-    private _cardPool!: CardPool;
-    private _assetsMangr!: AssetsManager;
+	public async init({ canvas, playerId }: IGameInitOptions): Promise<void> {
+		if (!canvas) {
+			throw new Error("GameService.init: canvas is required");
+		}
 
-    constructor()
-    {
-        this.app = null;
-        this._isInitialized = false;
-    }
+		this._playerId = playerId;
 
-    public async init({ canvas, playerId }: IGameInitOptions): Promise<void>
-    {
-        if (!canvas)
-        {
-            throw new Error("GameService.init: canvas is required");
-        }
+		this._app = new Application();
 
-        this.app = new Application();
+		await this._app.init({
+			canvas: canvas,
+			width: canvas.clientWidth,
+			height: canvas.clientHeight,
+			backgroundColor: "#291c3d",
+			// backgroundAlpha: 0.3,
+			resolution: window.devicePixelRatio || 1,
+			autoDensity: true,
+			antialias: true,
+		});
 
-        await this.app.init(
-        {
-            canvas: canvas,
-            width: canvas.clientWidth,
-            height: canvas.clientHeight,
-            backgroundColor: "#291c3d",
-            // backgroundAlpha: 0.3,
-            resolution: window.devicePixelRatio || 1,
-            autoDensity: true,
-            antialias: true
-        });
+		this.initSocket(playerId);
 
-        this.initSocket(playerId);
+		this._cardPool = new CardPool(this._app.stage);
 
-        this._assetsMangr = new AssetsManager();
+		this._tableManager = new TableManager(
+			this._cardPool,
+			this._assetsMangr,
+			(card) => this.onPlayerCardClicked(card),
+			() => this.onDeckClicked(),
+			() => this.onUnoClicked(),
+		);
 
-        await this._assetsMangr.loadTheme(CardsTheme.Uwu);
-        await this._assetsMangr.loadCardBacks(["uwu"]);
+		this._isInitialized = true;
+		this._resolveReady();
+	}
 
-        this._cardPool = new CardPool(this.app.stage);
+	public initSocket(playerId: string): void {
+		const socketOptions = {
+			query: {
+				playerId: playerId,
+			},
+			transports: ["websocket"],
+		};
 
-        this.app.stage.addChild(this._playerHand, 
-                                this._topOppHand,
-                                this._leftOppHand,
-                                this._rightOppHand,
-                                this._deck,
-                                this._discard);
+		this._socket = io("http://localhost:3000", socketOptions);
+		this.registerSocketListeners();
+	}
 
-        this._isInitialized = true;
+	private registerSocketListeners(): void {
+		if (!this._socket) return;
 
-        this.onResize(canvas.clientWidth, canvas.clientHeight);
-    }
+		registerServerEventCallbacks({
+			socket: this._socket,
+			ready: this._ready,
+			getPlayerId: () => this._playerId,
+			hasHandInitialized: () => this._hasHandInitialized,
+			setHandInitialized: (value) => {
+				this._hasHandInitialized = value;
+			},
+			hasGameStarted: () => this._hasGameStarted,
+			setPendingInitGameDto: (value) => {
+				this._pendingInitGameDto = value;
+			},
+			startGame: () => this.start(),
+			getTableManager: () => this._tableManager,
+		});
+	}
 
-    public initSocket(playerId: string): void
-    {
-        const socketOptions = {
-            query: {
-                playerId: playerId
-            },
-            transports: ['websocket']
-        };
+	private async initGame(dto: InitGameDto): Promise<void> {
+		if (!this._tableManager || !this._app) return;
 
-        const socketBaseUrl = import.meta.env.VITE_GAME_SOCKET_URL || window.location.origin;
-        this.socket = io(socketBaseUrl, { ...socketOptions, path: '/socket.io' });
+		const theme = dto.cardTheme === "basic" ? CardsTheme.Basic : CardsTheme.Uwu;
+		await this._assetsMangr.loadTheme(theme);
+		await this._assetsMangr.loadCardBacks(["uwu"]);
 
-        this.socket.on('connect', () =>
-        {
-            console.log('GameService: Socket connected', this.socket?.id);
-        });
+		if (this._tableManager.parent !== this._app.stage) {
+			this._app.stage.addChild(this._tableManager);
+		}
 
-        this.socket.on('connect_error', (err) =>
-        {
-            console.error('GameService: Connection error', err);
-            window.location.href = '/';
-        });
+		this._tableManager.initializeGame(dto);
+		this._tableManager.resize(this._app.screen.width, this._app.screen.height);
+	}
 
-        this.socket.on('disconnect', (reason) =>
-        {
-            if (reason === 'io server disconnect')
-            {
-                window.location.href = '/';
-            }
-        });
-    }
+	private async start(): Promise<void> {
+		if (!this._isInitialized || this._hasGameStarted) return;
 
-    /**
-     * Setup the game scene (add sprites, logic, etc.)
-     */
-    public start(): void
-    {
-        if (!this.app || !this._isInitialized) return;
+		if (this._pendingInitGameDto) {
+			await this.initGame(this._pendingInitGameDto);
+			this._pendingInitGameDto = null;
+		} else if (this._tableManager && this._app) {
+			if (!this._assetsMangr.isLoaded) {
+				await this._assetsMangr.loadTheme(CardsTheme.Basic);
+				await this._assetsMangr.loadCardBacks(["uwu"]);
+			}
 
-        // Example: Add a simple "Card" to the stage
-        // this.drawExampleCardFromSprite();
+			if (this._tableManager.parent !== this._app.stage) {
+				this._app.stage.addChild(this._tableManager);
+			}
 
-        // TO DELETE, JUST FOR TEST
-        const deckCard = this._cardPool.getCard();
-        deckCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
-        this._deck.setCard(deckCard);
-        const discardCard = this._cardPool.getCard();
-        discardCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, CardValue.One), true);
-        this._discard.setCard(discardCard);
+			this._tableManager.resize(this._app.screen.width, this._app.screen.height);
+		}
 
-        for (let i = 0; i < 7; i++) {
-            const dowTopCard = this._cardPool.getCard();
-            const dowLeftCard = this._cardPool.getCard();
-            const dowRightCard = this._cardPool.getCard();
-            dowTopCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
-            dowLeftCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
-            dowRightCard.setFaceBackCard(this._assetsMangr.getCardBack('uwu'), true);
-            this._topOppHand.addCard(dowTopCard);
-            this._leftOppHand.addCard(dowLeftCard);
-            this._rightOppHand.addCard(dowRightCard);
-        }
-        const values = [
-            CardValue.Zero, CardValue.One, CardValue.Two, CardValue.Three, CardValue.Four, 
-            CardValue.Five, CardValue.Six, CardValue.Seven, CardValue.Eight, CardValue.Nine, 
-            CardValue.PlusTwo, CardValue.Reverse, CardValue.Skipp
-        ];
+		this._hasGameStarted = true;
+	}
 
-        for (let i = 0; i < 7; i++) {
-            const upCard = this._cardPool.getCard();
-            const value = values[i % values.length];
+	private onPlayerCardClicked(card: UnoCard): void {
+		handlePlayerCardClicked(card, this._socket);
+	}
 
-            upCard.setFaceUpCard(this._assetsMangr.getCardTexture(CardSet.One, value), true);
-            this._playerHand.addCard(upCard);
-        }
-        // END OF DELETE
+	private onDeckClicked(): void {
+		handleDeckClicked(this._socket);
+	}
 
-        // Pixi handles the loop automatically via app.ticker
-        // You can add your own update logic here:
-        this.app.ticker.add((ticker) =>
-        {
-            this.update(ticker.deltaTime);
-        });
-    }
-
-    /**
-     * Main Game Loop
-     * @param _dt Delta time from Pixi Ticker
-     */
-    private update(_dt: number): void
-    {
-        // Add your game logic here
-        // Example: socket.emit('playerMove', ...)
-    }
-
-    /**
-     * Handle window resizing.
-     * Called from the React component.
-     */
-    public onResize(width: number, height: number): void
-    {
-        if (!this.app || !this._isInitialized) return;
-
-        // console.log("Width : " + width + " | Height : " + height)
-
-        // this.app.renderer.resize(width, height);
-
-        // TO DELETE ONE OF THEM
-        // const w = this.app.screen.width;
-        // const h = this.app.screen.height;
-
-        const w = width;
-        const h = height;
-        // END OF DELETE
-
-        // ===== HANDS =====
-
-        // Player Hand
-        this._playerHand.position.set(w / 2, h * 0.875); 
-        this._playerHand.resize(w, h);
-        this._playerHand.setVisible(true);
-
-        // Top Opponent
-        this._topOppHand.position.set(w / 2, h * 0.125);
-        this._topOppHand.resize(w, h);
-        this._topOppHand.setVisible(true);
-
-        // Left Opponent
-        this._leftOppHand.position.set(w * 0.07, h / 2);
-        this._leftOppHand.resize(w, h);
-        this._leftOppHand.setVisible(true);
-
-        // Right Opponent
-        this._rightOppHand.position.set(w * 0.93, h / 2);
-        this._rightOppHand.resize(w, h);
-        this._rightOppHand.setVisible(true);
-
-        // ===== CARD PILES =====
-
-        let pilesOffset: number = w / 9;
-
-        // Deck
-        this._deck.position.set((w / 2) - pilesOffset, h / 2);
-        this._deck.resize(w, h);
-        this._deck.setVisible(true);
-
-        // Discard
-        this._discard.position.set((w / 2) + pilesOffset, h / 2);
-        this._discard.resize(w, h);
-        this._discard.setVisible(true);
-    }
-
-    /**
-     * Cleanup when the React component unmounts
-     */
-    public destroy(): void
-    {
-        if (this.socket)
-        {
-            this.socket.disconnect();
-            this.socket = null;
-        }
-
-        if (this.app)
-        {
-            // Remove persistent components from the stage so they aren't destroyed
-            if (this._playerHand) this.app.stage.removeChild(this._playerHand);
-            if (this._topOppHand) this.app.stage.removeChild(this._topOppHand);
-            if (this._leftOppHand) this.app.stage.removeChild(this._leftOppHand);
-            if (this._rightOppHand) this.app.stage.removeChild(this._rightOppHand);
-            if (this._deck) this.app.stage.removeChild(this._deck);
-            if (this._discard) this.app.stage.removeChild(this._discard);
-
-            // Clear Hands
-            this._cleanupHand(this._playerHand);
-            this._cleanupHand(this._topOppHand);
-            this._cleanupHand(this._leftOppHand);
-            this._cleanupHand(this._rightOppHand);
-
-            // Clear Piles
-            this._cleanupPile(this._deck);
-            this._cleanupPile(this._discard);
-
-            if (this._cardPool)
-            {
-                this._cardPool.destroy();
-            }
-
-            this.app.destroy({ removeView: false }, { children: true });
-            this.app = null;
-        }
-        
-        this._isInitialized = false;
-    }
-
-    private _cleanupHand(hand: Hand): void
-    {
-        const cards = hand.children.filter((c) => c instanceof UnoCard) as UnoCard[];
-        cards.forEach((c) => {
-            hand.removeCard(c);
-        });
-    }
-
-    private _cleanupPile(pile: CardPile): void 
-    {
-        const card = pile.card;
-        if (card)
-        {
-            pile.setCard(null);
-        }
-    }
+	private onUnoClicked(): void {
+		handleUnoClicked(this._socket);
+	}
 }
 
 export const gameService = new GameService();

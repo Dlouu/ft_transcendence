@@ -1,7 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { IoAdapter } from "@nestjs/platform-socket.io";
-import { GameModule } from "./game/game.module";
+import { GameModule } from "./game.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(GameModule);
