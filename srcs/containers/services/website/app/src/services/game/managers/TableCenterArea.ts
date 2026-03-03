@@ -69,15 +69,15 @@ export class TableCenterArea extends Container {
         const borderRadius = mainRadius + 4;
         this._mainBackdrop.clear();
         // Draw border first (slightly larger)
-        this._mainBackdrop.lineStyle(borderThickness, borderFill, 1);
-        this._mainBackdrop.beginFill(borderFill, 1);
-        this._mainBackdrop.drawRoundedRect(-mainW/2 - borderThickness/2, -mainH/2 - borderThickness/2, mainW + borderThickness, mainH + borderThickness, borderRadius);
-        this._mainBackdrop.endFill();
+        this._mainBackdrop
+            .roundRect(-mainW/2 - borderThickness/2, -mainH/2 - borderThickness/2, mainW + borderThickness, mainH + borderThickness, borderRadius)
+            .fill({ color: borderFill, alpha: 1 })
+            .stroke({ width: borderThickness, color: borderFill, alpha: 1 });
         // Draw main area on top
-        this._mainBackdrop.lineStyle(2, mainBorder, 1);
-        this._mainBackdrop.beginFill(mainFill, 1);
-        this._mainBackdrop.drawRoundedRect(-mainW/2, -mainH/2, mainW, mainH, mainRadius);
-        this._mainBackdrop.endFill();
+        this._mainBackdrop
+            .roundRect(-mainW/2, -mainH/2, mainW, mainH, mainRadius)
+            .fill({ color: mainFill, alpha: 1 })
+            .stroke({ width: 2, color: mainBorder, alpha: 1 });
         this._mainBackdrop.position.set(width/2, height/2);
         // Deck and discard backdrops (vertical)
         const bdW = width * TableCenterArea.BACKDROP_WIDTH_RATIO;
@@ -91,17 +91,17 @@ export class TableCenterArea extends Container {
         const offset = width / 9;
         // Deck
         this._deckBackdrop.clear();
-        this._deckBackdrop.lineStyle(2, bdBorder, 1);
-        this._deckBackdrop.beginFill(bdFill, 0.18);
-        this._deckBackdrop.drawRoundedRect(-verticalW/2, -verticalH/2, verticalW, verticalH, bdRadius);
-        this._deckBackdrop.endFill();
+        this._deckBackdrop
+            .roundRect(-verticalW/2, -verticalH/2, verticalW, verticalH, bdRadius)
+            .fill({ color: bdFill, alpha: 0.18 })
+            .stroke({ width: 2, color: bdBorder, alpha: 1 });
         this._deckBackdrop.position.set(width/2 - offset, height/2);
         // Discard
         this._discardBackdrop.clear();
-        this._discardBackdrop.lineStyle(2, bdBorder, 1);
-        this._discardBackdrop.beginFill(bdFill, 0.18);
-        this._discardBackdrop.drawRoundedRect(-verticalW/2, -verticalH/2, verticalW, verticalH, bdRadius);
-        this._discardBackdrop.endFill();
+        this._discardBackdrop
+            .roundRect(-verticalW/2, -verticalH/2, verticalW, verticalH, bdRadius)
+            .fill({ color: bdFill, alpha: 0.18 })
+            .stroke({ width: 2, color: bdBorder, alpha: 1 });
         this._discardBackdrop.position.set(width/2 + offset, height/2);
     }
 

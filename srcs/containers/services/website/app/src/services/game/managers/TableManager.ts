@@ -18,7 +18,8 @@ export class TableManager extends Container
 {
     private static readonly UNO_BUTTON_BASE_WIDTH = 96;
     private static readonly UNO_BUTTON_ASPECT_RATIO = 16 / 9;
-    private static readonly UNO_BUTTON_FONT_CSS_VARIABLE = "--font-pixelhb";
+    private static readonly UNO_BUTTON_FILL_COLOR = "#291c3d";
+    private static readonly UNO_BUTTON_FONT_CSS_VARIABLE = "--font-pixelm";
     private static readonly UNO_BUTTON_FONT_FALLBACK = "PixelHB";
 
     private _playerIndex: number = -1;
@@ -68,12 +69,15 @@ export class TableManager extends Container
         this._middleArrow.anchor.set(0.5);
         this._unoButton = new Container();
         this._unoButtonBackground = new Graphics();
-        this._unoButtonLabel = new Text("UNO", {
-            fill: 0xffffff,
-            fontSize: 26,
-            fontWeight: "bold",
-            align: "center",
-            fontFamily: this.resolveUnoButtonFontFamily(),
+        this._unoButtonLabel = new Text({
+            text: "UNO",
+            style: {
+                fill: 0xffffff,
+                fontSize: 26,
+                fontWeight: "bold",
+                align: "center",
+                fontFamily: this.resolveUnoButtonFontFamily(),
+            },
         });
         this._unoButtonLabel.anchor.set(0.5);
         this._unoButton.addChild(this._unoButtonBackground);
@@ -420,10 +424,10 @@ export class TableManager extends Container
         const cornerRadius = Math.min(w, h) * 0.16;
 
         this._unoButtonBackground.clear();
-        this._unoButtonBackground.lineStyle(5, 0xffffff, 1);
-        this._unoButtonBackground.beginFill(0xdb1b2f, 1);
-        this._unoButtonBackground.drawRoundedRect(-w / 2, -h / 2, w, h, cornerRadius);
-        this._unoButtonBackground.endFill();
+        this._unoButtonBackground
+            .roundRect(-w / 2, -h / 2, w, h, cornerRadius)
+            .fill({ color: TableManager.UNO_BUTTON_FILL_COLOR, alpha: 1 })
+            .stroke({ width: 5, color: 0xffffff, alpha: 1 });
     }
 
     private resolveUnoButtonFontFamily(): string

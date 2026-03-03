@@ -3,6 +3,9 @@ import { GameWinDto } from "../dto/game-win.dto";
 
 export class VictoryScreen extends Container
 {
+    private static readonly UI_FONT_CSS_VARIABLE = "--font-pixelm";
+    private static readonly UI_FONT_FALLBACK = "PixelHB";
+
     private _panelWidthRatio: number = 0.76;
     private _panelAspectRatio: number = 16 / 9;
     private _panelCornerRadiusRatio: number = 0.03;
@@ -36,33 +39,46 @@ export class VictoryScreen extends Container
         super();
 
         this._onActionClick = onActionClick;
+        const uiFontFamily = this.resolveUiFontFamily();
 
         this._overlay = new Graphics();
         this._overlay.eventMode = "static";
 
         this._panel = new Graphics();
 
-        this._title = new Text("VICTORY", {
-            fill: 0xffffff,
-            fontSize: 56,
-            fontWeight: "bold",
-            align: "center",
+        this._title = new Text({
+            text: "VICTORY",
+            style: {
+                fill: 0xffffff,
+                fontSize: 56,
+                fontWeight: "bold",
+                align: "center",
+                fontFamily: uiFontFamily,
+            },
         });
         this._title.anchor.set(0.5, 0);
 
-        this._gameStatsLabel = new Text("", {
-            fill: 0xd5cfff,
-            fontSize: 19,
-            align: "center",
+        this._gameStatsLabel = new Text({
+            text: "",
+            style: {
+                fill: 0xd5cfff,
+                fontSize: 19,
+                align: "center",
+                fontFamily: uiFontFamily,
+            },
         });
         this._gameStatsLabel.anchor.set(0.5, 0);
 
         this._buttonBackground = new Graphics();
-        this._buttonLabel = new Text("Continue", {
-            fill: 0xffffff,
-            fontSize: 24,
-            fontWeight: "bold",
-            align: "center",
+        this._buttonLabel = new Text({
+            text: "Continue",
+            style: {
+                fill: 0xffffff,
+                fontSize: 24,
+                fontWeight: "bold",
+                align: "center",
+                fontFamily: uiFontFamily,
+            },
         });
         this._buttonLabel.anchor.set(0.5);
 
@@ -107,15 +123,15 @@ export class VictoryScreen extends Container
         const panelTop = (height - panelHeight) / 2;
 
         this._overlay.clear();
-        this._overlay.beginFill(0x0f0820, 0.7);
-        this._overlay.drawRect(0, 0, width, height);
-        this._overlay.endFill();
+        this._overlay
+            .rect(0, 0, width, height)
+            .fill({ color: 0x0f0820, alpha: 0.7 });
 
         this._panel.clear();
-        this._panel.lineStyle(3, 0xffffff, 0.2);
-        this._panel.beginFill(0x2b1e44, 0.97);
-        this._panel.drawRoundedRect(panelLeft, panelTop, panelWidth, panelHeight, panelMinDimension * this._panelCornerRadiusRatio);
-        this._panel.endFill();
+        this._panel
+            .roundRect(panelLeft, panelTop, panelWidth, panelHeight, panelMinDimension * this._panelCornerRadiusRatio)
+            .fill({ color: 0x2b1e44, alpha: 0.97 })
+            .stroke({ width: 3, color: 0xffffff, alpha: 0.2 });
 
         this._title.style.fontSize = panelWidth * this._titleFontRatio;
         this._title.position.set(width / 2, panelTop + (panelHeight * this._titleTopRatio));
@@ -132,16 +148,16 @@ export class VictoryScreen extends Container
     private drawButton(width: number, height: number): void
     {
         this._buttonBackground.clear();
-        this._buttonBackground.lineStyle(3, 0xffffff, 0.8);
-        this._buttonBackground.beginFill(0xc63845, 1);
-        this._buttonBackground.drawRoundedRect(
-            -width / 2,
-            -height / 2,
-            width,
-            height,
-            Math.min(width, height) * this._buttonCornerRadiusRatio,
-        );
-        this._buttonBackground.endFill();
+        this._buttonBackground
+            .roundRect(
+                -width / 2,
+                -height / 2,
+                width,
+                height,
+                Math.min(width, height) * this._buttonCornerRadiusRatio,
+            )
+            .fill({ color: 0xc63845, alpha: 1 })
+            .stroke({ width: 3, color: 0xffffff, alpha: 0.8 });
 
         this._buttonLabel.style.fontSize = Math.min(width, height) * this._buttonLabelFontRatio;
         this._buttonLabel.position.set(0, 0);
@@ -195,5 +211,28 @@ export class VictoryScreen extends Container
         parts.push(`${seconds}s`);
 
         return parts.join(" ");
+    }
+
+    private resolveUiFontFamily(): string
+    {
+        if (typeof window === "undefined" || typeof document === "undefined")
+        {
+            return VictoryScreen.UI_FONT_FALLBACK;
+        }
+
+        const cssValue = window
+            .getComputedStyle(document.documentElement)
+            .getPropertyValue(VictoryScreen.UI_FONT_CSS_VARIABLE)
+            .trim();
+
+        if (!cssValue)
+        {
+            return VictoryScreen.UI_FONT_FALLBACK;
+        }
+
+        return cssValue
+            .split(",")[0]
+            .trim()
+            .replace(/^['\"]|['\"]$/g, "") || VictoryScreen.UI_FONT_FALLBACK;
     }
 }

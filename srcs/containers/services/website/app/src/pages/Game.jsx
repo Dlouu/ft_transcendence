@@ -2,20 +2,23 @@ import { useEffect, useContext, useRef, useState } from "react";
 import { GameContext } from "../context/GameContext";
 import { Page, Button } from "../ui";
 import { gameService } from "../services/gameService";
+import { AuthContext } from "../context/AuthContext";
 
 function Game() {
     const { playerName } = useContext(GameContext);
+    const { user } = useContext(AuthContext);
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
 
     const [portrait, setPortrait] = useState(false);
+	const userId = user?.user_id;
 
     useEffect(() =>
     {
         if (!canvasRef.current) return;
 
-        gameService.init({ canvas: canvasRef.current, playerId: playerName });
+        gameService.init({ canvas: canvasRef.current, playerId: userId });
         console.log("Game mounted for", playerName);
 
         return () => gameService.destroy();

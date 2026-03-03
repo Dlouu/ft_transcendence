@@ -21,7 +21,6 @@ services:
       - /app/src/dto
       - ./containers/utils/game_dto:/app/src/dto
     command: npm run start:dev
-    # command: tail -f /dev/null
     ports:
       - "3000:3000"
 
