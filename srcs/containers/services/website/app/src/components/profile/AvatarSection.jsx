@@ -5,6 +5,11 @@ import img from "../../assets/default-back.png"
 function AvatarSection({ user }) {
 	const navigate = useNavigate();
 
+	const handleChangeAvatar = async () => {
+		console.log("change avatar function");
+		//fetch /user/update_profile_picture
+	};
+
 	return (
 		<div className="grid grid-cols-2">
 			<div className="flex flex-col gap-2">
@@ -16,7 +21,7 @@ function AvatarSection({ user }) {
 					className="h-34 w-34 rounded"
 					alt={user?.username}
 				/>
-				<Button variant="icon">
+				<Button variant="icon" onClick={handleChangeAvatar}>
 					󱇤
 				</Button>
 			</div>
