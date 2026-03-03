@@ -11,7 +11,7 @@ function Gallery() {
 	const { user } = useContext(AuthContext);
 	const [cards, setCards] = useState([]);
 	const [loadingCards, setLoadingCards] = useState(true);
-	const userId = user?.userId;
+	const userId = user?.user_id;
 
 	return (
 		<Page center>
