@@ -73,17 +73,14 @@ def create_lobby_or_error(requested_code=None):
 def _set_session_cookie(response, token):
     if not token:
         return response
-    secure_cookie = os.getenv("COOKIE_SECURE", "false").lower() == "true"
-    samesite_policy = "None" if secure_cookie else "Lax"
-    max_age = int(os.getenv("SESSION_TOKEN_EXPIRATION", "3600"))
+    
     response.set_cookie(
-        "session_token",
-        f"Bearer {token}",
-        httponly=True,
-        secure=secure_cookie,
-        samesite=samesite_policy,
-        max_age=max_age,
-        path="/",
+            "session_token",
+            f"Bearer {g.x_new_token}",
+            httponly=True,
+            secure=True,
+            samesite="None",
+            max_age=int(os.getenv("TOKEN_CACHE_LIFETIME", "3600"))
     )
     return response
 
