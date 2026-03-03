@@ -1,6 +1,6 @@
 from app.extensions import ma, db
 from app.models.user import User
-from app.models.game_stats import GameStats
+from app.models.gamestats import GameStats
 from marshmallow import fields, Schema
 
 class UserSchema(ma.SQLAlchemyAutoSchema):

@@ -351,7 +351,7 @@ class UploadCardImage(Resource):
 
 		db.session.commit()
 
-		logger.info("User's profile picture updated.", extra=extra_logger)
+		logger.info("User's card picture uploaded.", extra=extra_logger)
 		return {"message": "success"}, 201
 
 remove_card_image_model = ns.model("RemoveCardImageModel", {
