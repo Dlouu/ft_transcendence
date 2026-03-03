@@ -16,7 +16,7 @@ def s3_bucket_health_check(self):
 			if not extensions.s3:
 				extensions.s3 = extensions.s3_init_app()
 			try:
-				extensions.s3.head_bucket(Bucket=os.getenv("S3_BUCfKET_NAME", ""))
+				extensions.s3.head_bucket(Bucket=os.getenv("S3_BUCKET_NAME", ""))
 			except ClientError as e:
 				code = e.response['Error']['Code']
 				if code in ["403", "AccessDenied"]:

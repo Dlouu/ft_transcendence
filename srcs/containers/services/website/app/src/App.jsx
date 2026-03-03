@@ -5,7 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
-import Me from "./pages/Me";
+import Me from "./pages/Profile";
 import Gallery from "./pages/Gallery";
 import GalleryImage from "./pages/GalleryImage";
 import Paint from "./pages/Paint";

@@ -10,7 +10,6 @@ from .extensions import db, ma
 def	create_app():
 	app = Flask(__name__)
 	app.config.from_object(Config)
-	app.secret_key = os.getenv("FLASK_API_SECRET", "SuperSecret123!")
 
 	db.init_app(app)
 	ma.init_app(app)

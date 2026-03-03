@@ -34,7 +34,7 @@ function Navbar() {
 	const navLinks = [
 		{ to: "/", label: "PLAY" },
 		{ to: "/gallery", label: "CUSTOMIZE" },
-		{ to: "/me", label: "ME" }
+		{ to: "/me", label: "PROFILE" }
 	];
 
 	const linkClass = (path) =>
