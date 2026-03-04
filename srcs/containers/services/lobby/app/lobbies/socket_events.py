@@ -1,7 +1,7 @@
 import os
 import secrets
 
-from flask import request, session
+from flask import request, session, g
 from flask_socketio import join_room, emit
 from sqlalchemy.exc import IntegrityError
 
@@ -9,7 +9,8 @@ from app.core.extensions import socketio, db
 from app.core.state import lobbies, socketid_lobby, max_players
 from app.lobbies.services import emit_lobby_state, remove_lobby
 from app.models.user import User
-from app.services import session_service as st
+from app.tokens.generate_token import generate_token
+from app.tokens.check_token import check_token
 
 def _ensure_socket_user(socket_id: str) -> User | None:
     if not socket_id:
@@ -55,30 +56,16 @@ SocketIO event: "connect"
 Store the socket id in users DB for testing.
 """
 @socketio.on("connect")
+@generate_token()
+@check_token()
 def on_connect():
-    raw_token = request.cookies.get("session_token")
-    if not raw_token:
-        return False
-    token = raw_token.split(" ", 1)[1] if raw_token.startswith("Bearer ") else raw_token
-    if not st.does_session_token_exist(token):
-        return False
-    try:
-        payload = st.decode_session_token(token)
-    except Exception as exc:
-        print(f"Lobby: failed to decode token ({exc})", flush=True)
-        return False
-    if not payload:
-        return False
-
-    if payload.get("agent") and payload.get("agent") != request.headers.get("User-Agent", ""):
-        return False
-    if payload.get("remote_addr") and payload.get("remote_addr") != request.remote_addr:
-        return False
-
-    if payload.get("user_id") is not None:
-        session["user_id"] = payload.get("user_id")
-    if payload.get("room_code"):
-        session["room_code"] = payload.get("room_code")
+    current_token = getattr(g, "token", None)
+    if current_token:
+        print(f"Lobby: socket token={current_token}", flush=True)
+    new_token = getattr(g, "x_new_token", None)
+    if new_token:
+        max_age = int(os.getenv("TOKEN_CACHE_LIFETIME", os.getenv("SESSION_TOKEN_EXPIRATION", "3600")))
+        emit("session_token", {"token": new_token, "max_age": max_age}, to=request.sid)
 
     try:
         _ensure_socket_user(request.sid)

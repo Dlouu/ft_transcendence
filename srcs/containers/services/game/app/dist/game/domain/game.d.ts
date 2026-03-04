@@ -11,10 +11,10 @@ export declare class game {
     constructor(name: string, players: string[], playerNbr: number, botNbr: number);
     toJson(): {
         roomName: string;
-        players: player[];
-        connectedPlayers: string[];
-        deck: card[];
-        discard: card[];
+        players: {};
+        connectedPlayers: any;
+        deck: {};
+        discard: {};
         currentFamily: CardFamily;
         currentDirection: "CLOCKWISE" | "COUNTER-CLOCKWISE";
         currentPlayerIndex: number;

@@ -53,6 +53,13 @@ socket.on("connect", () => {
   socket.emit("join_lobby", { code: code });
 });
 
+socket.on("session_token", (data) => {
+  const token = data?.token;
+  if (!token) return;
+  const maxAge = Number.isFinite(data?.max_age) ? data.max_age : 3600;
+  document.cookie = `session_token=Bearer ${token}; Max-Age=${maxAge}; Path=/; SameSite=None; Secure`;
+});
+
 socket.on("room_full", (data) => {
     const message = data?.message || "Room is full, returning to lobby";
     alert(message);
