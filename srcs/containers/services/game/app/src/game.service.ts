@@ -1,7 +1,7 @@
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { CreateGameDto } from "./dto/create-game.dto";
 import { Game } from "./domain/UnoGame";
-import { GameState } from "./domain/GameEnums";
+import { CardCode, GameState } from "./domain/GameEnums";
 import { Server, Socket } from "socket.io";
 import { DeckService } from "./deck.service";
 import { GameLogicService } from "./game-logic.service";
@@ -79,6 +79,7 @@ export class GameService {
 		this.io.to(game.roomName).emit("game:start");
 
 		this.gameInitReadyByRoom.delete(game.roomName);
+		this.tryRunBotTurn(game);
 	}
 
 	private emitGameInit(game: Game): void {
@@ -162,7 +163,10 @@ export class GameService {
 			this.gameLogic.onUno(game, player);
 		}
 
-    this.gameLogic.goToNextPlayerIndex(game);
+		const advanceSteps = this.getTurnAdvanceStepsAfterPlay(dto.cardCode, game.players.length);
+		for (let i = 0; i < advanceSteps; i++) {
+			this.gameLogic.goToNextPlayerIndex(game);
+		}
 
     const now = Date.now();
     game.lastActionTime = now;
@@ -174,6 +178,7 @@ export class GameService {
 		};
 
 		this.io?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
+		this.tryRunBotTurn(game);
   }
 
   drawCard(playerId: string): void {
@@ -191,8 +196,9 @@ export class GameService {
 			return;
 		}
 
-    if (!this.gamePlay.drawCard(game, 1, false, player))
+    if (!this.gamePlay.drawCard(game, 1, false, player)) {
       return ;
+    }
 
     this.gameLogic.goToNextPlayerIndex(game);
 
@@ -206,6 +212,7 @@ export class GameService {
 		};
 
 		this.io?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
+		this.tryRunBotTurn(game);
   }
 
 	shoutUno(playerId: string): void {
@@ -220,5 +227,31 @@ export class GameService {
 		}
 
 		this.gamePlay.shoutUno(game, player);
+	}
+
+	private getTurnAdvanceStepsAfterPlay(cardCode: CardCode, playerCount: number): number {
+		switch (cardCode) {
+			case CardCode.Skip:
+			case CardCode.DrawTwo:
+			case CardCode.WildDrawFour:
+				return 2;
+			case CardCode.Reverse:
+				return playerCount === 2 ? 2 : 1;
+			default:
+				return 1;
+		}
+	}
+
+	private isBotTurn(game: Game): boolean {
+		const currentPlayer = game.players[game.currentPlayerIndex];
+		return !!currentPlayer?._isBot;
+	}
+
+	private tryRunBotTurn(game: Game): void {
+		if (!this.isBotTurn(game)) {
+			return;
+		}
+
+		this.botLogic.playTurn(game, game.currentPlayerIndex);
 	}
 }

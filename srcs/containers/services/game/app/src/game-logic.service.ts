@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Game } from "./domain/UnoGame";
 import { GameState, CardCode, CardFamily } from "./domain/GameEnums";
 import { DeckService } from "./deck.service";
@@ -7,17 +7,27 @@ import { UnoPlayer } from "./domain/UnoPlayer";
 import { CardDto } from "./dto/card.dto";
 import { Card } from "./domain/UnoCard";
 import { GameWinDto, GameWinPlayerDto } from "./dto/game-win.dto";
+import { toDrewCardDto } from "./dto/drawn-card.dto";
+import { GameService } from "./game.service";
 
 // Handles the rules of the game (turns, UNO shouts, card validation).
 @Injectable()
 export class GameLogicService {
 	private colorPickCallbacks = new Map<string, (color: CardFamily) => void>();
-	private readonly unoRevealDelayMs = 500;
+	private readonly unoRevealDelayMs = 750;
+	private readonly unoCallWindowMs = 5000;
+	private readonly unoPendingTimeouts = new Map<string, NodeJS.Timeout>();
 
 	constructor(
 		private readonly deckService: DeckService,
 		private readonly gameRepository: GameRepositoryService,
+		@Inject(forwardRef(() => GameService))
+		private readonly gameService: GameService,
 	) {}
+
+	private getIoServer() {
+		return this.gameService.getServer();
+	}
 
 	// ==========================
 	// ======= START GAME =======
@@ -116,7 +126,9 @@ export class GameLogicService {
 	 * @returns true if the player index matches the current player index, otherwise false.
 	 */
 	isPlayersTurn(game: Game, player: UnoPlayer): boolean {
-		const playerIndex = game.players.findIndex((p) => p._name === player._name);
+		const playerIndex = game.players.findIndex(
+			(p) => p._id === player._id || p._name === player._name,
+		);
 		return playerIndex === game.currentPlayerIndex;
 	}
 
@@ -235,10 +247,64 @@ export class GameLogicService {
 		}
 	}
 
+	clearPendingUno(game: Game): void {
+		const timeout = this.unoPendingTimeouts.get(game.roomName);
+		if (timeout) {
+			clearTimeout(timeout);
+			this.unoPendingTimeouts.delete(game.roomName);
+		}
+
+		game.pendingUnoPlayerIndex = null;
+	}
+
+	drawCardsWithEvents(
+		game: Game,
+		player: UnoPlayer,
+		iterNbr: number,
+	): { success: boolean; deckEmpty: boolean } {
+		const io = this.getIoServer();
+
+		if (game.deck.length === 0) {
+			this.deckService.discardToDeck(game);
+			if (game.deck.length === 0) {
+				io?.to(game.roomName).emit("game:deck:empty");
+				return { success: false, deckEmpty: true };
+			}
+
+			io?.to(game.roomName).emit("game:deck:shuffled");
+		}
+
+		for (let i = 0; i < iterNbr; i++) {
+			const card = game.deck.pop();
+			if (!card) {
+				return { success: false, deckEmpty: false };
+			}
+
+			player._hand.push(card);
+			player.hasDrawThisTurn = true;
+
+			if (player._socket) {
+				player._socket.emit(
+					"game:draw:self",
+					toDrewCardDto(player._name, card),
+				);
+			}
+
+			io?.to(game.roomName).emit(
+				"game:draw:others",
+				toDrewCardDto(player._name, undefined),
+			);
+		}
+
+		return { success: true, deckEmpty: false };
+	}
+
 	onUno(game: Game, player: UnoPlayer): void {
 		if (!player._socket) {
 			return;
 		}
+
+		const io = this.getIoServer();
 
 		const playerIndex = game.players.findIndex((p) => p._id === player._id);
 		if (playerIndex === -1) {
@@ -247,6 +313,8 @@ export class GameLogicService {
 
 		game.pendingUnoPlayerIndex = playerIndex;
 		player.hasShoutedUno = false;
+		this.clearPendingUno(game);
+		game.pendingUnoPlayerIndex = playerIndex;
 
 		player._socket.emit("game:uno:pending:self");
 
@@ -263,6 +331,27 @@ export class GameLogicService {
 
 			player._socket?.to(game.roomName).emit("game:uno:pending:others");
 		}, this.unoRevealDelayMs);
+
+		const timeout = setTimeout(() => {
+			const pendingIndex = game.pendingUnoPlayerIndex;
+			if (pendingIndex === null) {
+				this.unoPendingTimeouts.delete(game.roomName);
+				return;
+			}
+
+			const pendingPlayer = game.players[pendingIndex];
+			if (!pendingPlayer || pendingPlayer._id !== player._id || pendingPlayer._hand.length !== 1) {
+				this.unoPendingTimeouts.delete(game.roomName);
+				return;
+			}
+
+			this.clearPendingUno(game);
+			this.drawCardsWithEvents(game, pendingPlayer, 2);
+
+			player._socket?.to(game.roomName).emit("game:uno:expired");
+		}, this.unoCallWindowMs);
+
+		this.unoPendingTimeouts.set(game.roomName, timeout);
 	}
 
 	onVictory(game: Game, winner: UnoPlayer): void {
@@ -281,6 +370,8 @@ export class GameLogicService {
 		for (const player of game.players) {
 			this.colorPickCallbacks.delete(player._id);
 		}
+
+		this.clearPendingUno(game);
 
 		const durationDdHhMmSs = this.formatDurationToDdHhMmSs(
 			Date.now() - game.createdAt,

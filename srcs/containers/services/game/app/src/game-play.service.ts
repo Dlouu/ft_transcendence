@@ -8,8 +8,8 @@ import { Card } from './domain/UnoCard';
 import { UnoPlayer } from './domain/UnoPlayer';
 import { toPlayedCardDto } from './dto/played-card.dto';
 import { GameService } from './game.service';
-import { toDrewCardDto } from './dto/drawn-card.dto';
 import { GameRepositoryService } from './game-repository';
+import { NextTurnDto } from './dto/next-turn.dto';
 
 // Handles the inputs of the players of the game (play card, draw, uno).
 @Injectable()
@@ -41,8 +41,6 @@ export class GamePlayService {
 		game.discard.push(playedCard);
 		game.currentFamily = playedCard.family;
 
-		this.gameLogicService.goToNextPlayerIndex(game);
-
 		return true;
 	}
 
@@ -51,9 +49,6 @@ export class GamePlayService {
 		game.currentFamily = playedCard.family;
 
 		this.gameLogicService.reverseTurnOrder(game);
-
-		if (game.players.length === 2)
-			this.gameLogicService.goToNextPlayerIndex(game);
 
 		this.getIoServer()?.to(game.roomName).emit("game:turn:reverse")
 
@@ -65,7 +60,6 @@ export class GamePlayService {
 		game.currentFamily = playedCard.family;
 
 		this.drawCard(game, 2, true, this.gameLogicService.getNextPlayer(game));
-		this.gameLogicService.goToNextPlayerIndex(game);
 
 		return true;
 	}
@@ -90,7 +84,6 @@ export class GamePlayService {
 		const chosenFamily = await this.gameLogicService.askPlayerColor(game, player);
 		console.log(`Choosen color: ${chosenFamily}`);
 		this.drawCard(game, 4, true, targetPlayer);
-		this.gameLogicService.goToNextPlayerIndex(game);
 		game.currentFamily = chosenFamily;
 		playedCard.family = chosenFamily;
 		this.getIoServer()?.to(game.roomName).emit("game:wild:new-color", { chosenFamily });
@@ -181,20 +174,20 @@ export class GamePlayService {
 
 		const pendingPlayer = game.players[pendingIndex];
 		if (!pendingPlayer || pendingPlayer._hand.length !== 1) {
-			game.pendingUnoPlayerIndex = null;
+			this.gameLogicService.clearPendingUno(game);
 			return false;
 		}
 
 		if (pendingPlayer._id === player._id) {
 			pendingPlayer.hasShoutedUno = true;
-			game.pendingUnoPlayerIndex = null;
+			this.gameLogicService.clearPendingUno(game);
 
 			this.getIoServer()?.to(game.roomName).emit("game:uno:catched");
 
 			return true;
 		}
 
-		game.pendingUnoPlayerIndex = null;
+		this.gameLogicService.clearPendingUno(game);
 		if (!this.drawCard(game, unoPenaltyCards, true, pendingPlayer)) {
 			this.getIoServer()?.to(game.roomName).emit("game:uno:catched");
 			return false;
@@ -211,37 +204,32 @@ export class GamePlayService {
 
 	drawCard(game: Game, iterNbr: number, isDrawCard: boolean, player: UnoPlayer): boolean
 	{
-		// TODO: Do the function.
 		if (!this.gameLogicService.isPlayersTurn(game, player) && !isDrawCard)
 		{
 			console.log(`It's not player ${player._id}'s turn is not in the game ${game.roomName}`); // TODO: Replace this console log
 			return false;
 		}
 
-		if (game.deck.length === 0)
+		const drawResult = this.gameLogicService.drawCardsWithEvents(game, player, iterNbr);
+		if (!drawResult.success)
 		{
-			this.deckService.discardToDeck(game);
-			if (game.deck.length === 0)
-				this.getIoServer()?.to(game.roomName).emit("game:deck:empty");
-			else
-				this.getIoServer()?.to(game.roomName).emit("game:deck:shuffled");
-		}
-
-		for (let i = 0; i < iterNbr; i++) {
-			const card = game.deck.pop();
-			if (!card)
+			if (!isDrawCard && drawResult.deckEmpty)
 			{
-				console.log(`Game ${game.roomName} has nore more card available in the deck.`);
-				return false;
-			}
-	
-			player._hand.push(card);
-			player.hasDrawThisTurn = true;
+				this.gameLogicService.goToNextPlayerIndex(game);
 
-			console.log(`Player ${player._name} drew the card ${card.value} ${card.family}`);
-	
-			player._socket?.emit("game:draw:self", toDrewCardDto(player._name, card));
-			player._socket?.to(game.roomName).emit("game:draw:others", toDrewCardDto(player._name, undefined));
+				const now = Date.now();
+				game.lastActionTime = now;
+				game.turnStartTime = now;
+				
+				const nextTurnDto: NextTurnDto = {
+					currentPlayerIndex: game.currentPlayerIndex,
+					turnDirection: game.currentDirection,
+				};
+
+				this.getIoServer()?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
+			}
+
+			return false;
 		}
 
 		return true;

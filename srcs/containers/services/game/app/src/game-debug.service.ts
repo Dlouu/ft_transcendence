@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Game } from "./domain/UnoGame";
+import { UnoPlayer } from "./domain/UnoPlayer";
 
 @Injectable()
 export class GameDebugService
@@ -29,5 +30,17 @@ export class GameDebugService
 		console.log(`  ${i}: ${c.family} ${c.value}`);
 	  });
 	}
+  }
+
+	/**
+	 * Prints a single player's hand to the console for debugging.
+	 * @param player The player instance containing the hand to print.
+	 * @returns void
+	 */
+  printHand(player: UnoPlayer): void {
+	console.log(`${player._name}:`);
+	player._hand.forEach((c, i) => {
+	  console.log(`  ${i}: ${c.family} ${c.value}`);
+	});
   }
 }

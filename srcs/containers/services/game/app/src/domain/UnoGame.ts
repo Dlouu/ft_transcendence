@@ -105,4 +105,16 @@ export class Game {
     this.players.splice(playerIndex, 1);
     return true;
   }
+
+  getPlayerByIndex(index: number): UnoPlayer {
+    if (!Number.isInteger(index)) {
+      throw new Error("Player index must be an integer.");
+    }
+
+    if (index < 0 || index >= this.players.length) {
+      throw new Error("Player index is out of bounds.");
+    }
+
+    return this.players[index];
+  }
 }

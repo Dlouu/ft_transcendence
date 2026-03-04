@@ -172,7 +172,7 @@ export class GameRepositoryService {
 			return undefined;
 		}
 
-		const player = game.players.find((p) => p._name === playerId);
+		const player = game.players.find((p) => p._id === playerId);
 		if (!player) {
 			return undefined;
 		}
@@ -195,7 +195,7 @@ export class GameRepositoryService {
 	 * @returns The Game object if found, undefined otherwise.
 	 */
 	getGameByConnectedPlayer(playerId: string): Game | undefined {
-		return this.games.find((g) => g.players.some((p) => p._name === playerId));
+		return this.games.find((g) => g.players.some((p) => p._id === playerId));
 	}
 
 	/**
