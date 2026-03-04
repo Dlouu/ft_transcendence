@@ -98,7 +98,7 @@ export function registerServerEventCallbacks({
 	});
 
 	socket.on("game:played:card:self", async (_payload: PlayedCardDto) => {
-		getTableManager()?.removePlayerCard(_payload.cardIndex);
+		getTableManager()?.removePlayerCard(_payload.cardIndex, _payload.card);
 		getTableManager()?.updateDiscardCard(_payload.card);
 		console.log(`${_payload.name} played the card:`, _payload);
 	});

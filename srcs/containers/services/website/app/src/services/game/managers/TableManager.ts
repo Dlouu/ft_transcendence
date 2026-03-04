@@ -205,9 +205,12 @@ export class TableManager extends Container
         this._opponentsManager.setActivePlayer(playerIndex);
     }
 
-    public removePlayerCard(cardIndex: number): void
+    public removePlayerCard(cardIndex: number, cardDto?: CardDto): void
     {
-        const removedCard = this._playerHand.removeCardAt(cardIndex);
+        const removedCard = cardDto
+            ? this._playerHand.removeFirstMatchingCard(cardDto.cardFamily, cardDto.cardCode) ?? this._playerHand.removeCardAt(cardIndex)
+            : this._playerHand.removeCardAt(cardIndex);
+
         if (!removedCard)
         {
             return;
@@ -230,6 +233,7 @@ export class TableManager extends Container
 
         card.setFaceUpCard(texture, cardModel);
         this._playerHand.addCard(card);
+        this._playerHand.sortCards();
     }
 
     public removeOpponentCard(playerName: string, cardIndex: number): void
@@ -491,6 +495,8 @@ export class TableManager extends Container
             card.setFaceUpCard(texture, cardModel);
             this._playerHand.addCard(card);
         }
+
+        this._playerHand.sortCards();
     }
 
     private setupPiles(dto: InitGameDto): void
@@ -532,6 +538,8 @@ export class TableManager extends Container
             card.setFaceUpCard(texture, cardModel);
             this._playerHand.addCard(card);
         }
+
+        this._playerHand.sortCards();
     }
 
     private setPilesBackdropColor(color: string): void

@@ -1,6 +1,32 @@
 import { UnoCard } from './UnoCard';
 import { Container, Rectangle, Graphics } from 'pixi.js';
-import { HandRotation } from './GameEnums';
+import { CardCode, CardFamily, HandRotation } from './GameEnums';
+
+const CARD_FAMILY_SORT_ORDER: Record<CardFamily, number> = {
+    [CardFamily.ONE]: 0,
+    [CardFamily.TWO]: 1,
+    [CardFamily.THREE]: 2,
+    [CardFamily.FOUR]: 3,
+    [CardFamily.WILD]: 4,
+};
+
+const CARD_CODE_SORT_ORDER: Record<CardCode, number> = {
+    [CardCode.Zero]: 0,
+    [CardCode.One]: 1,
+    [CardCode.Two]: 2,
+    [CardCode.Three]: 3,
+    [CardCode.Four]: 4,
+    [CardCode.Five]: 5,
+    [CardCode.Six]: 6,
+    [CardCode.Seven]: 7,
+    [CardCode.Eight]: 8,
+    [CardCode.Nine]: 9,
+    [CardCode.Skip]: 10,
+    [CardCode.Reverse]: 11,
+    [CardCode.DrawTwo]: 12,
+    [CardCode.Wild]: 13,
+    [CardCode.WildDrawFour]: 14,
+};
 
 export class Hand extends Container
 {
@@ -105,6 +131,44 @@ export class Hand extends Container
         const card = this._cards[index];
         this.removeCard(card);
         return card;
+    }
+
+    public removeFirstMatchingCard(family: CardFamily, value: CardCode): UnoCard | null
+    {
+        const matchingCard = this._cards.find((card) => {
+            return card.card?.family === family && card.card?.value === value;
+        });
+
+        if (!matchingCard)
+        {
+            return null;
+        }
+
+        this.removeCard(matchingCard);
+        return matchingCard;
+    }
+
+    public sortCards(compareFn?: (left: UnoCard, right: UnoCard) => number): void
+    {
+        const comparator = compareFn ?? ((left: UnoCard, right: UnoCard): number => {
+            const leftCard = left.card;
+            const rightCard = right.card;
+
+            if (!leftCard && !rightCard) return 0;
+            if (!leftCard) return 1;
+            if (!rightCard) return -1;
+
+            const byFamily = CARD_FAMILY_SORT_ORDER[leftCard.family] - CARD_FAMILY_SORT_ORDER[rightCard.family];
+            if (byFamily !== 0)
+            {
+                return byFamily;
+            }
+
+            return CARD_CODE_SORT_ORDER[leftCard.value] - CARD_CODE_SORT_ORDER[rightCard.value];
+        });
+
+        this._cards.sort(comparator);
+        this.updateLayout();
     }
 
     private onCardHover(card: UnoCard): void
