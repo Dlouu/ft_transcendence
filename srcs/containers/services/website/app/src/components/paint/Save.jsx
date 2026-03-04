@@ -35,7 +35,7 @@ function Save({ canvasRef }) {
 
 				if (!response.ok) {
 					throw new Error(`API error: ${response.status}`);
-				}
+				}+lines[y][x];
 
 				notify("Image saved to gallery successfully", "success");
 			}, "image/png");
@@ -108,11 +108,11 @@ function Save({ canvasRef }) {
 				</Button>
 			</Tooltip>
 
-			{/* <Tooltip message="Set as card's back">
+			<Tooltip message="Set as card's back">
 				<Button variant="icon" onClick={saveCardBack} title="Set as card's back">
-					󱑢
+					󰘹
 				</Button>
-			</Tooltip> */}
+			</Tooltip>
 		</>
 	);
 }

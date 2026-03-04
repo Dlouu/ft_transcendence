@@ -6,7 +6,7 @@ const CARD_MASK = (() => {
 
 	for (let y = 0; y < HEIGHT; y++) {
 		for (let x = 0; x < WIDTH; x++) {
-			mask[y * WIDTH + x] = lines[y][x] === "1" ? 1 : 0;
+			mask[y * WIDTH + x] = +lines[y][x];
 		}
 	}
 	return mask;
@@ -31,7 +31,14 @@ export function prepareCardBack  (orignalImageData, fillColor) {
 			data[index + 3] = 255;
 		}
 
-		if (CARD_MASK[i] === 0) {
+		if (CARD_MASK[i] === 2) {
+			data[index] = 255;
+			data[index + 1] = 255;
+			data[index + 2] = 255;
+			data[index + 3] = 255;
+		}
+
+		else if (CARD_MASK[i] === 0) {
 			data[index] = 0;
 			data[index + 1] = 0;
 			data[index + 2] = 0;

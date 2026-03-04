@@ -8,7 +8,7 @@ function Card({ children, center = false, big = false, paint = false }) {
 				w-full
 				m-auto 
 				${center ? "flex flex-col justify-center items-center" : ""}
-				${paint ? "sm:max-w-xl-[1px] max-none p-2" : "p-6"}
+				${paint ? "sm:max-w-xl-[20px] max-none p-1" : "p-6"}
 				${big ? "max-w-2xl" : "max-w-md"}
 			`}
 		>
