@@ -15,6 +15,7 @@
 # Ignore custom files
 				socket,
 ./srcs/volumes
+**/dist
 ***/.venv/
 ***/.env/
 ***/volumes/
