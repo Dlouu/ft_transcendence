@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     volumes:
-      - nginx_data:/var/www/nginx
+      # - nginx_data:/var/www/nginx
       - service_logs:/logs
     depends_on:
       - api
