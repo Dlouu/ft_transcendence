@@ -10,8 +10,6 @@ services:
     container_name: service_website
     build: ./containers/services/website
     restart: on-failure
-    env_file:
-      - .env
     volumes:
       - website_data:/var/www/website
       - service_logs:/logs
@@ -26,16 +24,7 @@ services:
     build: ./containers/services/api
     restart: on-failure
     env_file:
-      - .env
-      - .secrets
-    environment:
-      DEFAULT_IMG_PATH: default
-      DEFAULT_PROFILE_PICTURE: default_profile_picture.jpg
-      REDIS_URL: redis://redis:6379/0
-      CREDENTIAL_DATABASE_URI: mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data
-      USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
-      S3_BUCKET_NAME: s3-transcendence-bucket
-      MAX_IMAGE_SIZE: 2097152
+      - env/api.env
     volumes:
       - api_data:/var/www/api
       - service_logs:/logs
@@ -52,18 +41,7 @@ services:
     build: ./containers/services/auth
     restart: on-failure
     env_file:
-      - .env
-    environment:
-      REDIS_URL: redis://redis:6379/0
-      AUTH_MIN_PASS_LENGTH: 8
-      AUTH_MAX_PASS_LENGTH: 64
-      AUTH_MIN_USERNAME_LENGTH: 3
-      AUTH_MAX_USERNAME_LENGTH: 24
-      REFRESH_TOKEN_EXPIRATION: 3600
-      REFRESH_TOKEN_EXPIRATION_CHECK_DELAY: 120
-      SESSION_TOKEN_EXPIRATION: 10
-      DB_CONNECT_TIMEOUT: 5
-      TZ: UTC
+      - env/auth.env
     depends_on:
       - auth_db
     volumes:
@@ -76,8 +54,6 @@ services:
     container_name: service_game
     build: ./containers/services/game
     restart: on-failure
-    env_file:
-      - .env
     volumes:
       - service_logs:/logs
     networks:
@@ -89,23 +65,15 @@ services:
     ports:
       - "5002:5002"
     env_file:
-      - .env
-    environment:
-      USER_DATABASE_URI: mysql+mysqldb://user_user:user_pwd@user_db:3306/users_data
-      REDIS_URL: redis://redis:6379/0
+      - env/lobby.env
     networks:
       - lobby_network
       - redis_network
       - user_db_network
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - cluster.routing.allocation.disk.watermark.low=5gb
-      - cluster.routing.allocation.disk.watermark.high=3gb
-      - cluster.routing.allocation.disk.watermark.flood_stage=1gb
+    env_file:
+      - env/elasticsearch.env
     ports:
       - "5065:9200"
     networks:
@@ -133,12 +101,7 @@ services:
     build: ./containers/databases/auth_db
     restart: unless-stopped
     env_file:
-      - .env
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpwd
-      MYSQL_DATABASE: auth_data
-      MYSQL_USER: auth_user
-      MYSQL_PASSWORD: auth_pwd
+      - env/auth_db.env
     volumes:
       - auth_db_data:/var/lib/mysql
       - service_logs:/logs
@@ -148,13 +111,8 @@ services:
     container_name: user_db
     build: ./containers/databases/user_db
     restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpwd
-      MYSQL_DATABASE: users_data
-      MYSQL_USER: user_user
-      MYSQL_PASSWORD: user_pwd
     env_file:
-      - .env
+      - env/user_db.env
     volumes:
       - user_db_data:/var/lib/mysql
       - service_logs:/logs
