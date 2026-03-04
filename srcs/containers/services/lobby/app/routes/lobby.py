@@ -76,7 +76,7 @@ def _set_session_cookie(response, token):
     
     response.set_cookie(
             "session_token",
-            f"Bearer {g.x_new_token}",
+            f"Bearer {token}",
             httponly=True,
             secure=True,
             samesite="None",
