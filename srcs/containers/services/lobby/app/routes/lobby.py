@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, g
 from app.core.state import lobbies, three_letters, four_letters
 from app.lobbies.services import lobby_removal
 from app.services import session_service as st
