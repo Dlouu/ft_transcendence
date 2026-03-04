@@ -1,4 +1,5 @@
-import { useContext, useState, useEffect } from "react";
+import React from "react";
+import { useContext } from "react";
 import { Button, Page, Card } from "../ui";
 import { Link, useNavigate } from "react-router-dom";
 import { getGallery } from "../services/galleryService";
@@ -9,8 +10,6 @@ function Gallery() {
 	const navigate = useNavigate();
 	const images = getGallery();
 	const { user } = useContext(AuthContext);
-	const [cards, setCards] = useState([]);
-	const [loadingCards, setLoadingCards] = useState(true);
 	const userId = user?.user_id;
 
 	return (
@@ -34,7 +33,7 @@ function Gallery() {
 
 				<UserGallery userId={userId} />
 
-				<div className="flex flex-col sm:flex-row gap-4 justify-center">
+				<div className="flex flex-col sm:flex-row sm:gap-4 justify-center">
 					<Button variant="success" onClick={() => navigate("/paint")}>
 						CREATE
 					</Button>

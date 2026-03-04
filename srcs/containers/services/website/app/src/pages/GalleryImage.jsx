@@ -40,15 +40,17 @@ function GalleryImage() {
 						<p className="text-gray-400">
 							Author: {image.author}
 						</p>
-						<Button>
-							EDIT
-						</Button>
+						{canDelete &&
+							<Button>
+								EDIT
+							</Button>
+						}
 
 						<Button>
 							DUPLICATE
 						</Button>
 
-						{/* {canDelete && ( */}
+						{canDelete && (
 							<Button
 								onClick={() => {
 									deleteImage(id);
@@ -57,7 +59,7 @@ function GalleryImage() {
 							>
 								DELETE
 							</Button>
-						{/* )} */}
+						)}
 
 
 

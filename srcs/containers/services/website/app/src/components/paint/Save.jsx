@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import { Button, Tooltip } from "../../ui";
 import { prepareCardBack } from "./drawingUtils";
+import { useNavigate } from "react-router-dom";
 import { WIDTH, HEIGHT } from "./constants";
 import { useNotifications } from "../../context/AlertContext";
 
 function Save({ canvasRef }) {
 	const { notify } = useNotifications();
+	const navigate = useNavigate();
 
 	async function saveInGallery() {
 		try {
@@ -43,6 +45,7 @@ function Save({ canvasRef }) {
 			console.error("Error saving to gallery:", error);
 			notify("Failed to save image", "error");
 		}
+		navigate("/gallery");
 	}
 
 	function savePNG() {
@@ -99,17 +102,17 @@ function Save({ canvasRef }) {
 	return (
 		<>
 			<Tooltip message="Save in gallery CTRL+S">
-				<Button variant="icon" onClick={saveInGallery} title="Save">󰉉</Button>
+				<Button variant="icon2" onClick={saveInGallery} title="Save">󰉉</Button>
 			</Tooltip>
 
 			<Tooltip message="Download">
-				<Button variant="icon" onClick={savePNG} title="Download">
+				<Button variant="icon2" onClick={savePNG} title="Download">
 					󱑢
 				</Button>
 			</Tooltip>
 
 			<Tooltip message="Set as card's back">
-				<Button variant="icon" onClick={saveCardBack} title="Set as card's back">
+				<Button variant="icon2" onClick={saveCardBack} title="Set as card's back">
 					󰘹
 				</Button>
 			</Tooltip>

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Page, Card } from "../ui";
+import { Page } from "../ui";
 import PaintCanvas from "../components/paint/PaintCanvas";
 import PaintToolbar from "../components/paint/PaintToolbar";
 
@@ -13,8 +13,7 @@ function Paint() {
 
 	return (
 		<Page center>
-			<Card paint>
-				<div className="flex sm:flex-row flex-col items-center justify-between">
+			<div className="flex sm:flex-row flex-col items-center justify-between mt-2 p-2 bg-gray-700/70 rounded shadow-md">
 				<PaintCanvas
 					canvasRef={canvasRef}
 					color={color}
@@ -36,11 +35,10 @@ function Paint() {
 					redo={undoRedo.redo}
 					canvasRef={canvasRef}
 				/>
-				</div>
-			</Card>
-				<p className="m-2 text-xs text-gray-400 text-center">
-					Users are solely responsible for the drawings and content they create.
-				</p>
+			</div>
+			<p className="m-2 text-xs text-gray-400 text-center">
+				Users are solely responsible for the drawings and content they create.
+			</p>
 		</Page>
 	);
 }

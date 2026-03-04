@@ -54,14 +54,14 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 	return (
 		<div className="flex sm:flex-col gap-2">
 
-			<div className="flex sm:flex-col gap-1 items-center">
+			<div className="flex sm:flex-col sm:gap-1 mt-2 sm:mt-0 gap-0 items-center">
 	
 			{/* Active color */}
 				<input
 					type="color"
 					value={color}
 					onChange={(e) => setColor(e.target.value)}
-					className="sm:w-9 sm:h-9 w-7 h-7 border rounded border-purple-300 hover:opacity-80 transition cursor-pointer"
+					className="sm:w-9 sm:h-9 w-5 h-9 border sm:rounded border-purple-300 hover:opacity-80 transition cursor-pointer"
 					title="Custom color"
 				/>
 
@@ -85,7 +85,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 								onClick={() => setColor(c)}
 								onDoubleClick={() => colorInputRefs.current[`base-${index}`]?.click()}
 								style={{ backgroundColor: c }}
-								className="sm:w-9 sm:h-9 w-7 h-7  border rounded border-gray-400 hover:opacity-80 transition"
+								className="sm:w-9 sm:h-9 w-5 h-9  border sm:rounded border-gray-400 hover:opacity-80 transition"
 								title="Click to select, double-click to edit"
 							/>
 						</Tooltip>

@@ -4,11 +4,11 @@ function UndoRedo({ onUndo, onRedo }) {
 	return (
 		<>
 			<Tooltip message="undo CTRL+Z">
-				<Button variant="icon" onClick={onUndo}>󰕍</Button>
+				<Button variant="icon2" onClick={onUndo}>󰕍</Button>
 			</Tooltip>
 
 			<Tooltip message="redo CTRL+Y">
-				<Button variant="icon" onClick={onRedo}>󰑏</Button>
+				<Button variant="icon2" onClick={onRedo}>󰑏</Button>
 			</Tooltip>
 		</>
 	);

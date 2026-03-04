@@ -1,4 +1,4 @@
-function Card({ children, center = false, big = false, paint = false }) {
+function Card({ children, center = false, big = false }) {
 	return (
 		<div
 			className={`
@@ -6,9 +6,9 @@ function Card({ children, center = false, big = false, paint = false }) {
 				rounded 
 				shadow-md
 				w-full
-				m-auto 
+				m-auto
+				p-6
 				${center ? "flex flex-col justify-center items-center" : ""}
-				${paint ? "sm:max-w-xl-[20px] max-none p-1" : "p-6"}
 				${big ? "max-w-2xl" : "max-w-md"}
 			`}
 		>

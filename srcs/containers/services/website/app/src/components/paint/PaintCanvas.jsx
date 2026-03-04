@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { WIDTH, HEIGHT, MAX_HEIGHT_RATIO, MAX_WIDTH_RATIO } from "./constants";
 import { drawCheckerBoard, drawLine, floodFill, selectColor } from "./drawingUtils";
 import { useUndoRedo } from "./useUndoRedo";
@@ -6,6 +6,7 @@ import { useUndoRedo } from "./useUndoRedo";
 function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onUndoRedoReady }) {
 	const ctxRef = useRef(null);
 	const isDrawingRef = useRef(false);
+	const containerRef = useRef(null);
 	const startPosRef = useRef(null);
 	const lastPosRef = useRef(null);
 	const pointerIdRef = useRef(null);
@@ -14,12 +15,24 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 	const previewCtxRef = useRef(null);
 	const previewImageRef = useRef(null);
 
-	const scale = Math.floor(
-		Math.min(
-			(window.innerWidth * MAX_WIDTH_RATIO) / WIDTH,
-			(window.innerHeight * MAX_HEIGHT_RATIO) / HEIGHT
-		)
-	);
+	const [scale, setScale] = useState(0.8);
+
+	useEffect(() => {
+	function updateScale() {
+		const newScale = Math.floor(
+			Math.min(
+				(window.innerWidth * MAX_WIDTH_RATIO) / WIDTH,
+				(window.innerHeight * MAX_HEIGHT_RATIO) / HEIGHT
+			)
+		);
+		setScale(newScale);
+	}
+
+	updateScale(); // au montage
+	window.addEventListener("resize", updateScale);
+
+	return () => window.removeEventListener("resize", updateScale);
+}, []);
 
 	const { saveSnapshot, undo, redo } = useUndoRedo(ctxRef);
 
@@ -211,9 +224,10 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 	}
 
 	return (
-		<div className="w-full aspect-88-136 flex justify-center">
+		<div className="w-full aspect-88-136 flex justify-center mb-2">
 			<div
-				className="relative"
+				ref={containerRef}
+				className="relative shrink-0"
 				style={{
 					width: WIDTH * scale,
 					height: HEIGHT * scale,
