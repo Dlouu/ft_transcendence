@@ -18,7 +18,7 @@ function ToolSelector({ tool, setTool }) {
 		document.addEventListener("keydown", handleKey);
 
 		return () => {document.removeEventListener("keydown", handleKey)}
-	}, []);
+	});
 
 	return (
 		<div className="flex sm:flex-col gap-1">

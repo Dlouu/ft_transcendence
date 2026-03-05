@@ -1,5 +1,3 @@
-//Backend local a remplacer plus tard
-
 const images = import.meta.glob(
 	"../gallery/*.{png,jpg,jpeg}",
 	{ eager: true }

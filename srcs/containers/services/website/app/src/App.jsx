@@ -19,7 +19,7 @@ function App() {
 	const { user, loading } = useContext(AuthContext);
 
 	if (loading)
-		return (<div>Loading...</div>);
+		return (<div className="bg-purple-950">Loading...</div>);
 
 	return (
 		<AppLayout>
@@ -31,21 +31,22 @@ function App() {
 				<Route path="/register" element={<Register />}/>
 				<Route path="/me" element={<ProtectedRoute><Me /></ProtectedRoute>}/>
 				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>}/>
-				//profile/:id pour les autres utilisateurs
-				//room/:id necessaire ?
-				//game/:id necessaire ?
 				<Route path="/gallery/:id" element={<ProtectedRoute><GalleryImage /></ProtectedRoute>}/>
 				<Route path="/paint" element={<ProtectedRoute><Paint /></ProtectedRoute>}/>
 				<Route path="/terms" element={<Terms />}/>
 				<Route path="/privacy" element={<Privacy />}/>
-				//friendlist (statut online uniquement)
-				//rules (revendication)
-				//profile users
-				//settings (avatar)
-				//erreurs 404 etc
+			{/*	// profile/:id pour les autres utilisateurs
+				// room/:id necessaire ?
+				// game/:id necessaire ?
+				// friendlist (statut online uniquement)
+				// rules (revendication)
+				// profile users
+				// settings (avatar)
+				// erreurs 404 etc */}
 			</Routes>
 		</AppLayout>
 	);
 }
 
 export default App;
+

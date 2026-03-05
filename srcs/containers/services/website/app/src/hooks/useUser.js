@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNotifications } from "../context/AlertContext";
+import { useNotifications } from "../hooks/useNotifications";
 import { AuthContext } from "../context/AuthContext";
 import { useContext } from "react";
 

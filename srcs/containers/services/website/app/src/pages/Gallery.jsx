@@ -1,4 +1,3 @@
-import React from "react";
 import { useContext } from "react";
 import { Button, Page, Card } from "../ui";
 import { Link, useNavigate } from "react-router-dom";

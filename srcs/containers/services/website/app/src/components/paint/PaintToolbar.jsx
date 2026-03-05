@@ -3,7 +3,6 @@ import BrushSelector from './BrushSelector';
 import ColorPalette from './ColorPalette';
 import Save from './Save';
 import UndoRedo from './UndoRedo';
-import { WIDTH } from './constants';
 
 function PaintToolbar({
 	tool,
@@ -35,7 +34,7 @@ function PaintToolbar({
 				</div>
 			</div>
 
-			<div className="grid sm:w-[50px]">
+			<div className="grid sm:w-12.5">
 				<div className="flex flex-row sm:flex-col justify-center gap-1">
 					<ColorPalette color={color} setColor={setColor} tool={tool} setTool={setTool} />
 				</div>

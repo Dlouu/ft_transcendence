@@ -3,7 +3,7 @@ import { Button, Tooltip } from "../../ui";
 import { prepareCardBack } from "./drawingUtils";
 import { useNavigate } from "react-router-dom";
 import { WIDTH, HEIGHT } from "./constants";
-import { useNotifications } from "../../context/AlertContext";
+import { useNotifications } from "../../hooks/useNotifications";
 
 function Save({ canvasRef }) {
 	const { notify } = useNotifications();
@@ -37,7 +37,7 @@ function Save({ canvasRef }) {
 
 				if (!response.ok) {
 					throw new Error(`API error: ${response.status}`);
-				}+lines[y][x];
+				}
 
 				notify("Image saved to gallery successfully", "success");
 			}, "image/png");
@@ -67,7 +67,7 @@ function Save({ canvasRef }) {
 		document.addEventListener("keydown", handleKey);
 
 		return () => {document.removeEventListener("keydown", handleKey)}
-	}, []);
+	});
 
 	function saveCardBack() {
 		const canvas = canvasRef.current;

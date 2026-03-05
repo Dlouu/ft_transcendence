@@ -19,18 +19,6 @@ function Navbar() {
 		setOpen(false);
 	};
 
-	// Handler pour bouton test JWT a supprimer plus tard + suppr ligne 60-62
-	const handleJWT = async (e) => {
-		e.preventDefault();
-		try {
-			const request = await fetch("/tests/test_jwt", {
-				method: "GET",
-			});
-		} catch (error) {
-			console.log(error);
-		}
-	};
-
 	const navLinks = [
 		{ to: "/", label: "PLAY" },
 		{ to: "/gallery", label: "CUSTOMIZE" },
@@ -56,10 +44,6 @@ function Navbar() {
 			<Link to="/" className="text-lg font-pixelm font-bold text-purple-500">
 				UwUNO
 			</Link>
-
-		{/* A delete, pour tester si y'a le cookie actif */}
-			<div className="px-2"></div>
-			<Button variant="icon" onClick={handleJWT}>󱛞</Button>
 
 		{/* Burger */}
 			{user && (

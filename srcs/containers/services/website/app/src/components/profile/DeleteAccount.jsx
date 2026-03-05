@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Button, Input } from "../../ui";
-import { useNotifications } from "../../context/AlertContext";
+import { useNotifications } from "../../hooks/useNotifications";
 import { useUser } from "../../hooks/useUser";
 
-function DeleteAccount({ profile }) {
+function DeleteAccount() {
 	const { notify } = useNotifications();
 	const [password, setPassword] = useState("");
 	const [confirm, setConfirm] = useState("");

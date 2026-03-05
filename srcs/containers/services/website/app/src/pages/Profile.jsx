@@ -6,7 +6,6 @@ import AvatarSection from "../components/profile/AvatarSection";
 import InfoSection from "../components/profile/InfoSection";
 import PasswordSection from "../components/profile/PasswordSection";
 import DeleteAccount from "../components/profile/DeleteAccount";
-import PersonalGallery from "../components/profile/PersonalGallery";
 import Sidebar from "../components/profile/Sidebar";
 
 function Me() {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { WIDTH, HEIGHT, MAX_HEIGHT_RATIO, MAX_WIDTH_RATIO } from "./constants";
 import { drawCheckerBoard, drawLine, floodFill, selectColor } from "./drawingUtils";
-import { useUndoRedo } from "./useUndoRedo";
+import { useUndoRedo } from "../../hooks/useUndoRedo";
 
 function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onUndoRedoReady }) {
 	const ctxRef = useRef(null);
@@ -28,7 +28,7 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 		setScale(newScale);
 	}
 
-	updateScale(); // au montage
+	updateScale();
 	window.addEventListener("resize", updateScale);
 
 	return () => window.removeEventListener("resize", updateScale);
@@ -59,7 +59,7 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 
 	}, []);
 
-	useEffect(() => {
+	useEffect((undo, redo) => {
 		const canvas = canvasRef.current;
 		canvas.width = WIDTH;
 		canvas.height = HEIGHT;
@@ -71,7 +71,7 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 		if (onUndoRedoReady) {
 			onUndoRedoReady({ undo, redo });
 		}
-	}, [onUndoRedoReady]);
+	}, [onUndoRedoReady, canvasRef]);
 
 	function clearPreview() {
 		const ctx = previewCtxRef.current;
@@ -201,7 +201,7 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 		drawAtEvent(e);
 	}
 
-	function handlePointerUp(e) {
+	function handlePointerUp() {
 		if (pointerIdRef.current !== null) {
 			canvasRef.current.releasePointerCapture(pointerIdRef.current);
 		}
@@ -213,8 +213,8 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 		clearPreview();
 	}
 
-	function handlePointerCancel(e) {
-		handlePointerUp(e);
+	function handlePointerCancel() {
+		handlePointerUp();
 	}
 
 	function handlePointerLeave() {

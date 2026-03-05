@@ -151,7 +151,7 @@ socket.on("room_expired", (data) => {
 // friends
 document.getElementById("add-friend").addEventListener("click", () => {
   const username = document.getElementById("friend-username").value.trim();
-  if (!username) return alert("Veuillez entrer un nom d'utilisateur");
+  if (!username) return alert("enter a username please");
 
   socket.emit("add_friend", {username: username});
 

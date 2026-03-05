@@ -3,7 +3,7 @@ import Lobby from "./Lobby";
 import Room from "./Room";
 
 function GameSetup() {
-	const [mode, setMode] = useState("lobby"); // lobby | create | join
+	const [mode, setMode] = useState("lobby"); // lobby | room
 	const [room, setRoom] = useState(null);
 	const [players, setPlayers] = useState([]);
 	const [deck, setDeck] = useState("basic");

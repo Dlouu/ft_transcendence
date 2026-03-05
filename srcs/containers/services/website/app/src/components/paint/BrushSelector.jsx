@@ -15,7 +15,7 @@ function BrushSelector({ brushSize, setBrushSize }) {
 		document.addEventListener("keydown", handleKey);
 
 		return () => {document.removeEventListener("keydown", handleKey)}
-	}, []);
+	});
 
 	return (
 		<Tooltip message="Size, press + or -">
