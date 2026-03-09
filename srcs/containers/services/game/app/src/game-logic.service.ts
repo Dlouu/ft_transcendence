@@ -220,7 +220,7 @@ export class GameLogicService {
 	}
 
 	async askPlayerColor(game: Game, player: UnoPlayer): Promise<CardFamily> {
-		if (!player._socket) {
+		if (!player._socket || player._isBot) {
 			return this.randomCardFamily();
 		}
 
@@ -247,7 +247,7 @@ export class GameLogicService {
 		}
 	}
 
-	clearPendingUno(game: Game): void {
+	clearPendingUno(game: Game, skipTurnTimeoutRestart = false): void {
 		const timeout = this.unoPendingTimeouts.get(game.roomName);
 		if (timeout) {
 			clearTimeout(timeout);
@@ -255,6 +255,10 @@ export class GameLogicService {
 		}
 
 		game.pendingUnoPlayerIndex = null;
+
+		if (!skipTurnTimeoutRestart && game.state === GameState.PLAYING) {
+			this.gameService.startTurnTimeout(game);
+		}
 	}
 
 	drawCardsWithEvents(
@@ -283,27 +287,24 @@ export class GameLogicService {
 			player._hand.push(card);
 			player.hasDrawThisTurn = true;
 
-			if (player._socket) {
+			if (!player._isBot && player._socket) {
 				player._socket.emit(
 					"game:draw:self",
 					toDrewCardDto(player._name, card),
 				);
+				player._socket.to(game.roomName).emit("game:draw:others", toDrewCardDto(player._name, undefined));
 			}
-
-			io?.to(game.roomName).emit(
-				"game:draw:others",
-				toDrewCardDto(player._name, undefined),
-			);
+			else
+				io?.to(game.roomName).emit(
+					"game:draw:others",
+					toDrewCardDto(player._name, undefined),
+				);
 		}
 
 		return { success: true, deckEmpty: false };
 	}
 
 	onUno(game: Game, player: UnoPlayer): void {
-		if (!player._socket) {
-			return;
-		}
-
 		const io = this.getIoServer();
 
 		const playerIndex = game.players.findIndex((p) => p._id === player._id);
@@ -313,13 +314,14 @@ export class GameLogicService {
 
 		game.pendingUnoPlayerIndex = playerIndex;
 		player.hasShoutedUno = false;
-		this.clearPendingUno(game);
+		this.clearPendingUno(game, true);
 		game.pendingUnoPlayerIndex = playerIndex;
 
-		player._socket.emit("game:uno:pending:self");
+		if (!player._isBot && player._socket)
+			player._socket.emit("game:uno:pending:self");
 
 		setTimeout(() => {
-			const pendingIndex = game.pendingUnoPlayerIndex;
+			 const pendingIndex = game.pendingUnoPlayerIndex;
 			if (pendingIndex === null) {
 				return;
 			}
@@ -329,7 +331,10 @@ export class GameLogicService {
 				return;
 			}
 
-			player._socket?.to(game.roomName).emit("game:uno:pending:others");
+			if (!player._isBot && player._socket)
+				player._socket.to(game.roomName).emit("game:uno:pending:others");
+			else
+				this.getIoServer()?.to(game.roomName).emit("game:uno:pending:others");
 		}, this.unoRevealDelayMs);
 
 		const timeout = setTimeout(() => {
@@ -348,7 +353,7 @@ export class GameLogicService {
 			this.clearPendingUno(game);
 			this.drawCardsWithEvents(game, pendingPlayer, 2);
 
-			player._socket?.to(game.roomName).emit("game:uno:expired");
+			this.getIoServer()?.to(game.roomName).emit("game:uno:expired");
 		}, this.unoCallWindowMs);
 
 		this.unoPendingTimeouts.set(game.roomName, timeout);
@@ -372,6 +377,7 @@ export class GameLogicService {
 		}
 
 		this.clearPendingUno(game);
+		this.gameService.clearTurnTimeout(game.roomName);
 
 		const durationDdHhMmSs = this.formatDurationToDdHhMmSs(
 			Date.now() - game.createdAt,
@@ -390,11 +396,7 @@ export class GameLogicService {
 			turnNbr: Math.max(0, game.discard.length - 1),
 		};
 
-		const emitterPlayer = game.players.find((player) => !!player._socket);
-		if (emitterPlayer?._socket) {
-			emitterPlayer._socket.emit("game:win", dto);
-			emitterPlayer._socket.to(game.roomName).emit("game:win", dto);
-		}
+		this.getIoServer()?.to(game.roomName).emit("game:win", dto);
 
 		this.gameRepository.deleteGame(game);
 

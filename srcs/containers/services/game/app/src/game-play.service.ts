@@ -119,9 +119,14 @@ export class GamePlayService {
 			return false;
 		}
 
-		player._socket?.emit("game:played:card:self", toPlayedCardDto(player._name, playedCard, cardIndex));
-		player._socket?.to(game.roomName).emit("game:played:card:others", toPlayedCardDto(player._name, playedCard, cardIndex));
-
+		if (!player._isBot && player._socket)
+		{
+			player._socket.emit("game:played:card:self", toPlayedCardDto(player._name, playedCard, cardIndex));
+			player._socket.to(game.roomName).emit("game:played:card:others", toPlayedCardDto(player._name, playedCard, cardIndex));
+		}
+		else
+			this.getIoServer()?.to(game.roomName).emit("game:played:card:others", toPlayedCardDto(player._name, playedCard, cardIndex));
+		
 		if (game.deck.length === 0)
 		{
 			this.deckService.discardToDeck(game);

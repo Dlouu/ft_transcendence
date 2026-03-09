@@ -77,8 +77,16 @@ export class Game {
   }
 
   addBots(): void {
+    const usedNames = new Set(this.players.map((player) => player._name));
+
     for (let i = 0; i < this.botNbr; i++) {
-      const botName = generateNickname();
+      let botName = generateNickname();
+
+      while (usedNames.has(botName)) {
+        botName = generateNickname();
+      }
+
+      usedNames.add(botName);
       this.players.push(new UnoPlayer(botName + "_id", botName, null, true));
     }
   }

@@ -16,6 +16,8 @@ import { BotLogicService } from "./bot-logic.service";
 export class GameService {
 	private io?: Server;
 	private readonly gameInitReadyByRoom = new Map<string, Set<string>>();
+	private readonly turnTimeoutByRoom = new Map<string, NodeJS.Timeout>();
+	private readonly turnTimeoutMs = 10000;
 
 	constructor(
 		private readonly gameRepository: GameRepositoryService,
@@ -32,6 +34,56 @@ export class GameService {
 
 	getServer(): Server | undefined {
 		return this.io;
+	}
+
+	clearTurnTimeout(roomName: string): void {
+		const existingTimeout = this.turnTimeoutByRoom.get(roomName);
+		if (!existingTimeout) {
+			return;
+		}
+
+		clearTimeout(existingTimeout);
+		this.turnTimeoutByRoom.delete(roomName);
+	}
+
+	startTurnTimeout(game: Game): void {
+		this.clearTurnTimeout(game.roomName);
+
+		if (game.state !== GameState.PLAYING || game.pendingUnoPlayerIndex !== null) {
+			return;
+		}
+
+		const currentPlayer = game.players[game.currentPlayerIndex];
+		if (!currentPlayer) {
+			return;
+		}
+
+		const timeout = setTimeout(() => {
+			this.onTurnTimeout(game.roomName, currentPlayer._id);
+		}, this.turnTimeoutMs);
+
+		this.turnTimeoutByRoom.set(game.roomName, timeout);
+	}
+
+	private onTurnTimeout(roomName: string, expectedPlayerId: string): void {
+		this.clearTurnTimeout(roomName);
+
+		const game = this.gameRepository.getGameByName(roomName);
+		if (!game || game.state !== GameState.PLAYING || game.pendingUnoPlayerIndex !== null) {
+			return;
+		}
+
+		const currentPlayer = game.players[game.currentPlayerIndex];
+		if (!currentPlayer || currentPlayer._id !== expectedPlayerId) {
+			return;
+		}
+
+		this.io?.to(game.roomName).emit("game:turn:timeout", {
+			playerId: currentPlayer._id,
+			playerName: currentPlayer._name,
+		});
+
+		this.drawCard(currentPlayer._id);
 	}
 
 	create(dto: CreateGameDto): Game {
@@ -79,6 +131,7 @@ export class GameService {
 		this.io.to(game.roomName).emit("game:start");
 
 		this.gameInitReadyByRoom.delete(game.roomName);
+		this.startTurnTimeout(game);
 		this.tryRunBotTurn(game);
 	}
 
@@ -128,6 +181,7 @@ export class GameService {
 
 		if (game && game.connectedPlayers.size === 0) {
 			this.gameInitReadyByRoom.delete(game.roomName);
+			this.clearTurnTimeout(game.roomName);
 
 			console.log(
 				`No connected players left in ${game.roomName}. Deleting game.`,
@@ -150,6 +204,12 @@ export class GameService {
 		if (game.pendingUnoPlayerIndex !== null) {
 			return;
 		}
+
+		if (!this.gameLogic.isPlayersTurn(game, player)) {
+			return;
+		}
+
+		this.clearTurnTimeout(game.roomName);
 
 		if (!await this.gamePlay.playCard(game, dto, player))
       return ;
@@ -178,6 +238,7 @@ export class GameService {
 		};
 
 		this.io?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
+		this.startTurnTimeout(game);
 		this.tryRunBotTurn(game);
   }
 
@@ -196,6 +257,8 @@ export class GameService {
 			return;
 		}
 
+		this.clearTurnTimeout(game.roomName);
+
     if (!this.gamePlay.drawCard(game, 1, false, player)) {
       return ;
     }
@@ -212,6 +275,7 @@ export class GameService {
 		};
 
 		this.io?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
+		this.startTurnTimeout(game);
 		this.tryRunBotTurn(game);
   }
 
