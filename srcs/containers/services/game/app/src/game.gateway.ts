@@ -70,7 +70,7 @@ export class GameGateway
 			return;
 		}
 
-		await this.gameService.playCard(playerId, payload);
+		await this.gameService.playCard(playerId, payload, undefined);
 		console.log(
 			`Player ${playerId} play the card ${payload.cardCode} ${payload.cardFamily}`,
 		);
@@ -83,7 +83,7 @@ export class GameGateway
 			return;
 		}
 
-		this.gameService.drawCard(playerId);
+		this.gameService.drawCard(playerId, undefined);
 	}
 
 	@SubscribeMessage("game:play:uno")

@@ -8,6 +8,7 @@ import { DeckService } from "./deck.service";
 import { GameRepositoryService } from "./game-repository";
 import { BotLogicService } from "./bot-logic.service";
 import { GameDebugService } from "./game-debug.service";
+import { BotScoringService } from "./bot-scoring.service";
 
 @Module({
 	providers: [
@@ -18,6 +19,7 @@ import { GameDebugService } from "./game-debug.service";
 		DeckService,
 		GameRepositoryService,
 		BotLogicService,
+		BotScoringService,
 		GameDebugService,
 	],
 	controllers: [GameController],
@@ -29,6 +31,7 @@ import { GameDebugService } from "./game-debug.service";
 		DeckService,
 		GameRepositoryService,
 		BotLogicService,
+		BotScoringService,
 		GameDebugService,
 	],
 })

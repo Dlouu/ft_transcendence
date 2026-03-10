@@ -50,14 +50,14 @@ export class OpponentsManager extends Container
             }
             else if (totalPlayers === 3)
             {
-                if (relativeIndex === 1) positionKey = 'right';
-                if (relativeIndex === 2) positionKey = 'left';
+                if (relativeIndex === 1) positionKey = 'left';
+                if (relativeIndex === 2) positionKey = 'right';
             }
             else
             {
-                if (relativeIndex === 1) positionKey = 'right';
+                if (relativeIndex === 1) positionKey = 'left';
                 if (relativeIndex === 2) positionKey = 'top';
-                if (relativeIndex === 3) positionKey = 'left';
+                if (relativeIndex === 3) positionKey = 'right';
             }
 
             const player = initGameDto.players[i];

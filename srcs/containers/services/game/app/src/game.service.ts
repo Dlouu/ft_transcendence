@@ -83,7 +83,7 @@ export class GameService {
 			playerName: currentPlayer._name,
 		});
 
-		this.drawCard(currentPlayer._id);
+		this.drawCard(currentPlayer._id, game);
 	}
 
 	create(dto: CreateGameDto): Game {
@@ -190,10 +190,13 @@ export class GameService {
 		}
 	}
 
-	async playCard(playerId: string, dto: CardDto): Promise<void> {
-		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
-		if (!game || game.state !== GameState.PLAYING) {
-			return;
+	async playCard(playerId: string, dto: CardDto, game: Game | undefined): Promise<void> {
+		if (!game)
+		{
+			game = this.gameRepository.getGameByConnectedPlayer(playerId);
+			if (!game || game.state !== GameState.PLAYING) {
+				return;
+			}
 		}
 
 		const player = this.gameRepository.getPlayerInGame(game, playerId);
@@ -221,6 +224,7 @@ export class GameService {
 
 		if (player._hand.length === 1) {
 			this.gameLogic.onUno(game, player);
+			this.botLogic.scheduleUnoReaction(game);
 		}
 
 		const advanceSteps = this.getTurnAdvanceStepsAfterPlay(dto.cardCode, game.players.length);
@@ -242,10 +246,13 @@ export class GameService {
 		this.tryRunBotTurn(game);
   }
 
-  drawCard(playerId: string): void {
-		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
-		if (!game || game.state !== GameState.PLAYING) {
-			return;
+  drawCard(playerId: string, game: Game | undefined): void {
+		if (!game)
+		{
+			game = this.gameRepository.getGameByConnectedPlayer(playerId);
+			if (!game) {
+				return;
+			}
 		}
 
 		const player = this.gameRepository.getPlayerInGame(game, playerId);
@@ -290,7 +297,13 @@ export class GameService {
 			return ;
 		}
 
-		this.gamePlay.shoutUno(game, player);
+		const hadPendingUno = game.pendingUnoPlayerIndex !== null;
+		const didHandleUno = this.gamePlay.shoutUno(game, player);
+
+		// If UNO was resolved and the current player is a bot, resume automated play.
+		if ((didHandleUno || hadPendingUno) && game.pendingUnoPlayerIndex === null) {
+			this.tryRunBotTurn(game);
+		}
 	}
 
 	private getTurnAdvanceStepsAfterPlay(cardCode: CardCode, playerCount: number): number {
@@ -312,6 +325,10 @@ export class GameService {
 	}
 
 	private tryRunBotTurn(game: Game): void {
+		if (game.state !== GameState.PLAYING || game.pendingUnoPlayerIndex !== null) {
+			return;
+		}
+
 		if (!this.isBotTurn(game)) {
 			return;
 		}
