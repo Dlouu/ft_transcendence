@@ -6,10 +6,10 @@ import { AuthContext } from "../context/AuthContext";
 import UserGallery from "../components/profile/UserGallery";
 
 function Gallery() {
-	const navigate = useNavigate();
-	const images = getGallery();
 	const { user } = useContext(AuthContext);
 	const userId = user?.user_id;
+	const navigate = useNavigate();
+	const images = getGallery();
 
 	return (
 		<Page center>

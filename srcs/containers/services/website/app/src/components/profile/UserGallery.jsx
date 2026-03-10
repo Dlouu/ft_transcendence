@@ -36,8 +36,8 @@ function UserGallery({ userId }) {
 
 	return (
 		<>
-			{loadingCards && <p>Loading gallery...</p>}
 			<h1 className="font-pixelmono mt-10 mb-2">PERSONAL CARDS</h1>
+			{loadingCards && <p className="mt-10 text-center font-pixelm">Loading gallery...</p>}
 			{!loadingCards && !cards.length && <p>No personal cards yet</p>}
 
 			{!!cards.length && (

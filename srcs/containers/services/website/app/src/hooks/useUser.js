@@ -1,94 +1,68 @@
+import { useApi } from "./useApi";
 import { useState } from "react";
-import { useNotifications } from "../hooks/useNotifications";
 import { AuthContext } from "../context/AuthContext";
 import { useContext } from "react";
 
 export function useUser() {
-	const { notify } = useNotifications();
-	const { logout, setUser } = useContext(AuthContext);
-
+	const { post } = useApi();
+	const { logout, setUser, refreshUser } = useContext(AuthContext);
 	const [loading, setLoading] = useState(false);
 
-	const request = async (url, method, body, successMessage) => {
-		setLoading(true);
-
+	const updateUser = async (field, value) => {
+		
 		try {
-			const response = await fetch(url, {
-				method: method,
-				headers: {
-					'Accept': "application/json",
-					'Content-Type': "application/json",
-				},
-				body: JSON.stringify(body),
-			});
+			setLoading(true);
+			const data = await post(
+			"/api/user/update_information",
+			{ [field]: value },
+			`Your ${field} has been updated`
+		);
 
-			const contentType = response.headers.get("content-type") || "";
-			const data = contentType.includes("application/json")
-				? await response.json()
-				: await response.text();
+		setUser((prev) => ({...prev, [field]: value }));
 
-			if (!response.ok) {
-				const message =
-					typeof data === "string"
-						? data
-						: data?.message || "Request failed";
-				throw new Error(message);
-			}
+		return data;
+		} finally {
+			setLoading(false);
+		}
+	
+	};
 
-			if (successMessage) notify(successMessage, "success");
-
-			return data;
-		} catch (error) {
-			notify(error.message || "Error", "error");
-			throw error;
+	const updateProfilePicture = async (file) => {
+		try {
+			setLoading(true);
+			await post("/api/user/update_profile_picture", file);
+			await refreshUser();
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const updateUser = async (field, value) => {
-		const data = await request(
-			"/api/user/update_information",
-			"POST",
-			{ [field]: value },
-			`Your ${field} has been updated`
-		);
-
-		if (setUser) {
-			setUser((prev) => ({
-				...prev,
-				[field]: value,
-			}));
+	const uploadCardBack = async (file) => {
+		try {
+			setLoading(true);
+    	return await post("/api/user/upload_card_image", file, "Card uploaded in Gallery");
+		} finally {
+			setLoading(false);
 		}
-
-		return data;
-	};
+  	};
 
 	const changePassword = async (password, newPassword) => {
-		return request(
+		return post(
 			"/api/user/update_password",
-			"POST",
-			{
-				password,
-				new_password: newPassword,
-			},
+			{ password, new_password: newPassword },
 			"Password changed"
 		);
 	};
 
 	const deleteAccount = async (password) => {
-		await request(
-			"/api/user/delete_account",
-			"POST",
-			{ password },
-			"Account deleted"
-		);
-
+		await post("/api/user/delete_account", { password }, "Account deleted" );
 		logout();
 	};
 
 	return {
 		updateUser,
+		updateProfilePicture,
+		uploadCardBack,
 		changePassword,
 		deleteAccount,
 		loading,

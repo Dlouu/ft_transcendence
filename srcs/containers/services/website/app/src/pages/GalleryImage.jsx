@@ -3,11 +3,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { deleteImage, getImageById } from "../services/galleryService";
 import { Button, Page, Card } from "../ui";
+import { useUser } from "../hooks/useUser";
 
 function GalleryImage() {
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const { user } = useContext(AuthContext);
+
+	const { uploadCardBack, loading } = useUser();
 
 	const image = getImageById(id);
 
@@ -20,6 +23,19 @@ function GalleryImage() {
 	}
 
 	const canDelete = user?.name === image.author;
+
+	const handleDuplicate = async () => {
+		try {
+			const response = await fetch(image.src);
+			const blob = await response.blob();
+			const file = new File([blob], `card-back-${id}.png`, { type: blob.type });
+
+			await uploadCardBack(file);
+			navigate("/gallery");
+		} catch (error) {
+			console.error("Failed to duplicate", error);
+		}
+	}
 
 	return (
 		<Page center>
@@ -46,7 +62,7 @@ function GalleryImage() {
 							</Button>
 						}
 
-						<Button>
+						<Button onClick={handleDuplicate} disabled={loading}>
 							DUPLICATE
 						</Button>
 

@@ -1,15 +1,27 @@
 import { Button } from "../../ui";
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../../hooks/useUser";
 import img from "../../assets/default-back.png"
 
 function AvatarSection({ user }) {
 	const navigate = useNavigate();
+	const fileInputRef = useRef(null);
+	const { updateProfilePicture } = useUser();
 
-	const handleChangeAvatar = async () => {
-		console.log("change avatar function");
-		//fetch /user/update_profile_picture
-	};
+const handleChangeAvatar = async (e) => {
+	const file = e.target.files[0];
+	if (!file) return;
 
+	try {
+		await updateProfilePicture(file);
+
+	} catch (error) {
+		console.error(error);
+	}
+	
+};
+		
 	return (
 		<div className="grid grid-cols-2">
 			<div className="flex flex-col gap-2">
@@ -17,11 +29,21 @@ function AvatarSection({ user }) {
 					Avatar:
 				</p>
 				<img
-					src={user?.profile_picture_url}
+					src={user?.profile_picture_url ?? "/default-avatar.png"}
 					className="h-34 w-34 rounded"
 					alt={user?.username}
 				/>
-				<Button variant="icon" onClick={handleChangeAvatar}>
+				<input
+					type="file"
+					accept="image/*"
+					ref={fileInputRef}
+					className="hidden"
+					onChange={handleChangeAvatar}
+				/>
+				<Button
+					variant="icon"
+					onClick={() => fileInputRef.current.click()}
+				>
 					󱇤
 				</Button>
 			</div>
@@ -31,7 +53,7 @@ function AvatarSection({ user }) {
 					Card's back:
 				</p>
 				<img
-					src={img}
+					src={user?.card_back_url || img}
 					className="h-34 w-22"
 					alt="Card back"
 				/>

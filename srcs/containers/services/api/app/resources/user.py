@@ -182,7 +182,7 @@ class UpdateProfilePicture(Resource):
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
 		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
 
-		if not s3s.add_resource(image_file, s3_url):
+		if not s3s.add_resource(processed_file, s3_url):
 			logger.critical("Unable to upload the new profile picture", extra_logger)
 			return {"message": "Unable to upload the new profile picture."}, 401
 

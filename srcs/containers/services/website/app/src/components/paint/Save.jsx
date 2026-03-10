@@ -1,3 +1,4 @@
+import { useApi } from "../../hooks/useApi";
 import { useEffect } from "react";
 import { Button, Tooltip } from "../../ui";
 import { prepareCardBack } from "./drawingUtils";
@@ -6,6 +7,7 @@ import { WIDTH, HEIGHT } from "./constants";
 import { useNotifications } from "../../hooks/useNotifications";
 
 function Save({ canvasRef }) {
+	const { post } = useApi();
 	const { notify } = useNotifications();
 	const navigate = useNavigate();
 
@@ -17,35 +19,25 @@ function Save({ canvasRef }) {
 				return;
 			}
 
-			canvas.toBlob(async (file) => {
-				if (!file) {
+			canvas.toBlob(async (blob) => {
+				if (!blob) {
 					notify("Failed to generate image", "error");
 					return;
 				}
 
-				const uploadFile = new File([file], "UwUNO-drawing.png", {
+				const uploadFile = new File([blob], "UwUNO-drawing.png", {
 					type: "image/png",
 				});
 				const formData = new FormData();
 				formData.append("image", uploadFile);
 
-				const response = await fetch("/api/user/upload_card_image", {
-					method: "POST",
-					body: formData,
-					credentials: "include",
-				});
-
-				if (!response.ok) {
-					throw new Error(`API error: ${response.status}`);
-				}
-
-				notify("Image saved to gallery successfully", "success");
+				await post("/api/user/upload_card_image", uploadFile, "Image saved to gallery successfully");
+				navigate("/gallery");
 			}, "image/png");
 		} catch (error) {
 			console.error("Error saving to gallery:", error);
 			notify("Failed to save image", "error");
 		}
-		navigate("/gallery");
 	}
 
 	function savePNG() {
