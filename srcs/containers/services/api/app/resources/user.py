@@ -182,7 +182,7 @@ class UpdateProfilePicture(Resource):
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
 		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
 
-		if not s3s.add_resource(image_file, s3_url):
+		if not s3s.add_resource(processed_file, s3_url):
 			logger.critical("Unable to upload the new profile picture", extra_logger)
 			return {"message": "Unable to upload the new profile picture."}, 401
 
@@ -423,7 +423,7 @@ class GetCardImage(Resource):
 
 		images_url = []
 		for row in query.yield_per(50):
-			url = s3s.get_resource_url(row.img_url, 3600)
+			url = s3s.get_resource_url(row.img_url, -1)
 			if url is not None:
 				images_url.append({"url": url, "image_id": row.id})
 

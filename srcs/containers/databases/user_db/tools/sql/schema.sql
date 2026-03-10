@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
 	user_id BIGINT UNSIGNED NOT NULL UNIQUE,
 	username VARCHAR(255) NOT NULL,
 	profile_picture_url VARCHAR(255) NOT NULL,
+	card_back_url VARCHAR(255) NOT NULL,
 
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
@@ -49,7 +50,7 @@ CREATE TABLE IF NOT EXISTS friends (
 		FOREIGN KEY (requester_id)
 		REFERENCES users(id)
 		ON DELETE CASCADE,
-	
+
 	CONSTRAINT fk_accepter
 		FOREIGN KEY (accepter_id)
 		REFERENCES users(id)

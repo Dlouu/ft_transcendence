@@ -15,7 +15,9 @@ def add_resource(image_file, url):
 		True if the file have beend added otherwise False.
 	"""
 	try:
-		extensions.s3.upload_fileobj(image_file, os.getenv("S3_BUCKET_NAME", ""), url, ExtraArgs={"ContentType": image_file.content_type})
+		extensions.s3.upload_fileobj(image_file, os.getenv("S3_BUCKET_NAME", ""), url, ExtraArgs={
+				"ContentType": image_file.content_type
+			})
 	except AttributeError:
 		return False
 	except ParamValidationError:
@@ -54,9 +56,14 @@ def get_resource_url(key, expire=3600):
 	if not does_resource_exist(key):
 		return None
 
+	bucket_name = os.getenv("S3_BUCKET_NAME", "")
+
+	print(key, flush=True)
+	if expire == -1:
+		return bucket_name + ".s3.amazonaws.com" + "/" + key
 	resource = extensions.s3.generate_presigned_url(
 		ClientMethod="get_object",
-		Params={"Bucket": os.getenv("S3_BUCKET_NAME", ""), "Key": key},
+		Params={"Bucket": bucket_name, "Key": key},
 		ExpiresIn = expire
 	)
 
