@@ -20,9 +20,9 @@ function Navbar() {
 	};
 
 	const navLinks = [
-		{ to: "/", label: "PLAY" },
-		{ to: "/gallery", label: "CUSTOMIZE" },
-		{ to: "/me", label: "PROFILE" }
+		{ to: "/", icon: "󰘸", label: "PLAY"},
+		{ to: "/gallery", icon: "󰏘",label: "CUSTOMIZE" },
+		{ to: "/me", icon: "󰀄",label: "PROFILE" }
 	];
 
 	const linkClass = (path) =>
@@ -61,7 +61,8 @@ function Navbar() {
 				<div className="hidden sm:flex font-pixelhb ml-auto items-center gap-4 font-bold">
 					{navLinks.map((link) => (
 						<Link key={link.to} to={link.to} className={linkClass(link.to)}>
-							{link.label}
+							<span className="font-icon text-purple-300">{link.icon}</span>
+							<span className="px-2">{link.label}</span>
 						</Link>
 					))}
 
@@ -94,7 +95,8 @@ function Navbar() {
 								to={link.to}
 								onClick={() => setOpen(false)}
 							>
-								{link.label}
+								<span className="font-icon text-purple-300">{link.icon}</span>
+								<span className="px-2">{link.label}</span>
 							</Link>
 						))}
 

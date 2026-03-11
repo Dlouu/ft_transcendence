@@ -1,4 +1,4 @@
-function Button({ children, onClick, type, disabled = false, variant = "primary", isActive = false }) {
+function Button({ children, onClick, type, disabled = false, variant = "primary", isActive = false, ...props }) {
 	const base = "cursor-pointer rounded font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed py-2";
 
 	const variants = {
@@ -29,6 +29,7 @@ function Button({ children, onClick, type, disabled = false, variant = "primary"
 			disabled={disabled}
 			type={type}
 			className={`${variants[variant]}`}
+			{...props}
 		>
 			{children}
 		</button>

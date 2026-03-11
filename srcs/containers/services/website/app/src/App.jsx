@@ -11,6 +11,7 @@ import GalleryImage from "./pages/GalleryImage";
 import Paint from "./pages/Paint";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import NotFound from "./pages/NotFound";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext";
 
@@ -25,24 +26,21 @@ function App() {
 		<AppLayout>
 			<Routes>
 				{/* <Route path="/" element={user ? <Game /> : <Login />}/> */}
-				<Route path="/" element={user ? <Home /> : <Login />}/>
+				<Route path="/" element={user ? <Home /> : <Login />} />
 				{/* <Route path="/game" element={<Game />}/> */}
-				<Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>}/>
+				<Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>} />
 				<Route path="/register" element={<Register />}/>
-				<Route path="/me" element={<ProtectedRoute><Me /></ProtectedRoute>}/>
-				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>}/>
-				<Route path="/gallery/:id" element={<ProtectedRoute><GalleryImage /></ProtectedRoute>}/>
-				<Route path="/paint" element={<ProtectedRoute><Paint /></ProtectedRoute>}/>
-				<Route path="/terms" element={<Terms />}/>
-				<Route path="/privacy" element={<Privacy />}/>
-			{/*	// profile/:id pour les autres utilisateurs
-				// room/:id necessaire ?
-				// game/:id necessaire ?
-				// friendlist (statut online uniquement)
-				// rules (revendication)
-				// profile users
-				// settings (avatar)
-				// erreurs 404 etc */}
+				<Route path="/me" element={<ProtectedRoute><Me /></ProtectedRoute>} />
+				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
+				<Route path="/gallery/:id" element={<ProtectedRoute><GalleryImage /></ProtectedRoute>} />
+				<Route path="/paint" element={<ProtectedRoute><Paint /></ProtectedRoute>} />
+				<Route path="/terms" element={<Terms />} />
+				<Route path="/privacy" element={<Privacy />} />
+			{/*	// profile/:id
+				// room/:id
+				// game/:id
+				// friendlist (statut online uniquement)*/}
+				<Route path="*" element={<NotFound />} />
 			</Routes>
 		</AppLayout>
 	);
