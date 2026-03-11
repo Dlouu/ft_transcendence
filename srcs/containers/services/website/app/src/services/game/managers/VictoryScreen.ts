@@ -5,6 +5,8 @@ export class VictoryScreen extends Container
 {
     private static readonly UI_FONT_CSS_VARIABLE = "--font-pixelm";
     private static readonly UI_FONT_FALLBACK = "PixelHB";
+    private static readonly DEFAULT_BUTTON_LABEL = "HOME";
+    private static readonly HOME_PATH = "/";
 
     private _panelWidthRatio: number = 0.76;
     private _panelAspectRatio: number = 16 / 9;
@@ -30,15 +32,17 @@ export class VictoryScreen extends Container
     private _button: Container;
     private _buttonBackground: Graphics;
     private _buttonLabel: Text;
+    private _buttonText: string;
 
     private _isButtonAnimating: boolean = false;
     private _onActionClick?: () => void;
 
-    constructor(onActionClick?: () => void)
+    constructor(onActionClick?: () => void, buttonText: string = VictoryScreen.DEFAULT_BUTTON_LABEL)
     {
         super();
 
         this._onActionClick = onActionClick;
+        this._buttonText = buttonText;
         const uiFontFamily = this.resolveUiFontFamily();
 
         this._overlay = new Graphics();
@@ -71,7 +75,7 @@ export class VictoryScreen extends Container
 
         this._buttonBackground = new Graphics();
         this._buttonLabel = new Text({
-            text: "Continue",
+            text: this._buttonText,
             style: {
                 fill: 0xffffff,
                 fontSize: 24,
@@ -96,6 +100,12 @@ export class VictoryScreen extends Container
         this.addChild(this._button);
 
         this.visible = false;
+    }
+
+    public setButtonText(text: string): void
+    {
+        this._buttonText = text;
+        this._buttonLabel.text = this._buttonText;
     }
 
     public show(dto: GameWinDto, isVictory: boolean): void
@@ -178,8 +188,17 @@ export class VictoryScreen extends Container
             this._button.scale.set(1);
             this._button.alpha = 1;
             this._isButtonAnimating = false;
-            this._onActionClick?.();
-            console.log("VictoryScreen: placeholder action button clicked.");
+
+            if (this._onActionClick)
+            {
+                this._onActionClick();
+                return;
+            }
+
+            if (typeof window !== "undefined")
+            {
+                window.location.assign(VictoryScreen.HOME_PATH);
+            }
         }, 130);
     }
 
