@@ -1,15 +1,16 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { Button, Page, Card } from "../ui";
 import { Link, useNavigate } from "react-router-dom";
-import { getGallery } from "../services/galleryService";
+import { getDefaultGallery } from "../services/gallery/galleryService";
 import { AuthContext } from "../context/AuthContext";
 import UserGallery from "../components/profile/UserGallery";
 
 function Gallery() {
 	const { user } = useContext(AuthContext);
+	const [userImages, setUserImages] = useState([]);
 	const userId = user?.user_id;
 	const navigate = useNavigate();
-	const images = getGallery();
+	const images = getDefaultGallery();
 
 	return (
 		<Page center>

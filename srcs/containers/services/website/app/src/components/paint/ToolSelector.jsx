@@ -10,7 +10,7 @@ function ToolSelector({ tool, setTool }) {
 			setTool("eraser");
 		else if ((e.key === "c" || e.key === "*")  && e.repeat === false)
 			setTool("bucket");
-		else if ((e.key === "v" || e.key === "/")  && e.repeat === false)
+		else if ((e.key === "v")  && e.repeat === false)
 			setTool("stroke");
 	}
 
@@ -55,7 +55,7 @@ function ToolSelector({ tool, setTool }) {
 				</Button>
 			</Tooltip>
 
-			<Tooltip message = "stroke [V] [/]">
+			<Tooltip message = "stroke [V]">
 				<Button
 					variant="icon"
 					isActive={tool === "stroke"}

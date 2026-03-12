@@ -1,18 +1,14 @@
-import { useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
-import { deleteImage, getImageById } from "../services/galleryService";
+import { getDefaultImage } from "../services/gallery/galleryService";
 import { Button, Page, Card } from "../ui";
 import { useUser } from "../hooks/useUser";
 
 function GalleryImage() {
 	const { id } = useParams();
 	const navigate = useNavigate();
-	const { user } = useContext(AuthContext);
-
 	const { uploadCardBack, loading } = useUser();
 
-	const image = getImageById(id);
+	const image = getDefaultImage(id);
 
 	if (!image) {
 		return (
@@ -21,8 +17,6 @@ function GalleryImage() {
 			</p>
 		);
 	}
-
-	const canDelete = user?.name === image.author;
 
 	const handleDuplicate = async () => {
 		try {
@@ -48,36 +42,15 @@ function GalleryImage() {
 							className="w-full max-h-[90vh] object-contain"
 							alt={id}
 						/>
-
-
 					</div>
 
 					<div className="flex flex-col gap-1">
 						<p className="text-gray-400">
-							Author: {image.author}
 						</p>
-						{canDelete &&
-							<Button>
-								EDIT
-							</Button>
-						}
 
 						<Button onClick={handleDuplicate} disabled={loading}>
 							DUPLICATE
 						</Button>
-
-						{canDelete && (
-							<Button
-								onClick={() => {
-									deleteImage(id);
-									navigate("/gallery");
-								}}
-							>
-								DELETE
-							</Button>
-						)}
-
-
 
 						<Button>
 							SELECT AS BACK
@@ -86,7 +59,6 @@ function GalleryImage() {
 						<Button onClick={() => navigate(-1)}>
 							BACK
 						</Button>
-
 
 					</div>
 				</div>

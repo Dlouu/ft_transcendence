@@ -25,10 +25,8 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 			let index = -1;
 
 			
-			if (key >= 1 && key <= 3) {
+			if (key >= 1 && key <= 9) {
 				index = key - 1; // Keys 1-3 → colors 0-2
-			} else if (key >= 4 && key <= 9) {
-				index = COLORS.length + (key - 4); // Keys 4-9 → custom colors 0-5
 			}
 
 			if (index >= 0 && index < palette.length) {
