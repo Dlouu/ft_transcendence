@@ -5,9 +5,3 @@ app = create_app()
 if __name__ == "__main__":
     socketio.run(app, debug=True, port=5002, host="0.0.0.0", use_reloader=True, allow_unsafe_werkzeug=True)
 
-'''
-generer des tokens a create et join lobby
-renvoyer les token dans les cookies de la reponse (de create et join)
-verifier la validite du token a levent connect
-faire des tests --> que se passe til si la connection est refusee
-'''
