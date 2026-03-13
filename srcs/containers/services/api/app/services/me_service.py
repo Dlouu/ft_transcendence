@@ -27,7 +27,7 @@ def me(user_id, email=None):
 			return response.json(), response.status_code
 
 	try:
-		profile_picture_url = s3s.get_resource_url(user.profile_picture_url)
+		profile_picture_url = s3s.get_resource_url(user.profile_picture_url, -1)
 	except Exception as e:
 		profile_picture_url = None
 

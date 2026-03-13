@@ -11,7 +11,7 @@ def make_custom_response(bad_response, code, content):
 
 	return response
 
-def make_request(url, method):
+def make_request(path, method, service="auth:5055"):
 	"""
 	Request wrapper for the API to centralize all the check and avoid redundance.
 
@@ -22,11 +22,12 @@ def make_request(url, method):
 	return:
 		a request Response data type.
 	"""
+	url = f"http://{service}" + path
 	response = requests.Response()
 	try:
 		response = requests.request(
 			method=method.upper(),
-			url="http://auth:5055" + url,
+			url=url,
 			json=request.get_json(silent=True),
 			cookies=request.cookies,
 			timeout=20
