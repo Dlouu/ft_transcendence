@@ -388,6 +388,64 @@ remove_card_image_model = ns.model("RemoveCardImageModel", {
 	"card_id": fields.Integer(required=True)
 })
 
+update_img_model = reqparse.RequestParser()
+update_img_model.add_argument(
+	"image",
+	type=FileStorage,
+	location="files",
+	required=True,
+	help="Image to upload."
+)
+
+update_img_model.add_argument(
+    "image_id",
+    type=int,
+    location="form",
+    required=True,
+    help="Card ID"
+)
+
+@ns.route("/update_card_image")
+class UpdateCardImage(Resource):
+	"""
+	Allow the user to upload image for his cards.
+
+	API:
+		Method: POST
+		Endpoint: /user/upload_card_image
+		Token: yes
+
+	Response:
+		200: The image have been added to the s3 bucket and is now available for the user.
+		400: The body is not valid or the image have a wrong format.
+		401: Failed to upload the image to the s3 bucket.
+	"""
+	# check if image size is 136*88, if not resize it
+	@ns.jwt_required()
+	@ns.expect(update_img_model)
+	@ns.s3_bucket_health_check()
+	def post(self):
+		try:
+			args = update_img_model.parse_args()
+			image_file = args["image"]
+
+			if image_file.content_type not in {"image/jpeg", "image/png"}:
+				return {"message": "File format not supported."}, 400
+		except Exception as e:
+			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
+			return {"message": "Content invalid or wrong type."}, 400
+
+		user_id = g.token_payload["user_id"]
+
+		card = CardGallery.query.filter_by(id=args["image_id"], user_id=user_id).first()
+
+		if not card:
+			return {"message": "No card id found for this user id."}, 404
+
+		print(card, flush=True)
+		return {"message": "success"}, 200
+
+
 @ns.route("/remove_card_image")
 class RemoveCardImage(Resource):
 	"""
