@@ -28,7 +28,7 @@ export function useApi() {
 				options.body = formData;
 			} 
 			// Normal JSON body
-			else if (body && typeof body === "object") {
+			else if (body !== null && typeof body !== "undefined") {
 				options.headers["Content-Type"] = "application/json";
 				options.body = JSON.stringify(body);
 			}

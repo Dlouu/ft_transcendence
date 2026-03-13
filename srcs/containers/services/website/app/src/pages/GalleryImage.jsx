@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { getDefaultImage } from "../services/gallery/galleryService";
 import { Button, Page, Card } from "../ui";
 import { useUser } from "../hooks/useUser";
@@ -6,16 +6,26 @@ import { useUser } from "../hooks/useUser";
 function GalleryImage() {
 	const { id } = useParams();
 	const navigate = useNavigate();
-	const { uploadCardBack, loading } = useUser();
-
-	const image = getDefaultImage(id);
+	const { uploadCardBack, removeCard, loading } = useUser();
+	const location = useLocation();
+	const imageFromState = location.state;
+	
+	const image = imageFromState || getDefaultImage(id);
+	const isUserImage = image?.type === "user";
 
 	if (!image) {
 		return (
-			<p>
-				Image not found
-			</p>
+			<p>Image not found</p>
 		);
+	}
+
+	const handleDelete = async () => {
+		try {
+			await removeCard(id);
+			navigate("/gallery");
+		} catch (error) {
+			console.error("Failed to delete: ", error);
+		}
 	}
 
 	const handleDuplicate = async () => {
@@ -48,6 +58,16 @@ function GalleryImage() {
 						<p className="text-gray-400">
 						</p>
 
+						{isUserImage && (
+							<Button
+								onClick={() => navigate("/paint", {
+									state: {src: image.src, id: image.id, type: image.type}
+								})}
+							>
+								EDIT
+							</Button>
+						)}
+
 						<Button onClick={handleDuplicate} disabled={loading}>
 							DUPLICATE
 						</Button>
@@ -55,6 +75,12 @@ function GalleryImage() {
 						<Button>
 							SELECT AS BACK
 						</Button>
+
+						{isUserImage && (
+							<Button onClick={handleDelete}>
+								DELETE
+							</Button>
+						)}
 
 						<Button onClick={() => navigate(-1)}>
 							BACK

@@ -18,10 +18,19 @@ function UserGallery({ userId }) {
 					method: "GET",
 					credentials: "include",
 				});
-				const data = await res.json();
-				if (!res.ok) {
-					throw new Error(data.message);
+
+				if (res.status === 404) {
+					setCards([]);
+					setLoadingCards(false);
+					return;
 				}
+
+				if (!res.ok) {
+					const text = await res.text();
+					throw new Error(text || "Fetch failed");
+				}
+
+				const data = await res.json();
 				setCards(data?.images_url || []);
 			} catch (err) {
 				console.error(err);
@@ -43,9 +52,16 @@ function UserGallery({ userId }) {
 			{!!cards.length && (
 				<div className="grid sm:grid-cols-6 grid-cols-3 gap-4">
 					{cards.map((card) => (
-						<Link key={card.image_id} to={`/gallery/${card.image_id}`}>
+						<Link
+							key={card.image_id}
+							to={`/gallery/${card.image_id}`}
+							state={{
+								id: card.image_id,
+								src: card.url,
+								type: "user"
+							}}
+						>
 							<img
-								key={card.image_id}
 								src={card.url}
 								className="w-full rounded-lg shadow-md hover:scale-105 transition"
 								alt={`card-${card.image_id}`}

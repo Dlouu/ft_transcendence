@@ -12,6 +12,7 @@ export function useUser() {
 		
 		try {
 			setLoading(true);
+
 			const data = await post(
 			"/api/user/update_information",
 			{ [field]: value },
@@ -21,6 +22,7 @@ export function useUser() {
 		setUser((prev) => ({...prev, [field]: value }));
 
 		return data;
+
 		} finally {
 			setLoading(false);
 		}
@@ -30,8 +32,25 @@ export function useUser() {
 	const updateProfilePicture = async (file) => {
 		try {
 			setLoading(true);
+
 			await post("/api/user/update_profile_picture", file);
 			await refreshUser();
+
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const removeCard = async (cardId) => {
+		try {
+			setLoading(true);
+
+			return await post(
+				"/api/user/remove_card_image",
+				{ card_id: Number(cardId) },
+				"Image deleted successfully"
+			);
+
 		} finally {
 			setLoading(false);
 		}
@@ -40,11 +59,13 @@ export function useUser() {
 	const uploadCardBack = async (file) => {
 		try {
 			setLoading(true);
-    	return await post("/api/user/upload_card_image", file, "Card uploaded in Gallery");
+
+		return await post("/api/user/upload_card_image", file, "Card uploaded in Gallery");
+
 		} finally {
 			setLoading(false);
 		}
-  	};
+	};
 
 	const changePassword = async (password, newPassword) => {
 		return post(
@@ -63,6 +84,7 @@ export function useUser() {
 		updateUser,
 		updateProfilePicture,
 		uploadCardBack,
+		removeCard,
 		changePassword,
 		deleteAccount,
 		loading,
