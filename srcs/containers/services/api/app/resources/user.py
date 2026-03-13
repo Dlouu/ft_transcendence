@@ -137,7 +137,7 @@ class UpdateProfilePicture(Resource):
 		image_file.stream.seek(0, 2)
 		file_size = image_file.stream.tell()
 		image_file.stream.seek(0)
-
+		print("salut", flush=True)
 		max_size = int(os.getenv("MAX_IMAGE_SIZE", 2097152))
 		if file_size > max_size:
 			max_mb = max_size / (max_size * 0.5)
@@ -313,6 +313,7 @@ class UploadCardImage(Resource):
 		400: The body is not valid or the image have a wrong format.
 		401: Failed to upload the image to the s3 bucket.
 	"""
+	# check if image size is 136*88, if not resize it
 	@ns.jwt_required()
 	@ns.expect(upload_model)
 	@ns.s3_bucket_health_check()
