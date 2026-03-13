@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, g
 from app.core.state import lobbies, three_letters, four_letters
 from app.lobbies.services import lobby_removal
 from app.services import session_service as st
@@ -76,7 +76,7 @@ def _set_session_cookie(response, token):
     
     response.set_cookie(
             "session_token",
-            f"Bearer {g.x_new_token}",
+            f"Bearer {token}",
             httponly=True,
             secure=True,
             samesite="None",
@@ -213,3 +213,8 @@ Renders the game page once the match has started.
 @lobby.route("/game/<code>", methods=["GET"])
 def starting_game(code):
     return render_template("game.html", code=code)
+"""
+dans quelle situation on connect l'utilsateur au websocket et a quel moment on le deconnecte
+
+
+"""
