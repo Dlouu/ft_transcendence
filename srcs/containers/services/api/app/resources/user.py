@@ -137,7 +137,7 @@ class UpdateProfilePicture(Resource):
 		image_file.stream.seek(0, 2)
 		file_size = image_file.stream.tell()
 		image_file.stream.seek(0)
-		print("salut", flush=True)
+
 		max_size = int(os.getenv("MAX_IMAGE_SIZE", 2097152))
 		if file_size > max_size:
 			max_mb = max_size / (max_size * 0.5)
@@ -343,6 +343,35 @@ class UploadCardImage(Resource):
 		except Exception as e:
 			db.session.rollback()
 			logger.critical(f"Unhandled error happened while creating image database's object.", extra=extra_logger | logger.extra(exception=e))
+			return {"message": "Failure, something wrong happened while uploading this image."}, 400
+
+		image_file.stream.seek(0, 2)
+		file_size = image_file.stream.tell()
+		image_file.stream.seek(0)
+
+		try:
+			img = Image.open(image_file.stream)
+
+			if image_file.content_type == "image/png":
+				img = img.convert("RGBA")
+			else:
+				img = img.convert("RGB")
+
+			small_image = img.resize((136, 88), Image.NEAREST)
+
+			output = BytesIO()
+			format = "PNG" if image_file.content_type == "image/png" else "JPEG"
+			small_image.save(output, format=format)
+			output.seek(0)
+
+			processed_file = FileStorage(
+				stream=output,
+				filename=image_file.filename,
+				content_type=image_file.content_type,
+			)
+		except Exception as e:
+			db.session.rollback()
+			logger.critical(f"Unhandled error happened while converting the image to the good format.", extra=extra_logger, exc_info=e)
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 
 		if not s3s.add_resource(image_file, s3_url):
