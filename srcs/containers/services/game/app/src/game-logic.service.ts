@@ -76,6 +76,7 @@ export class GameLogicService {
 		}
 
 		game.pendingUnoPlayerIndex = null;
+		game.turnCount = 0;
 
 		const now = Date.now();
 		game.turnStartTime = now;
@@ -170,6 +171,16 @@ export class GameLogicService {
 	 * @returns void
 	 */
 	goToNextPlayerIndex(game: Game): void {
+		if (game.deck.length === 0) {
+			this.deckService.discardToDeck(game);
+
+			if (game.deck.length === 0) {
+				this.getIoServer()?.to(game.roomName).emit("game:deck:empty");
+			} else {
+				this.getIoServer()?.to(game.roomName).emit("game:deck:shuffled");
+			}
+		}
+
 		if (game.currentDirection === "CLOCKWISE") {
 			game.currentPlayerIndex =
 				(game.currentPlayerIndex + 1) % game.players.length;
@@ -354,6 +365,7 @@ export class GameLogicService {
 			this.drawCardsWithEvents(game, pendingPlayer, 2);
 
 			this.getIoServer()?.to(game.roomName).emit("game:uno:expired");
+			this.gameService.tryRunBotTurn(game);
 		}, this.unoCallWindowMs);
 
 		this.unoPendingTimeouts.set(game.roomName, timeout);
@@ -393,7 +405,7 @@ export class GameLogicService {
 				}),
 			),
 			gameDuration: durationDdHhMmSs,
-			turnNbr: Math.max(0, game.discard.length - 1),
+			turnNbr: Math.floor(game.turnCount / game.players.length),
 		};
 
 		this.getIoServer()?.to(game.roomName).emit("game:win", dto);

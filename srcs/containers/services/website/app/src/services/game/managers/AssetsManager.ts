@@ -107,7 +107,8 @@ export class AssetsManager {
 
 		const loadPromises = variants.map(async (variant) => {
 			const key = variant;
-			const assetPath = `${variant}-back.png`;
+			const isUrl = variant.startsWith("http://") || variant.startsWith("https://") || variant.startsWith("/");
+			const assetPath = isUrl ? variant : `${variant}-back.png`;
 
 			try {
 				const texture = await Assets.load<Texture>(assetPath);

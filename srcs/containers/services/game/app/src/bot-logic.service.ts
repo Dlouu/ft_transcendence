@@ -1,6 +1,7 @@
 import { GameDebugService } from './game-debug.service';
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Game } from "./domain/UnoGame";
+import { GameState } from "./domain/GameEnums";
 import { GamePlayService } from "./game-play.service";
 import { GameService } from "./game.service";
 import { GameLogicService } from "./game-logic.service";
@@ -133,6 +134,10 @@ export class BotLogicService {
 
 	async playTurn(game: Game, botIndex: number): Promise<void> {
 		await this.delayBotTurn();
+
+		if (!this.gameService.isGameActive(game) || game.state !== GameState.PLAYING) {
+			return;
+		}
 
 		const bot = game.getPlayerByIndex(botIndex);
 		const playableCards = this.getPlayableCards(game, botIndex);

@@ -220,6 +220,7 @@ export class GamePlayService {
 		{
 			if (!isDrawCard && drawResult.deckEmpty)
 			{
+				game.turnCount += 1;
 				this.gameLogicService.goToNextPlayerIndex(game);
 
 				const now = Date.now();

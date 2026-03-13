@@ -37,9 +37,9 @@ export class Hand extends Container
     private _isTurnActive: boolean = false;
 
     // Config
-    private _areaPercent: number;
-    private _overlapPercent: number;
-    private _cardRatio: number;
+    private _areaPercent: number;       // Fraction of the screen length the hand may occupy (e.g. 0.6 = 60%)
+    private _overlapPercent: number;    // Fraction of a card's width that is hidden behind the next card (e.g. 0.3 = 30% overlap)
+    private _cardRatio: number;         // Card width-to-height ratio used to derive card width from its height (e.g. 0.66 ≈ standard card aspect)
     private _isInteractive: boolean;
     private _reverseCards: boolean;
 
@@ -245,7 +245,7 @@ export class Hand extends Container
         const underlayYOffset = cardHeight * 0.9;
 
         this._underlay.clear();
-        this._underlay.ellipse(0, underlayYOffset, handLengthAvailable / 2, cardHeight * 1.25);
+        this._underlay.ellipse(0, underlayYOffset, handLengthAvailable / 2, cardHeight * 1.45);
 
         if (this._isTurnActive)
         {

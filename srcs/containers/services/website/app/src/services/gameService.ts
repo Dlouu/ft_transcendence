@@ -110,7 +110,8 @@ export class GameService {
 
 		const theme = dto.cardTheme === "basic" ? CardsTheme.Basic : CardsTheme.Uwu;
 		await this._assetsMangr.loadTheme(theme);
-		await this._assetsMangr.loadCardBacks(["uwu"]);
+		const cardBackVariants = [...new Set(dto.players.map((p) => p.cardBack))];
+		await this._assetsMangr.loadCardBacks(cardBackVariants);
 
 		if (this._tableManager.parent !== this._app.stage) {
 			this._app.stage.addChild(this._tableManager);

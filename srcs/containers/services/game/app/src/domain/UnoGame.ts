@@ -21,6 +21,7 @@ export class Game {
   public createdAt: number; // Timestamp of room creation
   public turnStartTime: number; // Timestamp
   public lastActionTime: number;
+  public turnCount: number;
   public pendingUnoPlayerIndex: number | null;
 
   public state: GameState;
@@ -49,6 +50,7 @@ export class Game {
     this.connectedPlayers = new Set<string>();
 
     this.lastActionTime = 0;
+    this.turnCount = 0;
     this.pendingUnoPlayerIndex = null;
   }
 
@@ -72,6 +74,7 @@ export class Game {
       turnStartTime: this.turnStartTime,
       state: this.state,
       lastActionTime: this.lastActionTime,
+      turnCount: this.turnCount,
       pendingUnoPlayerIndex: this.pendingUnoPlayerIndex,
     };
   }

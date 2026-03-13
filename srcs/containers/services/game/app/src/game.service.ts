@@ -17,7 +17,7 @@ export class GameService {
 	private io?: Server;
 	private readonly gameInitReadyByRoom = new Map<string, Set<string>>();
 	private readonly turnTimeoutByRoom = new Map<string, NodeJS.Timeout>();
-	private readonly turnTimeoutMs = 10000;
+	private readonly turnTimeoutMs = 500;
 
 	constructor(
 		private readonly gameRepository: GameRepositoryService,
@@ -36,6 +36,10 @@ export class GameService {
 		return this.io;
 	}
 
+	isGameActive(game: Game): boolean {
+		return this.gameRepository.getGameByName(game.roomName) === game;
+	}
+
 	clearTurnTimeout(roomName: string): void {
 		const existingTimeout = this.turnTimeoutByRoom.get(roomName);
 		if (!existingTimeout) {
@@ -49,7 +53,10 @@ export class GameService {
 	startTurnTimeout(game: Game): void {
 		this.clearTurnTimeout(game.roomName);
 
-		if (game.state !== GameState.PLAYING || game.pendingUnoPlayerIndex !== null) {
+		if (
+			game.state !== GameState.PLAYING ||
+			game.pendingUnoPlayerIndex !== null
+		) {
 			return;
 		}
 
@@ -69,7 +76,11 @@ export class GameService {
 		this.clearTurnTimeout(roomName);
 
 		const game = this.gameRepository.getGameByName(roomName);
-		if (!game || game.state !== GameState.PLAYING || game.pendingUnoPlayerIndex !== null) {
+		if (
+			!game ||
+			game.state !== GameState.PLAYING ||
+			game.pendingUnoPlayerIndex !== null
+		) {
 			return;
 		}
 
@@ -126,7 +137,7 @@ export class GameService {
 			return;
 		}
 
-    game.createdAt = Date.now();
+		game.createdAt = Date.now();
 
 		this.io.to(game.roomName).emit("game:start");
 
@@ -179,7 +190,10 @@ export class GameService {
 
 		this.gameRepository.leave(playerId, socket);
 
-		if (game && game.connectedPlayers.size === 0) {
+		if (game.connectedPlayers.size === 0) {
+			game.state = GameState.GAME_OVER;
+			game.pendingUnoPlayerIndex = null;
+			this.gameLogic.clearPendingUno(game, true);
 			this.gameInitReadyByRoom.delete(game.roomName);
 			this.clearTurnTimeout(game.roomName);
 
@@ -187,16 +201,23 @@ export class GameService {
 				`No connected players left in ${game.roomName}. Deleting game.`,
 			);
 			this.gameRepository.deleteGame(game);
+			return;
 		}
+
+		this.tryRunBotTurn(game);
 	}
 
-	async playCard(playerId: string, dto: CardDto, game: Game | undefined): Promise<void> {
-		if (!game)
-		{
+	async playCard(
+		playerId: string,
+		dto: CardDto,
+		game: Game | undefined,
+	): Promise<void> {
+		if (!game) {
 			game = this.gameRepository.getGameByConnectedPlayer(playerId);
-			if (!game || game.state !== GameState.PLAYING) {
-				return;
-			}
+		}
+
+		if (!game || !this.isGameActive(game) || game.state !== GameState.PLAYING) {
+			return;
 		}
 
 		const player = this.gameRepository.getPlayerInGame(game, playerId);
@@ -214,8 +235,9 @@ export class GameService {
 
 		this.clearTurnTimeout(game.roomName);
 
-		if (!await this.gamePlay.playCard(game, dto, player))
-      return ;
+		if (!(await this.gamePlay.playCard(game, dto, player))) return;
+
+		game.turnCount += 1;
 
 		if (player._hand.length === 0) {
 			this.gameLogic.onVictory(game, player);
@@ -227,14 +249,17 @@ export class GameService {
 			this.botLogic.scheduleUnoReaction(game);
 		}
 
-		const advanceSteps = this.getTurnAdvanceStepsAfterPlay(dto.cardCode, game.players.length);
+		const advanceSteps = this.getTurnAdvanceStepsAfterPlay(
+			dto.cardCode,
+			game.players.length,
+		);
 		for (let i = 0; i < advanceSteps; i++) {
 			this.gameLogic.goToNextPlayerIndex(game);
 		}
 
-    const now = Date.now();
-    game.lastActionTime = now;
-    game.turnStartTime = now;
+		const now = Date.now();
+		game.lastActionTime = now;
+		game.turnStartTime = now;
 
 		const nextTurnDto: NextTurnDto = {
 			currentPlayerIndex: game.currentPlayerIndex,
@@ -244,15 +269,15 @@ export class GameService {
 		this.io?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
 		this.startTurnTimeout(game);
 		this.tryRunBotTurn(game);
-  }
+	}
 
-  drawCard(playerId: string, game: Game | undefined): void {
-		if (!game)
-		{
+	drawCard(playerId: string, game: Game | undefined): void {
+		if (!game) {
 			game = this.gameRepository.getGameByConnectedPlayer(playerId);
-			if (!game) {
-				return;
-			}
+		}
+
+		if (!game || !this.isGameActive(game) || game.state !== GameState.PLAYING) {
+			return;
 		}
 
 		const player = this.gameRepository.getPlayerInGame(game, playerId);
@@ -265,16 +290,29 @@ export class GameService {
 		}
 
 		this.clearTurnTimeout(game.roomName);
+		const playerIndexBeforeDraw = game.currentPlayerIndex;
 
-    if (!this.gamePlay.drawCard(game, 1, false, player)) {
-      return ;
-    }
+		if (!this.gamePlay.drawCard(game, 1, false, player)) {
+			// If draw failed because deck is empty, GamePlayService already advanced the turn.
+			// Continue the turn loop here so bots can keep playing without stalling.
+			if (game.currentPlayerIndex !== playerIndexBeforeDraw) {
+				const now = Date.now();
+				game.lastActionTime = now;
+				game.turnStartTime = now;
 
-    this.gameLogic.goToNextPlayerIndex(game);
+				this.startTurnTimeout(game);
+				this.tryRunBotTurn(game);
+			}
+			return;
+		}
 
-    const now = Date.now();
-    game.lastActionTime = now;
-    game.turnStartTime = now;
+		game.turnCount += 1;
+
+		this.gameLogic.goToNextPlayerIndex(game);
+
+		const now = Date.now();
+		game.lastActionTime = now;
+		game.turnStartTime = now;
 
 		const nextTurnDto: NextTurnDto = {
 			currentPlayerIndex: game.currentPlayerIndex,
@@ -284,29 +322,35 @@ export class GameService {
 		this.io?.to(game.roomName).emit("game:nextTurn", nextTurnDto);
 		this.startTurnTimeout(game);
 		this.tryRunBotTurn(game);
-  }
+	}
 
 	shoutUno(playerId: string): void {
 		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
 		if (!game || game.state !== GameState.PLAYING) {
-			return ;
+			return;
 		}
 
 		const player = this.gameRepository.getPlayerInGame(game, playerId);
 		if (!player) {
-			return ;
+			return;
 		}
 
 		const hadPendingUno = game.pendingUnoPlayerIndex !== null;
 		const didHandleUno = this.gamePlay.shoutUno(game, player);
 
 		// If UNO was resolved and the current player is a bot, resume automated play.
-		if ((didHandleUno || hadPendingUno) && game.pendingUnoPlayerIndex === null) {
+		if (
+			(didHandleUno || hadPendingUno) &&
+			game.pendingUnoPlayerIndex === null
+		) {
 			this.tryRunBotTurn(game);
 		}
 	}
 
-	private getTurnAdvanceStepsAfterPlay(cardCode: CardCode, playerCount: number): number {
+	private getTurnAdvanceStepsAfterPlay(
+		cardCode: CardCode,
+		playerCount: number,
+	): number {
 		switch (cardCode) {
 			case CardCode.Skip:
 			case CardCode.DrawTwo:
@@ -324,8 +368,12 @@ export class GameService {
 		return !!currentPlayer?._isBot;
 	}
 
-	private tryRunBotTurn(game: Game): void {
-		if (game.state !== GameState.PLAYING || game.pendingUnoPlayerIndex !== null) {
+	tryRunBotTurn(game: Game): void {
+		if (
+			!this.isGameActive(game) ||
+			game.state !== GameState.PLAYING ||
+			game.pendingUnoPlayerIndex !== null
+		) {
 			return;
 		}
 

@@ -25,6 +25,7 @@ export class GameRepositoryService {
 	 */
 	create(createGameDto: CreateGameDto): Game {
 		const { roomName, players, botNbr, theme } = createGameDto;
+		const playerUids = players.map((player) => player.id);
 
 		if (this.getGameByName(roomName)) {
 			throw new ConflictException("Game name already exists");
@@ -33,8 +34,8 @@ export class GameRepositoryService {
 		const cardTheme = theme === "UWU" ? "uwu" : "basic";
 		const newGame = new Game(
 			roomName,
-			players,
-			players.length,
+			playerUids,
+			playerUids.length,
 			botNbr,
 			cardTheme,
 		);
@@ -97,6 +98,7 @@ export class GameRepositoryService {
 			player = newPlayer;
 		} else {
 			player._socket = socket;
+			player._isBot = false;
 		}
 
 		socket.join(game.roomName);
@@ -133,6 +135,9 @@ export class GameRepositoryService {
 		if (!rejoinDto) return;
 
 		player._socket.emit("game:rejoin", rejoinDto);
+
+		player._isBot = false;
+
 		console.log(`Player ${player._name} rejoined the game ${game.roomName}`);
 	}
 
@@ -151,6 +156,12 @@ export class GameRepositoryService {
 		if (!game) throw new Error("Player's not in a game.");
 
 		game.connectedPlayers.delete(playerId);
+
+		const player = this.getPlayerInGame(game, playerId);
+		if (!player) throw new Error("Player's not found in the game.");
+
+		player._socket = null;
+		player._isBot = true;
 
 		socket.to(game.roomName).emit("game:playerLeft", { playerId });
 
@@ -186,7 +197,14 @@ export class GameRepositoryService {
 	 * @returns The Game object if found, undefined otherwise.
 	 */
 	getGameByExpectedPlayer(playerId: string): Game | undefined {
-		return this.games.find((g) => g.expectedPlayers.includes(playerId));
+		for (let i = this.games.length - 1; i >= 0; i--) {
+			const game = this.games[i];
+			if (game.expectedPlayers.includes(playerId)) {
+				return game;
+			}
+		}
+
+		return undefined;
 	}
 
 	/**
@@ -195,7 +213,7 @@ export class GameRepositoryService {
 	 * @returns The Game object if found, undefined otherwise.
 	 */
 	getGameByConnectedPlayer(playerId: string): Game | undefined {
-		return this.games.find((g) => g.players.some((p) => p._id === playerId));
+		return this.games.find((g) => g.connectedPlayers.has(playerId));
 	}
 
 	/**
