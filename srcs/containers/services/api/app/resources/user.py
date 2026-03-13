@@ -357,7 +357,7 @@ class UploadCardImage(Resource):
 			else:
 				img = img.convert("RGB")
 
-			small_image = img.resize((136, 88), Image.NEAREST)
+			small_image = img.resize((88, 136), Image.NEAREST)
 
 			output = BytesIO()
 			format = "PNG" if image_file.content_type == "image/png" else "JPEG"
@@ -374,7 +374,7 @@ class UploadCardImage(Resource):
 			logger.critical(f"Unhandled error happened while converting the image to the good format.", extra=extra_logger, exc_info=e)
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 
-		if not s3s.add_resource(image_file, s3_url):
+		if not s3s.add_resource(processed_file, s3_url):
 			db.session.rollback()
 			logger.critical(f"Failed to upload the image.", extra=extra_logger)
 			return {"message": "Failed to upload the image."}, 401
@@ -442,7 +442,6 @@ class UpdateCardImage(Resource):
 		if not card:
 			return {"message": "No card id found for this user id."}, 404
 
-		print(card, flush=True)
 		return {"message": "success"}, 200
 
 
@@ -507,7 +506,7 @@ class GetCardImage(Resource):
 		query = CardGallery.query.filter_by(user_id=user_id)
 
 		if query.first() is None:
-			return {"message": "No card image found for this user id "}, 404
+			return {"message": "No card image found for this user id "}, 200
 
 		images_url = []
 		for row in query.yield_per(50):

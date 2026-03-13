@@ -61,7 +61,7 @@ def get_resource_url(key, expire=3600):
 	bucket_name = os.getenv("S3_BUCKET_NAME", "")
 
 	if expire == -1:
-		return bucket_name + ".s3.amazonaws.com" + "/" + key
+		return "https://"+ bucket_name + ".s3.amazonaws.com" + "/" + key
 	resource = extensions.s3.generate_presigned_url(
 		ClientMethod="get_object",
 		Params={"Bucket": bucket_name, "Key": key},
