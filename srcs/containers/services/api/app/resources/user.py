@@ -298,6 +298,14 @@ upload_model.add_argument(
 	help="Image to upload."
 )
 
+upload_model.add_argument(
+    "image_id",
+    type=int,
+    location="form",
+    required=False,
+    help="Card ID"
+)
+
 @ns.route("/upload_card_image")
 class UploadCardImage(Resource):
 	"""
@@ -330,20 +338,34 @@ class UploadCardImage(Resource):
 
 		user_id = g.token_payload["user_id"]
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
+
+		card = None
+		print(args["image_id"], flush=True)
+		if args["image_id"] is not None:
+			card = CardGallery.query.filter_by(id=args["image_id"], user_id=user_id).first()
 		s3_url = f"card_gallery/{user_id}/{uuid4()}.{file_ext}"
+		if card:
+			s3_url = card.img_url
+
 		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
-		try:
-			image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
-			db.session.add(image_db_obj)
-		except ValidationError as e:
-			db.session.rollback()
-			logger.warning("Validation error when trying to load the image schema.", extra=extra_logger)
-			return {"message": "Failure, something wrong happened while uploading this image."}, 400
-		except Exception as e:
-			db.session.rollback()
-			logger.critical(f"Unhandled error happened while creating image database's object.", extra=extra_logger | logger.extra(exception=e))
-			return {"message": "Failure, something wrong happened while uploading this image."}, 400
+		if not card:
+			try:
+				image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
+				db.session.add(image_db_obj)
+			except ValidationError as e:
+				db.session.rollback()
+				logger.warning("Validation error when trying to load the image schema.", extra=extra_logger)
+				return {"message": "Failure, something wrong happened while uploading this image."}, 400
+			except Exception as e:
+				db.session.rollback()
+				logger.critical(f"Unhandled error happened while creating image database's object.", extra=extra_logger | logger.extra(exception=e))
+				return {"message": "Failure, something wrong happened while uploading this image."}, 400
+		else:
+			if not s3s.delete_all_resources(card.img_url):
+				db.session.rollback()
+				logger.critical("Unable to delete the old profile picture", extra=extra_logger)
+				return {"message": "Unable to delete the old profile picture."}, 401
 
 		image_file.stream.seek(0, 2)
 		file_size = image_file.stream.tell()
@@ -441,6 +463,10 @@ class UpdateCardImage(Resource):
 
 		if not card:
 			return {"message": "No card id found for this user id."}, 404
+
+		if not s3s.delete_all_resources(card.img_url):
+			logger.critical("Unable to delete the old profile picture", extra=extra_logger)
+			return {"message": "Unable to delete the old profile picture."}, 401
 
 		return {"message": "success"}, 200
 
