@@ -78,9 +78,13 @@ export const toRejoinGameDto = (
 		return null;
 	}
 
-	let localPlayerIndex = game.players.findIndex((currentPlayer) => currentPlayer._id === player._id);
+	let localPlayerIndex = game.players.findIndex(
+		(currentPlayer) => currentPlayer._id === player._id,
+	);
 	if (localPlayerIndex === -1) {
-		localPlayerIndex = game.players.findIndex((currentPlayer) => currentPlayer._name === player._name);
+		localPlayerIndex = game.players.findIndex(
+			(currentPlayer) => currentPlayer._name === player._name,
+		);
 	}
 	if (localPlayerIndex === -1) {
 		return null;

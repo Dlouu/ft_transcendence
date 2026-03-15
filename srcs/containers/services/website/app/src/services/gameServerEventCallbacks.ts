@@ -132,11 +132,14 @@ export function registerServerEventCallbacks({
 		console.log(`Turn order reversed:`, _payload);
 	});
 
-	socket.on("game:wild:new-color", async (_payload: { chosenFamily: CardFamily }) => {
-		getTableManager()?.setPilesBackdropColorByCardSet(_payload.chosenFamily);
-		getTableManager()?.hideCardFamilySelector();
-		console.log(`Wild color changed:`, _payload);
-	});
+	socket.on(
+		"game:wild:new-color",
+		async (_payload: { chosenFamily: CardFamily }) => {
+			getTableManager()?.setPilesBackdropColorByCardSet(_payload.chosenFamily);
+			getTableManager()?.hideCardFamilySelector();
+			console.log(`Wild color changed:`, _payload);
+		},
+	);
 
 	socket.on("game:nextTurn", async (_payload: NextTurnDto) => {
 		const tableManager = getTableManager();

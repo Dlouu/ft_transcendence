@@ -1,5 +1,11 @@
 import { Type } from "class-transformer";
-import { IsArray, IsBoolean, IsNumber, IsString, ValidateNested } from "class-validator";
+import {
+	IsArray,
+	IsBoolean,
+	IsNumber,
+	IsString,
+	ValidateNested,
+} from "class-validator";
 
 export interface IGameWinPlayer {
 	name: string;

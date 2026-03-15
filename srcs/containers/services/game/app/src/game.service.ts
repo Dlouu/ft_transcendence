@@ -17,7 +17,7 @@ export class GameService {
 	private io?: Server;
 	private readonly gameInitReadyByRoom = new Map<string, Set<string>>();
 	private readonly turnTimeoutByRoom = new Map<string, NodeJS.Timeout>();
-	private readonly turnTimeoutMs = 500;
+	private readonly turnTimeoutMs = 10000;
 
 	constructor(
 		private readonly gameRepository: GameRepositoryService,

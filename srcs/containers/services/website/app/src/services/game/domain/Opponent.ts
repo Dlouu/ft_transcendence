@@ -3,62 +3,49 @@ import { Hand } from "./Hand";
 import { UnoCard } from "./UnoCard";
 import { CardPool } from "./CardPool";
 
-export class Opponent
-{
-    public readonly name: string;
-    public readonly index: number;
-    
-    private _hand: Hand;
-    private _cardBack: Texture;
+export class Opponent {
+	public readonly name: string;
+	public readonly index: number;
 
-    constructor(
-        name: string,
-        index: number,
-        hand: Hand,
-        cardBack: Texture
-    )
-    {
-        this.name = name;
-        this.index = index;
-        this._hand = hand;
-        this._cardBack = cardBack;
-    }
+	private _hand: Hand;
+	private _cardBack: Texture;
 
-    public get hand(): Hand
-    {
-        return this._hand;
-    }
+	constructor(name: string, index: number, hand: Hand, cardBack: Texture) {
+		this.name = name;
+		this.index = index;
+		this._hand = hand;
+		this._cardBack = cardBack;
+	}
 
-    /**
-     * Adds n cards to the opponent hand (visual only, face down).
-     */
-    public initializeHand(count: number, pool: CardPool): void
-    {
-        for (let i = 0; i < count; i++)
-        {
-            const card = pool.getCard();
-            // Opponents cards are always face down for us
-            card.setFaceBackCard(this._cardBack, null);
-            card.setIsFaceUp(false);
-            this._hand.addCard(card);
-        }
-    }
+	public get hand(): Hand {
+		return this._hand;
+	}
 
-    public addCard(card: UnoCard): void
-    {
-        card.setFaceBackCard(this._cardBack, null);
-        this._hand.addCard(card);
-    }
+	/**
+	 * Adds n cards to the opponent hand (visual only, face down).
+	 */
+	public initializeHand(count: number, pool: CardPool): void {
+		for (let i = 0; i < count; i++) {
+			const card = pool.getCard();
+			// Opponents cards are always face down for us
+			card.setFaceBackCard(this._cardBack, null);
+			card.setIsFaceUp(false);
+			this._hand.addCard(card);
+		}
+	}
 
-    public removeCard(card: UnoCard): void
-    {
-        this._hand.removeCard(card);
-    }
+	public addCard(card: UnoCard): void {
+		card.setFaceBackCard(this._cardBack, null);
+		this._hand.addCard(card);
+	}
 
-    public destroy(): void
-    {
-        // Hand cleanup is handled by the Manager/Service cleanup routine
-        // identifying children of the stage.
-        // But we can clear references here.
-    }
+	public removeCard(card: UnoCard): void {
+		this._hand.removeCard(card);
+	}
+
+	public destroy(): void {
+		// Hand cleanup is handled by the Manager/Service cleanup routine
+		// identifying children of the stage.
+		// But we can clear references here.
+	}
 }
