@@ -182,7 +182,7 @@ class UpdateProfilePicture(Resource):
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
 		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
 
-		if not s3s.add_resource(image_file, s3_url):
+		if not s3s.add_resource(processed_file, s3_url):
 			logger.critical("Unable to upload the new profile picture", extra_logger)
 			return {"message": "Unable to upload the new profile picture."}, 401
 
@@ -313,6 +313,7 @@ class UploadCardImage(Resource):
 		400: The body is not valid or the image have a wrong format.
 		401: Failed to upload the image to the s3 bucket.
 	"""
+	# check if image size is 136*88, if not resize it
 	@ns.jwt_required()
 	@ns.expect(upload_model)
 	@ns.s3_bucket_health_check()
@@ -344,7 +345,36 @@ class UploadCardImage(Resource):
 			logger.critical(f"Unhandled error happened while creating image database's object.", extra=extra_logger | logger.extra(exception=e))
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 
-		if not s3s.add_resource(image_file, s3_url):
+		image_file.stream.seek(0, 2)
+		file_size = image_file.stream.tell()
+		image_file.stream.seek(0)
+
+		try:
+			img = Image.open(image_file.stream)
+
+			if image_file.content_type == "image/png":
+				img = img.convert("RGBA")
+			else:
+				img = img.convert("RGB")
+
+			small_image = img.resize((88, 136), Image.NEAREST)
+
+			output = BytesIO()
+			format = "PNG" if image_file.content_type == "image/png" else "JPEG"
+			small_image.save(output, format=format)
+			output.seek(0)
+
+			processed_file = FileStorage(
+				stream=output,
+				filename=image_file.filename,
+				content_type=image_file.content_type,
+			)
+		except Exception as e:
+			db.session.rollback()
+			logger.critical(f"Unhandled error happened while converting the image to the good format.", extra=extra_logger, exc_info=e)
+			return {"message": "Failure, something wrong happened while uploading this image."}, 400
+
+		if not s3s.add_resource(processed_file, s3_url):
 			db.session.rollback()
 			logger.critical(f"Failed to upload the image.", extra=extra_logger)
 			return {"message": "Failed to upload the image."}, 401
@@ -357,6 +387,63 @@ class UploadCardImage(Resource):
 remove_card_image_model = ns.model("RemoveCardImageModel", {
 	"card_id": fields.Integer(required=True)
 })
+
+update_img_model = reqparse.RequestParser()
+update_img_model.add_argument(
+	"image",
+	type=FileStorage,
+	location="files",
+	required=True,
+	help="Image to upload."
+)
+
+update_img_model.add_argument(
+    "image_id",
+    type=int,
+    location="form",
+    required=True,
+    help="Card ID"
+)
+
+@ns.route("/update_card_image")
+class UpdateCardImage(Resource):
+	"""
+	Allow the user to upload image for his cards.
+
+	API:
+		Method: POST
+		Endpoint: /user/upload_card_image
+		Token: yes
+
+	Response:
+		200: The image have been added to the s3 bucket and is now available for the user.
+		400: The body is not valid or the image have a wrong format.
+		401: Failed to upload the image to the s3 bucket.
+	"""
+	# check if image size is 136*88, if not resize it
+	@ns.jwt_required()
+	@ns.expect(update_img_model)
+	@ns.s3_bucket_health_check()
+	def post(self):
+		try:
+			args = update_img_model.parse_args()
+			image_file = args["image"]
+
+			if image_file.content_type not in {"image/jpeg", "image/png"}:
+				return {"message": "File format not supported."}, 400
+		except Exception as e:
+			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
+			return {"message": "Content invalid or wrong type."}, 400
+
+		user_id = g.token_payload["user_id"]
+
+		card = CardGallery.query.filter_by(id=args["image_id"], user_id=user_id).first()
+
+		if not card:
+			return {"message": "No card id found for this user id."}, 404
+
+		return {"message": "success"}, 200
+
 
 @ns.route("/remove_card_image")
 class RemoveCardImage(Resource):
@@ -419,11 +506,11 @@ class GetCardImage(Resource):
 		query = CardGallery.query.filter_by(user_id=user_id)
 
 		if query.first() is None:
-			return {"message": "No card image found for this user id "}, 404
+			return {"message": "No card image found for this user id "}, 200
 
 		images_url = []
 		for row in query.yield_per(50):
-			url = s3s.get_resource_url(row.img_url, 3600)
+			url = s3s.get_resource_url(row.img_url, -1)
 			if url is not None:
 				images_url.append({"url": url, "image_id": row.id})
 
