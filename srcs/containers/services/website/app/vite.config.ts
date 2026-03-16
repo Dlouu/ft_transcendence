@@ -11,6 +11,11 @@ export default defineConfig({
         target: "http://service_api:5050",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/lobby': {
+        target: "http://lobby_game:5002",
+            changeOrigin: true,
+            ws: true,
       }
     }
   }
