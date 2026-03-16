@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS friends (
 
 	CHECK (requester_id <> accepter_id)
 
-) ENGINE=Innodb;
+) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS gamestats (
 

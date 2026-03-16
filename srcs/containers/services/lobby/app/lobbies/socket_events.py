@@ -1,5 +1,6 @@
 import os
 import secrets
+import jwt
 
 from flask import request, session
 from flask_socketio import join_room, emit
@@ -7,11 +8,12 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.extensions import socketio, db
 from app.core.state import lobbies, socketid_lobby, max_players
+from app.lobbies.lobby_generator import create_lobby_or_error
 from app.lobbies.services import emit_lobby_state, remove_lobby
 from app.models.user import User
 from app.services import session_service as st
 
-def _ensure_socket_user(socket_id: str) -> User | None:
+""" def _ensure_socket_user(socket_id: str) -> User | None:
     if not socket_id:
         return None
 
@@ -42,7 +44,7 @@ def _ensure_socket_user(socket_id: str) -> User | None:
         except IntegrityError:
             db.session.rollback()
             continue
-    return None
+    return None """
 
 
 """
@@ -52,38 +54,73 @@ SocketIO event: "connect"
 - Automatic connection event
 
 🎯 Purpose:
-Store the socket id in users DB for testing.
+Verify if user can be associated with the socket connection.
 """
 @socketio.on("connect")
 def on_connect():
-    raw_token = request.cookies.get("session_token")
-    if not raw_token:
-        return False
-    token = raw_token.split(" ", 1)[1] if raw_token.startswith("Bearer ") else raw_token
-    if not st.does_session_token_exist(token):
-        return False
-    try:
-        payload = st.decode_session_token(token)
-    except Exception as exc:
-        print(f"Lobby: failed to decode token ({exc})", flush=True)
-        return False
-    if not payload:
+    '''
+    theo stocke un truc dans les cookies, je dois recuperer le token de session de lutilisateur est stocke dans les cooke.
+    requete redis pour recuperer le cookie
+    redis --> token de session (serveur)
+    cookie --> token de session (client)
+    cookie --> token de session --> user_id
+    '''
+    session_token = request.cookies.get("session_token")
+    if not session_token:
         return False
 
-    if payload.get("agent") and payload.get("agent") != request.headers.get("User-Agent", ""):
-        return False
-    if payload.get("remote_addr") and payload.get("remote_addr") != request.remote_addr:
-        return False
+    if session_token.startswith("Bearer "):
+        session_token = session_token.split(" ", 1)[1]
 
-    if payload.get("user_id") is not None:
-        session["user_id"] = payload.get("user_id")
-    if payload.get("room_code"):
-        session["room_code"] = payload.get("room_code")
+    if not st.does_session_token_exist(session_token):
+        return False
 
     try:
-        _ensure_socket_user(request.sid)
-    except Exception as exc:
-        print(f"Lobby: failed to store socket user ({exc})", flush=True)
+        payload = st.decode_session_token(session_token)
+    except jwt.PyJWTError:
+        return False
+
+    if not payload or "user_id" not in payload:
+        return False
+
+    user = User.query.filter_by(user_id=payload["user_id"]).first()
+    if not user:
+        return False
+
+    session["user_id"] = payload["user_id"]
+    session["username"] = user.username
+    session["db_user_id"] = user.id
+    join_room(user.username)
+
+'''
+create_lobby
+le serveur genere toujours un code de room (pas de code fourni par le client)
+renvoie un json ok/false
+'''
+@socketio.on("create_lobby")
+def create_lobby(data):
+    payload = data or {}
+    requested_code = payload.get("code") or payload.get("room_name")
+    if requested_code:
+        return {"ok": False, "message": "Room code cannot be chosen", "status": 400}
+
+    room_name, error = create_lobby_or_error(session.get("user_id"))
+    if error:
+        message, status = error
+        return {"ok": False, "message": message, "status": status}
+    return {"ok": True, "code": room_name}
+    
+@socketio.on("join_lobby_request")
+def join_lobby_request(data):
+    code = (data or {}).get("code", "").strip().upper()
+    if not code:
+        return {"ok": False, "message": "Missing room code", "status": 400}
+    lobby_data = lobbies.get(code)
+    if not lobby_data:
+        return {"ok": False, "message": "Room doesn't exist", "status": 404} #404?
+    return {"ok": True, "code": code}
+
+
 
 """
 SocketIO event: "add_bot"
@@ -278,7 +315,7 @@ def player_ready_to_play():
     emit_lobby_state(code)
 
 """
-SocketIO event: "join_lobby"
+SocketIO event: "join_lobby_socket"
 
 📥 Receives:
 - data:
@@ -293,9 +330,9 @@ SocketIO event: "join_lobby"
 Adds a player to the lobby, updates internal structures,
 and synchronizes all clients.
 """
-@socketio.on("join_lobby")
+@socketio.on("join_lobby_socket")
 def join_lobby_socket(data):
-    code = (data.get("code") or "").strip().upper()
+    code = ((data or {}).get("code") or "").strip().upper()
     if code not in lobbies:
         emit("error", {"message": "Room doesn't eexist"})
         return
