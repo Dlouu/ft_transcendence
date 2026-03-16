@@ -1,9 +1,24 @@
-FROM alpine:3.19
+FROM nginx:1.29-alpine
 
-RUN apk add --no-cache bash
+# Install openssl
+RUN apk add --no-cache openssl
 
-COPY ./tools/script.sh /
+# Create SSL directory
+RUN mkdir -p /etc/nginx/ssl
 
-RUN chmod +x /script.sh
+# Generate self-signed certificate
+RUN openssl req -x509 -nodes -days 365 \
+    -newkey rsa:2048 \
+    -keyout /etc/nginx/ssl/selfsigned.key \
+    -out /etc/nginx/ssl/selfsigned.crt \
+    -subj "/C=FR/ST=State/L=City/O=MyOrg/CN=localhost"
 
-CMD [ "/script.sh" ]
+# Remove default config
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy custom config
+COPY tools/nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80 443
+
+CMD ["nginx", "-g", "daemon off;"]

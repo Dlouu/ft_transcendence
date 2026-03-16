@@ -13,8 +13,8 @@
 ***/.swp
 
 # Ignore custom files
-				socket,
 ./srcs/volumes
+**/dist
 ***/.venv/
 ***/.env/
 ***/volumes/
@@ -23,5 +23,4 @@ node_modules
 .DS_Store
 ***/.secrets
 ***/.env
-
-***/secrets/
+***/env/

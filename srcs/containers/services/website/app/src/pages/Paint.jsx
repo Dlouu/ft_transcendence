@@ -13,7 +13,8 @@ function Paint() {
 
 	return (
 		<Page center>
-			<Card big>
+			<Card paint>
+				<div className="flex sm:flex-row flex-col items-center justify-between">
 				<PaintCanvas
 					canvasRef={canvasRef}
 					color={color}
@@ -35,8 +36,9 @@ function Paint() {
 					redo={undoRedo.redo}
 					canvasRef={canvasRef}
 				/>
+				</div>
 			</Card>
-				<p className="m-4 text-xs text-gray-400 text-center">
+				<p className="m-2 text-xs text-gray-400 text-center">
 					Users are solely responsible for the drawings and content they create.
 				</p>
 		</Page>

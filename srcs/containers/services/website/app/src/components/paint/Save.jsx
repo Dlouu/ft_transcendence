@@ -2,8 +2,48 @@ import { useEffect } from "react";
 import { Button, Tooltip } from "../../ui";
 import { prepareCardBack } from "./drawingUtils";
 import { WIDTH, HEIGHT } from "./constants";
+import { useNotifications } from "../../context/AlertContext";
 
 function Save({ canvasRef }) {
+	const { notify } = useNotifications();
+
+	async function saveInGallery() {
+		try {
+			const canvas = canvasRef.current;
+			if (!canvas) {
+				notify("Canvas not found", "error");
+				return;
+			}
+
+			canvas.toBlob(async (file) => {
+				if (!file) {
+					notify("Failed to generate image", "error");
+					return;
+				}
+
+				const uploadFile = new File([file], "UwUNO-drawing.png", {
+					type: "image/png",
+				});
+				const formData = new FormData();
+				formData.append("image", uploadFile);
+
+				const response = await fetch("/api/user/upload_card_image", {
+					method: "POST",
+					body: formData,
+					credentials: "include",
+				});
+
+				if (!response.ok) {
+					throw new Error(`API error: ${response.status}`);
+				}
+
+				notify("Image saved to gallery successfully", "success");
+			}, "image/png");
+		} catch (error) {
+			console.error("Error saving to gallery:", error);
+			notify("Failed to save image", "error");
+		}
+	}
 
 	function savePNG() {
 		const canvas = canvasRef.current;
@@ -58,10 +98,9 @@ function Save({ canvasRef }) {
 
 	return (
 		<>
-		{/* A remettre quand AWS sera connecté, et déplacer le saveCardBack dans la galerie */}
-			{/* <Tooltip message="Save in gallery CTRL+S">
-				<Button variant="icon" onClick={() => setTool("save")} title="Save">󰉉</Button>
-			</Tooltip> */}
+			<Tooltip message="Save in gallery CTRL+S">
+				<Button variant="icon" onClick={saveInGallery} title="Save">󰉉</Button>
+			</Tooltip>
 
 			<Tooltip message="Download">
 				<Button variant="icon" onClick={savePNG} title="Download">
@@ -69,11 +108,11 @@ function Save({ canvasRef }) {
 				</Button>
 			</Tooltip>
 
-			<Tooltip message="Set as card's back">
+			{/* <Tooltip message="Set as card's back">
 				<Button variant="icon" onClick={saveCardBack} title="Set as card's back">
 					󱑢
 				</Button>
-			</Tooltip>
+			</Tooltip> */}
 		</>
 	);
 }
