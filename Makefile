@@ -23,6 +23,7 @@ all: build run
 build:
 	@mkdir -p $(PWD)/srcs/volumes/auth_db_volume
 	@mkdir -p $(PWD)/srcs/volumes/user_db_volume
+	@mkdir -p $(PWD)/srcs/volumes/service_logs
 	$(COMPOSE) build $(DOCK)
 
 run:
@@ -60,5 +61,6 @@ privileged:
 commit:
 	@git add .
 	@git commit -m "$(MESSAGE)"
+	@git push
 
 .PHONY: all build run stop restart create logs clean fclean re enter ps privileged

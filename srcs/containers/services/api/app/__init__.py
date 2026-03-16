@@ -1,6 +1,7 @@
 from flask import Flask, g
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from limits.storage import MemoryStorage
 import os
 
 from .config import Config
@@ -9,7 +10,6 @@ from .extensions import db, ma
 def	create_app():
 	app = Flask(__name__)
 	app.config.from_object(Config)
-	app.secret_key = os.getenv("FLASK_API_SECRET", "SuperSecret123!")
 
 	db.init_app(app)
 	ma.init_app(app)
@@ -18,6 +18,7 @@ def	create_app():
 		app=app,
 		key_func=get_remote_address,
 		storage_uri="redis://redis:6379",
+		in_memory_fallback_enabled=True,
 		default_limits=["10 per second"]
 	)
 

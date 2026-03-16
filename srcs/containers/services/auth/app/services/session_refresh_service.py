@@ -1,11 +1,12 @@
-import string, secrets, random, hashlib, os
-
 from datetime import datetime, timezone, timedelta
+import string, secrets, random, hashlib, os
 from sqlalchemy.orm import joinedload
 
-from app.extensions import db
 from app.schemas.refresh_tokens import refresh_token_schema, refresh_token_rules_schema
 from app.models.refresh_tokens import RefreshToken
+from app.utils.logger import logger
+from app.extensions import db
+
 
 available_data = {
 	"User-Agent": lambda req: req.headers["User-Agent"],
@@ -95,9 +96,11 @@ def initialize_new_refresh_token(user_id, request):
 		db.session.commit()
 	except Exception as e:
 		db.session.rollback()
-		print(e, flush=True)
-		print("Undefined exception have been raised in 'initialize_new_refresh_token', resolve this or handle this behavior.", flush=True)
+		logger.critical(f"Undefined exception have been raised while initializing a refresh token for the user id {user_id}.",
+			extra=logger.extra(category="token", user_id=user_id, request=request, exception=e))
 		return False
+
+	logger.info(f"Session token expired for user id {user_id}, a new one have been generated.", extra=logger.extra(category="token", user_id=user_id, request=request))
 	return True, refresh_token.id
 
 def generate_new_active_refresh_token(request, tid):
@@ -124,6 +127,8 @@ def generate_new_active_refresh_token(request, tid):
 	row.rules.active_token_rules = rules;
 
 	db.session.commit()
+
+	logger.info(f"Refresh token updated for user id {row.user_id}.", extra=logger.extra(category="token", user_id=row.user_id, request=request))
 	return True
 
 def does_refresh_token_exist(user_id, request):

@@ -14,6 +14,8 @@ from app.services import s3_bucket_service as s3s
 from app.models.card_gallery import CardGallery
 from app.services import request_service as rs
 from app.services import me_service as ms
+from app.utils.logger import logger
+from app.utils.image_mask import mask
 from app.schemas import user as su
 from app.models.user import User
 from app.extensions import db
@@ -65,20 +67,23 @@ class UpdateInformation(Resource):
 		try:
 			information = su.user_update_schema.load(request.json)
 		except ValidationError:
+			logger.warning("Request validation error.", extra=logger.extra(request=request))
 			return {"message": "The body is no valid."}, 400
 
 		user_id = g.token_payload["user_id"]
 		request.json["user_id"] = user_id
 
 		response = rs.make_request("/user/update_information", "POST")
+		extra_logger = logger.extra(request=request, response=response, user_id=user_id)
 		if response.status_code != 200:
-			print(f"{request.path}: The auth service was unable to update user information.", flush=True)
+			logger.warning("server refused, unable to update user's information in the auth service.",
+				  extra=extra_logger | logger.extra(target="auth"))
 			return response.json(), response.status_code
 
 		user = User.query.filter_by(user_id=user_id).first()
 
 		if not user:
-			print(f"{request.path}: The user {user_id} does not exist in the database, this isn't a normal error.", flush=True)
+			logger.critical("The user does not exist in the user database.", extra=extra_logger)
 			return {"message": "Something wrong happened while trying to update user's information."}, 401
 
 		if "username" in information and user.username != information["username"]:
@@ -89,7 +94,105 @@ class UpdateInformation(Resource):
 
 		db.session.commit()
 
+		logger.info("User information updated.", extra=extra_logger)
 		return {"message": "success"}, 200
+
+update_password_model = ns.model("UpdatePasswordModel", {
+	"password": fields.String(required=True),
+	"new_password": fields.String(required=True)
+})
+
+@ns.route("/update_password")
+class UpdatePassword(Resource):
+	"""
+	Allow the user to update his password, he have to send the last one too to validate this action.
+
+	API:
+		Method: POST
+		Endpoint: /user/update_password
+		Token: yes
+
+	Response:
+		200: Password updated.
+		400: Body is not valid.
+	"""
+	@ns.jwt_required()
+	@ns.expect(update_password_model)
+	def post(self):
+		try:
+			information = su.password_update_schema.load(request.json)
+		except ValidationError:
+			logger.warning("Request validation error.", extra=logger.extra(request=request))
+			return {"message": "The body is no valid."}, 400
+
+		user_id = g.token_payload["user_id"]
+		request.json["user_id"] = user_id
+
+		response = rs.make_request("/user/update_password", "POST")
+		if response.status_code != 200:
+			logger.warning("server refused, unable to update the user's password.", extra=logger.extra(request=request, response=response, target="auth"))
+			return response.json(), response.status_code
+
+		logger.info("User's password updated.", extra=logger.extra(request=request, user_id=user_id))
+		return {"message": "success"}, 200
+
+delete_account_model = ns.model("DeleteAccountModel", {
+	"password": fields.String(required=True)
+})
+
+@ns.route("/delete_account")
+class DeleteAccount(Resource):
+	"""
+	This route is used by the user to delete his account.
+
+	API:
+		Method: POST
+		Endpoint: /user/delete_account
+		Token: yes
+
+	Response:
+		200: Account have been deleted.
+		400: The body isn't valid.
+
+	"""
+	@ns.jwt_required()
+	@ns.expect(delete_account_model)
+	def post(self):
+		try:
+			su.delete_account_schema.load(request.json)
+		except ValidationError:
+			logger.warning("Request validation error.", extra=logger.extra(request=request))
+			return {"message": "The body is no valid."}, 400
+
+		user_id = g.token_payload["user_id"]
+		request.json["user_id"] = user_id
+
+		response = rs.make_request("/user/delete_account", "POST")
+		if response.status_code != 200:
+			logger.warning("Server refused, unable to delete the user's account.", extra=logger.extra(request=request, response=response))
+			return response.json(), response.status_code
+
+		user = User.query.options(joinedload(User.cards)).filter_by(user_id=user_id).first()
+
+		if user is not None:
+			deleted_username = str(uuid4()).split("-", 1)[0]
+			while User.query.filter_by(username=deleted_username).first() is not None:
+				deleted_username = str(uuid4()).split("-", 1)[0]
+
+			user.username = "deleted_user_" + str(deleted_username)
+			user.profile_picture_url = os.getenv("DEFAULT_IMG_PATH") + "/" + os.getenv("DEFAULT_PROFILE_PICTURE", "")
+
+			s3s.delete_all_resources(f"card_gallery/{user_id}/")
+			s3s.delete_all_resources(f"profile_picture/{user_id}/")
+
+			for row in user.cards:
+				db.session.delete(row)
+
+			db.session.commit()
+
+		logger.info("User's account deleted.", extra=logger.extra(request=request, user_id=user_id))
+		return {"message": "success"}, 200
+
 
 updade_profile_picture_model = reqparse.RequestParser()
 updade_profile_picture_model.add_argument(
@@ -126,7 +229,8 @@ class UpdateProfilePicture(Resource):
 			if image_file.content_type not in {"image/jpeg", "image/png"}:
 				return {"message": "File format not supported."}, 400
 		except Exception as e:
-			print(f"{request.path}: A problem occured while parsing data: {e}", flush=True)
+			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
+			return {"message": "Content invalid or wrong type."}, 400
 
 		image_file.stream.seek(0, 2)
 		file_size = image_file.stream.tell()
@@ -138,13 +242,15 @@ class UpdateProfilePicture(Resource):
 			return {"message": f"The image is too big (max: {max_mb:.0f}mb)."}, 400
 
 		user_id = g.token_payload["user_id"]
-
 		user = User.query.filter_by(user_id=user_id).first()
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
 		if not user:
+			logger.critical("The user does not exist in the user database.", extra=extra_logger)
 			return {"message": f"No user found with the id {user_id}, contact an admin if the problem persist."}, 401
 
 		if not s3s.delete_all_resources(f"profile_picture/{user_id}"):
+			logger.critical("Unable to delete the old profile picture", extra=extra_logger)
 			return {"message": "Unable to delete the old profile picture."}, 401
 
 		try:
@@ -175,105 +281,13 @@ class UpdateProfilePicture(Resource):
 		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
 
 		if not s3s.add_resource(processed_file, s3_url):
-			user.profile_picture_url = os.getenv("DEFAULT_IMG_PATH") + "/" + os.getenv("DEFAULT_PROFILE_PICTURE", "")
+			logger.critical("Unable to upload the new profile picture", extra_logger)
 			return {"message": "Unable to upload the new profile picture."}, 401
 
 		user.profile_picture_url = s3_url
 		db.session.commit()
 
-		return {"message": "success"}, 200
-
-
-update_password_model = ns.model("UpdatePasswordModel", {
-	"password": fields.String(required=True),
-	"new_password": fields.String(required=True)
-})
-
-@ns.route("/update_password")
-class UpdatePassword(Resource):
-	"""
-	Allow the user to update his password, he have to send the last one too to validate this action.
-
-	API:
-		Method: POST
-		Endpoint: /user/update_password
-		Token: yes
-
-	Response:
-		200: Password updated.
-		400: Body is not valid.
-	"""
-	@ns.jwt_required()
-	@ns.expect(update_password_model)
-	def post(self):
-		try:
-			information = su.password_update_schema.load(request.json)
-		except ValidationError:
-			return {"message": "The body is no valid."}, 400
-
-		user_id = g.token_payload["user_id"]
-		request.json["user_id"] = user_id
-
-		response = rs.make_request("/user/update_password", "POST")
-		if response.status_code != 200:
-			print(f"{request.path}: The auth service was unable to update the user's password.", flush=True)
-			return response.json(), response.status_code
-
-		return {"message": "success"}, 200
-
-delete_account_model = ns.model("DeleteAccountModel", {
-	"password": fields.String(required=True)
-})
-
-@ns.route("/delete_account")
-class DeleteAccount(Resource):
-	"""
-	This route is used by the user to delete his account.
-
-	API:
-		Method: POST
-		Endpoint: /user/delete_account
-		Token: yes
-
-	Response:
-		200: Account have been deleted.
-		400: The body isn't valid.
-
-	"""
-	@ns.jwt_required()
-	@ns.expect(delete_account_model)
-	def post(self):
-		try:
-			su.delete_account_schema.load(request.json)
-		except ValidationError:
-			return {"message": "The body is no valid."}, 400
-
-		user_id = g.token_payload["user_id"]
-		request.json["user_id"] = user_id
-
-		response = rs.make_request("/user/delete_account", "POST")
-		if response.status_code != 200:
-			print(f"{request.path}: The auth service was unable to delete the user's account.", flush=True)
-			return response.json(), response.status_code
-
-		user = User.query.options(joinedload(User.cards)).filter_by(user_id=user_id).first()
-
-		if user is not None:
-			deleted_username = str(uuid4()).split("-", 1)[0]
-			while User.query.filter_by(username=deleted_username).first() is not None:
-				deleted_username = str(uuid4()).split("-", 1)[0]
-
-			user.username = "deleted_user_" + str(deleted_username)
-			user.profile_picture_url = os.getenv("DEFAULT_IMG_PATH") + "/" + os.getenv("DEFAULT_PROFILE_PICTURE", "")
-
-			s3s.delete_all_resources(f"card_gallery/{user_id}/")
-			s3s.delete_all_resources(f"profile_picture/{user_id}/")
-
-		for row in user.cards:
-			db.session.delete(row)
-
-		db.session.commit()
-
+		logger.info("User's profile picture updated.", extra=extra_logger)
 		return {"message": "success"}, 200
 
 upload_model = reqparse.RequestParser()
@@ -283,6 +297,14 @@ upload_model.add_argument(
 	location="files",
 	required=True,
 	help="Image to upload."
+)
+
+upload_model.add_argument(
+    "image_id",
+    type=int,
+    location="form",
+    required=False,
+    help="Card ID"
 )
 
 @ns.route("/upload_card_image")
@@ -300,6 +322,7 @@ class UploadCardImage(Resource):
 		400: The body is not valid or the image have a wrong format.
 		401: Failed to upload the image to the s3 bucket.
 	"""
+	# check if image size is 136*88, if not resize it
 	@ns.jwt_required()
 	@ns.expect(upload_model)
 	@ns.s3_bucket_health_check()
@@ -311,36 +334,110 @@ class UploadCardImage(Resource):
 			if image_file.content_type not in {"image/jpeg", "image/png"}:
 				return {"message": "File format not supported."}, 400
 		except Exception as e:
-			print(f"A problem occured while parsing data ({e})", flush=True)
-			return {"message": "Bad request"}, 400
+			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
+			return {"message": "Content invalid or wrong type."}, 400
 
 		user_id = g.token_payload["user_id"]
-
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
+
+		card = None
+
+		if args["image_id"] is not None:
+			card = CardGallery.query.filter_by(id=args["image_id"], user_id=user_id).first()
 		s3_url = f"card_gallery/{user_id}/{uuid4()}.{file_ext}"
+		if card:
+			s3_url = card.img_url
+
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
+
+		if not card:
+			try:
+				image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
+				db.session.add(image_db_obj)
+			except ValidationError as e:
+				db.session.rollback()
+				logger.warning("Validation error when trying to load the image schema.", extra=extra_logger)
+				return {"message": "Failure, something wrong happened while uploading this image."}, 400
+			except Exception as e:
+				db.session.rollback()
+				logger.critical(f"Unhandled error happened while creating image database's object.", extra=extra_logger | logger.extra(exception=e))
+				return {"message": "Failure, something wrong happened while uploading this image."}, 400
+		else:
+			if not s3s.delete_all_resources(card.img_url):
+				db.session.rollback()
+				logger.critical("Unable to delete the old profile picture", extra=extra_logger)
+				return {"message": "Unable to delete the old profile picture."}, 401
+
+		image_file.stream.seek(0, 2)
+		file_size = image_file.stream.tell()
+		image_file.stream.seek(0)
 
 		try:
-			image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
-			db.session.add(image_db_obj)
-		except ValidationError as e:
-			db.session.rollback()
-			print(f"Something wrong happened while creating image database's object for user id {user_id} ({g.token}), the image '{image_file.filename}' will not be uploaded.", flush=True)
-			return {"message": "Failure, something wrong happened while uploading this image."}, 400
+			img = Image.open(image_file.stream)
+
+			if image_file.content_type == "image/png":
+				img = img.convert("RGBA")
+			else:
+				img = img.convert("RGB")
+
+			small_image = img.resize((88, 136), Image.NEAREST)
+
+			pixels = small_image.load()
+
+			for y in range(136):
+				for x in range(88):
+					m = mask[y][x]
+
+					if m == 0:
+						pixels[x, y] = (0, 0, 0, 0)
+					elif m == 2:
+						pixels[x, y] = (255, 255, 255, 255)
+
+			output = BytesIO()
+			format = "PNG" if image_file.content_type == "image/png" else "JPEG"
+			small_image.save(output, format=format)
+			output.seek(0)
+
+			processed_file = FileStorage(
+				stream=output,
+				filename=image_file.filename,
+				content_type=image_file.content_type,
+			)
 		except Exception as e:
 			db.session.rollback()
-			print(f"Unhandled error happened while creating image database's object for user id {user_id} ({g.token}), handle this error as soons as possible ({e}).", flush=True)
+			logger.critical(f"Unhandled error happened while converting the image to the good format.", extra=extra_logger, exc_info=e)
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 
-		if not s3s.add_resource(image_file, s3_url):
+		if not s3s.add_resource(processed_file, s3_url):
 			db.session.rollback()
-			return {"message": "Failed to upload the image"}, 401
+			logger.critical(f"Failed to upload the image.", extra=extra_logger)
+			return {"message": "Failed to upload the image."}, 401
 
 		db.session.commit()
+
+		logger.info("User's card picture uploaded.", extra=extra_logger)
 		return {"message": "success"}, 201
 
 remove_card_image_model = ns.model("RemoveCardImageModel", {
 	"card_id": fields.Integer(required=True)
 })
+
+update_img_model = reqparse.RequestParser()
+update_img_model.add_argument(
+	"image",
+	type=FileStorage,
+	location="files",
+	required=True,
+	help="Image to upload."
+)
+
+update_img_model.add_argument(
+    "image_id",
+    type=int,
+    location="form",
+    required=True,
+    help="Card ID"
+)
 
 @ns.route("/remove_card_image")
 class RemoveCardImage(Resource):
@@ -364,18 +461,22 @@ class RemoveCardImage(Resource):
 		try:
 			data = su.delete_card_image_schema.load(request.json)
 		except ValidationError:
+			logger.warning("Request validation error.", extra=logger.extra(request=request))
 			return {"message": "The body is not valid."}, 400
 
 		user_id = g.token_payload["user_id"]
 		card = CardGallery.query.filter_by(user_id=user_id, id=data["card_id"]).first()
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
 		if not card:
+			logger.warning("A non-existent card was attempted to be deleted.", extra=extra_logger)
 			return {"message": f"No card found with the id {data["card_id"]} for the user id {user_id}."}, 404
 
 		s3s.delete_resource(card.img_url)
 		db.session.delete(card)
 		db.session.commit()
 
+		logger.info("card successfully removed.", extra=extra_logger)
 		return {"message": "success"}, 200
 
 @ns.route("/<user_id>/get_card_images")
@@ -399,12 +500,14 @@ class GetCardImage(Resource):
 		query = CardGallery.query.filter_by(user_id=user_id)
 
 		if query.first() is None:
-			return {"message": "No card image found for this user id "}, 404
+			return {"message": "No card image found for this user id "}, 200
 
 		images_url = []
 		for row in query.yield_per(50):
-			url = s3s.get_resource_url(row.img_url, 3600)
+			url = s3s.get_resource_url(row.img_url, -1)
 			if url is not None:
 				images_url.append({"url": url, "image_id": row.id})
 
+		logger.info(f"Cards successfully retrieved for the user id {user_id}.",
+			  extra=logger.extra(request=request, user_id=user_id, target="aws"))
 		return {"message": "success", "images_url": images_url}, 200

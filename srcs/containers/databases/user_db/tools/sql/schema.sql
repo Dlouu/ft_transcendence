@@ -8,8 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
 	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
 	user_id BIGINT UNSIGNED NOT NULL UNIQUE,
-	username VARCHAR(255) NULL,
+	username VARCHAR(255) NOT NULL,
 	profile_picture_url VARCHAR(255) NOT NULL,
+	card_back_url VARCHAR(255) NOT NULL,
 
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
@@ -29,4 +30,61 @@ CREATE TABLE IF NOT EXISTS card_gallery (
 		FOREIGN KEY (user_id) REFERENCES users(user_id)
 		ON DELETE CASCADE
 		ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS friends (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+	requester_id BIGINT UNSIGNED NOT NULL,
+	accepter_id  BIGINT UNSIGNED NOT NULL,
+
+	status ENUM('pending', 'accepted', 'rejected', 'blocked')
+		NOT NULL DEFAULT 'pending',
+
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+	CONSTRAINT fk_requester
+		FOREIGN KEY (requester_id)
+		REFERENCES users(id)
+		ON DELETE CASCADE,
+
+	CONSTRAINT fk_accepter
+		FOREIGN KEY (accepter_id)
+		REFERENCES users(id)
+		ON DELETE CASCADE,
+
+	CONSTRAINT unique_friendship
+		UNIQUE (requester_id, accepter_id),
+
+	INDEX idx_requester (requester_id),
+	INDEX idx_accepter (accepter_id),
+
+	CHECK (requester_id <> accepter_id)
+
+) ENGINE=Innodb;
+
+CREATE TABLE IF NOT EXISTS gamestats (
+
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+	user_id BIGINT UNSIGNED NOT NULL UNIQUE,
+
+	winrate DECIMAL(5 , 2),
+	games_played BIGINT UNSIGNED DEFAULT 0 NOT NULL,
+	games_won BIGINT UNSIGNED DEFAULT 0,
+	nbr_uno BIGINT UNSIGNED DEFAULT 0,
+	nbr_uwu BIGINT UNSIGNED DEFAULT 0,
+	nbr_4cards BIGINT UNSIGNED DEFAULT 0,
+	nbr_drew BIGINT UNSIGNED DEFAULT 0,
+	biggest_hand BIGINT UNSIGNED DEFAULT 0,
+
+	CONSTRAINT fk_user_stats
+		FOREIGN KEY (user_id)
+		REFERENCES users(id)
+		ON DELETE CASCADE,
+
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
 ) ENGINE=InnoDB;

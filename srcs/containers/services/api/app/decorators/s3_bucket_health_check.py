@@ -2,7 +2,8 @@ from botocore.exceptions import ClientError, EndpointConnectionError, ParamValid
 from functools import wraps
 import os
 
-from app.extensions import s3
+from app.utils.logger import logger
+from app import extensions
 
 def s3_bucket_health_check(self):
 	"""
@@ -12,30 +13,29 @@ def s3_bucket_health_check(self):
 	def decorator(f):
 		@wraps(f)
 		def decorated(*args, **kwargs):
-			if not s3:
-				return {"message": "This service is temporary unavailable."}, 503
-
+			if not extensions.s3:
+				extensions.s3 = extensions.s3_init_app()
 			try:
-				s3.head_bucket(Bucket=os.getenv("S3_BUCKET_NAME", ""))
+				extensions.s3.head_bucket(Bucket=os.getenv("S3_BUCKET_NAME", ""))
 			except ClientError as e:
 				code = e.response['Error']['Code']
 				if code in ["403", "AccessDenied"]:
-					print(f"s3: access denied ({e})", flush=True)
+					logger.critical("The API no longer have access to the aws bucket.", extra=logger.extra(target="aws"))
 					return {"message": "This service is temporary unavailable."}, 503
 				elif code in ["404", "NoSuchBucket"]:
-					print(f"s3: bucket not found ({e})", flush=True)
+					logger.critical("The S3 bucket can't be found.", extra=logger.extra(target="aws"))
 					return {"message": "This service is temporary unavailable."}, 503
 				else:
-					print(f"s3: unavailable (code {code})", flush=True)
+					logger.critical(f"Service unavailable. (code: {code})", extra=logger.extra(target="aws"))
 					return {"message": "This service is temporary unavailable."}, 503
 			except EndpointConnectionError as e:
-				print(f"s3: network error({e})", flush=True)
+				logger.critical("S3 network error..", extra=logger.extra(target="aws"))
 				return {"message": "This service is temporary unavailable."}, 503
 			except ParamValidationError as e:
-				print(f"s3: parameter error ({e})", flush=True)
+				logger.critical("S3 parameter error.", extra=logger.extra(target="aws"))
 				return {"message": "This service is temporary unavailable."}, 503
 			except Exception as e:
-				print(f"s3: unhandled error ({e})", flush=True)
+				logger.critical(f"Unhandled error happened in the s3 bucket health check.", extra=logger.extra(target="aws", exception=e))
 				return {"message": "This service is temporary unavailable."}, 503
 
 			return f(*args, **kwargs)

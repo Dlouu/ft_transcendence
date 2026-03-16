@@ -1,13 +1,14 @@
 from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
 from datetime import datetime, timezone
-from flask import request, g, session
-import os, requests
+from flask import request, g, Request
+import os
 
 from app.schemas.user import user_registration_schema, user_login_schema, user_schema
 from app.services import request_service as rs
 from app.services import me_service as ms
 from app.services import session_service as ss
+from app.utils.logger import logger
 from app.models.user import User
 from app.extensions import db
 
@@ -22,6 +23,7 @@ user_registration_model = ns.model("UserRegistration", {
 @ns.route("/registration")
 class UserRegistration(Resource):
 	@ns.expect(user_registration_model)
+	@ns.db_health_check()
 	def post(self):
 		"""
 		Prepare the communication with the authentification service to create a new user.
@@ -41,28 +43,33 @@ class UserRegistration(Resource):
 		try:
 			auth_data = user_registration_schema.load(request.json)
 		except ValidationError as err:
+			logger.warning("Request validation error.", extra=logger.extra(request=request))
 			return {"message": "One or more fields are missing"}, 400
 
 		response = rs.make_request("/auth/registration", "POST")
 		json_response = response.json()
 
 		if (response.status_code != 201):
+			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target="auth"))
 			return json_response, response.status_code
 
 		try:
 			user_payload = {
 				"username": auth_data["username"],
 				"user_id": json_response["id"],
-				"profile_picture_url": os.getenv("DEFAULT_IMG_PATH")+"/"+os.getenv("DEFAULT_PROFILE_PICTURE", "")}
+				"profile_picture_url": os.getenv("DEFAULT_IMG_PATH")+"/"+os.getenv("DEFAULT_PROFILE_PICTURE", ""),
+				"card_back_url": os.getenv("DEFAULT_IMG_PATH")+"/"+os.getenv("DEFAULT_PROFILE_PICTURE", "")}
 			user = user_schema.load(user_payload)
 			db.session.add(user)
 			db.session.commit()
 		except Exception as e:
-			print(e, flush=True)
+			logger.critical(f"Unhandled error happened.", extra=logger.extra(request=request, exception=e))
 			return {"message": "Error while creating the user."}, 401
 
 		g.x_new_token = json_response["token"]
-		return ms.me(json_response["id"])
+
+		logger.info("Registration successful.", extra=logger.extra(request=request, user_id=json_response["id"]))
+		return ms.me(json_response["id"], json_response["email"])
 
 
 user_login_model = ns.model("UserLogin", {
@@ -73,6 +80,7 @@ user_login_model = ns.model("UserLogin", {
 @ns.route("/login")
 class UserLogin(Resource):
 	@ns.expect(user_login_model)
+	@ns.db_health_check()
 	def patch(self):
 		"""
 		Prepare the communication with the authentification service to login the user.
@@ -92,12 +100,14 @@ class UserLogin(Resource):
 		try:
 			auth_data = user_login_schema.load(request.json)
 		except ValidationError as err:
+			logger.warning("Request validation error.", extra=logger.extra(request=request))
 			return {"message": "The body format isn't valid."}, 400
 
 		response = rs.make_request("/auth/login", "POST")
 		json_response = response.json()
 
 		if response.status_code != 200:
+			logger.warning("server refused.", extra=logger.extra(request=request, response=response, target="auth"))
 			return json_response, response.status_code
 
 		user = User.query.filter_by(user_id=json_response["id"]).first()
@@ -109,7 +119,7 @@ class UserLogin(Resource):
 				db.session.add(user)
 				db.session.commit()
 			except Exception as e:
-				print(f"{request.path}: something went wrong while trying to initialize the user in the database. ({e})", flush=True)
+				logger.critical(f"Unhandled error happened: {e}", extra=logger.extra(request=request, exception=e))
 				return {"message": "The user exist but something went wrong while initializing his metadata. If the problem persist contact an admin."}, 401
 
 		user.is_active = True
@@ -118,6 +128,7 @@ class UserLogin(Resource):
 		db.session.commit()
 		g.x_new_token = json_response["token"]
 
+		logger.info("Login successful.", extra=logger.extra(request=request))
 		return ms.me(json_response["id"])
 
 @ns.route("/logout")

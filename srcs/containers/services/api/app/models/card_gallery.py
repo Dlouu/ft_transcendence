@@ -1,7 +1,6 @@
 from app.extensions import db
 
 class CardGallery(db.Model):
-	__bind_key__ = "user"
 	__tablename__ = "card_gallery"
 
 	id = db.Column(db.BigInteger, primary_key=True)

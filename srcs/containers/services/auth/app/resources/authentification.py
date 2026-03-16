@@ -3,8 +3,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
 import os, json, bcrypt
 
-from app.services import session_service as st
 from app.services import session_refresh_service as rt
+from app.services.sql_service import safe_request
+from app.services import session_service as st
 from app.utils import user_check as uc
 from app.models.user import User
 from app.extensions import db
@@ -12,11 +13,13 @@ from app.extensions import db
 ns = Blueprint("Authentification", __name__)
 
 @ns.route("/registration", methods=["POST"])
+@ns.db_health_check()
+@ns.redis_health_check()
 def registration():
 	data = request.get_json(silent=True)
 
 	if not uc.is_email_valid(data.get("email", "")):
-		return {"message": "The email is not valid."}, 409
+		return {"message": "The email is not valid."}, 400
 
 	min_len = int(os.getenv("AUTH_MIN_USERNAME_LENGTH", "3"))
 	max_len = int(os.getenv("AUTH_MAX_USERNAME_LENGTH", 10))
@@ -35,9 +38,9 @@ def registration():
 		return {"message": str(exc)}, 400
 
 	if uc.does_email_exist(user.email):
-		return {"message": "Email already exists."}, 409
+		return {"message": "Email already exists."}, 400
 	if uc.username_exists(user.username):
-		return {"message": "username already exists"}, 410
+		return {"message": "username already exists"}, 400
 
 	try:
 		password_bytes = password.encode("utf-8")
@@ -47,41 +50,52 @@ def registration():
 		db.session.commit()
 	except IntegrityError:
 		db.session.rollback()
-		return {"message": "email already exists"}, 409
-	except Exception as exc:
+		return {"message": "email already exists."}, 401
+	except Exception as e:
 		db.session.rollback()
-		return {"message": str(exc)}, 500
+		logger.critical(f"unhandled error happened.", extra=logger.extra(target="auth", exception=e))
+		return {"message": "A unknow error happened while creating the user."}, 401
 
 	success, tid = rt.initialize_new_refresh_token(user.id, request)
 	if not success:
 		db.session.delete(user)
 		db.session.commit()
-		return {"message": "failure when storing refresh token"}, 500
+		return {"message": "A problem occured while storing refresh token."}, 401
 
 	token, public, private, created_at = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
-	st.store_session_token(token, public, user.id)
+
+	if not st.store_session_token(token, public, user.id):
+		return {"message": "A problem occured while generating user token."}, 401
 
 	response = {
 		"message": "success",
 		"id": user.id,
-		"token": token
+		"token": token,
+		"email": user.email
 	}
 
 	return response, 201
 
 @ns.route("/login", methods=["POST"])
+@ns.db_health_check()
+@ns.redis_health_check()
 def login():
 	data = request.get_json(silent=True)
 	if data is None:
 		with open("test_login.json", "r") as f:
 			data = json.load(f)
+
 	username_or_login = data.get("login_email")
 	password = data.get("password")
 	if not username_or_login or not password:
 		return {"message": f"Username/Email or password is missing."}, 400
-	user = User.query.filter(or_(User.email == username_or_login, User.username == username_or_login)).first()
+
+	user = User.query.filter(or_(User.email == username_or_login, User.username == username_or_login))
+	user = user.first()
 	if user is None:
 		return {"message": "Username/Email and password does not match."}, 400
+	elif user is False:
+		return {"message": "Service unavailable."}, 50
 
 	try:
 		password_bytes = password.encode("utf-8")
@@ -99,12 +113,15 @@ def login():
 		rt.generate_new_active_refresh_token(request, tid)
 
 	token, public, private, created_at = st.generate_session_token(user.id, tid, request.headers, request.remote_addr)
-	st.store_session_token(token, public, user.id)
+
+	if not st.store_session_token(token, public, user.id):
+		return {"message": "A problem occured while generating user token."}, 401
 
 	response = {
 		"message": "success",
 		"id": user.id,
-		"token": token
+		"token": token,
+		"email": user.email
 	}
 
 	return response, 200

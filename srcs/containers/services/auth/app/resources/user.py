@@ -12,6 +12,7 @@ from app.extensions import db
 ns = Blueprint("User", __name__)
 
 @ns.route("/update_information", methods=["POST"])
+@ns.db_health_check()
 def update_information():
 	"""
 	Endpoint to update the user email.
@@ -61,6 +62,7 @@ def update_information():
 	return {"message": "success"}, 200
 
 @ns.route("/update_password", methods=["POST"])
+@ns.db_health_check()
 def UpdatePassword():
 	"""
 	Update the user password.
@@ -99,6 +101,7 @@ def UpdatePassword():
 	return {"message": "success"}, 200
 
 @ns.route("/delete_account", methods=["POST"])
+@ns.db_health_check()
 def delete_account():
 	"""
 	Delete a user account.
@@ -140,11 +143,12 @@ def delete_account():
 	if token is not None and token.startswith("Bearer "):
 		token = token.split(" ", 1)[1]
 		if ss.does_session_token_exist(token):
-			ss.delete_session_token(token)
+			ss.delete_session_token(token, data["user_id"])
 
 	return {"message": "success"}, 200
 
 @ns.route("/email/<user_id>", methods=["GET"])
+@ns.db_health_check()
 def get_user_email(user_id):
 	"""
 	Return the email address of a given user_id.
