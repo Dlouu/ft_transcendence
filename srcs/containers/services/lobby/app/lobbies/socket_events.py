@@ -1,5 +1,6 @@
 import os
 import secrets
+import jwt
 
 from flask import request, session
 from flask_socketio import join_room, emit
@@ -12,7 +13,7 @@ from app.lobbies.services import emit_lobby_state, remove_lobby
 from app.models.user import User
 from app.services import session_service as st
 
-def _ensure_socket_user(socket_id: str) -> User | None:
+""" def _ensure_socket_user(socket_id: str) -> User | None:
     if not socket_id:
         return None
 
@@ -43,7 +44,7 @@ def _ensure_socket_user(socket_id: str) -> User | None:
         except IntegrityError:
             db.session.rollback()
             continue
-    return None
+    return None """
 
 
 """
@@ -53,11 +54,43 @@ SocketIO event: "connect"
 - Automatic connection event
 
 🎯 Purpose:
-Store the socket id in users DB for testing.
+Verify if user can be associated with the socket connection.
 """
 @socketio.on("connect")
 def on_connect():
-    pass
+    '''
+    theo stocke un truc dans les cookies, je dois recuperer le token de session de lutilisateur est stocke dans les cooke.
+    requete redis pour recuperer le cookie
+    redis --> token de session (serveur)
+    cookie --> token de session (client)
+    cookie --> token de session --> user_id
+    '''
+    session_token = request.cookies.get("session_token")
+    if not session_token:
+        return False
+
+    if session_token.startswith("Bearer "):
+        session_token = session_token.split(" ", 1)[1]
+
+    if not st.does_session_token_exist(session_token):
+        return False
+
+    try:
+        payload = st.decode_session_token(session_token)
+    except jwt.PyJWTError:
+        return False
+
+    if not payload or "user_id" not in payload:
+        return False
+
+    user = User.query.filter_by(user_id=payload["user_id"]).first()
+    if not user:
+        return False
+
+    session["user_id"] = payload["user_id"]
+    session["username"] = user.username
+    session["db_user_id"] = user.id
+    join_room(user.username)
 
 '''
 create_lobby
