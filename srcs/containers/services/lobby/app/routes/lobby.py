@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for
+from app.core.extensions import socketio
 
 lobby = Blueprint("lobby", __name__)
 
@@ -30,12 +31,13 @@ GET /lobby/<code>
 🎯 Purpose:
 Displays the lobby page for a given code.
 """
-@lobby.route("/lobby/<code>", methods=["GET"])
+@socketio.on("join_lobby")
 def lobby_room(code):
     if not code:
-        return redirect(url_for("lobby.home"))
+        return ("No code provided", 405)
+        #return redirect(url_for("lobby.home"))
     code = code.strip().upper()
-    return render_template("lobby.html", code=code)
+    return ("Success", 200)
 
 """
 GET /game/<code>
@@ -49,6 +51,6 @@ GET /game/<code>
 🎯 Purpose:
 Renders the game page once the match has started.
 """
-@lobby.route("/game/<code>", methods=["GET"])
+@socketio.on("game_start")
 def starting_game(code):
-    return render_template("game.html", code=code)
+    return ("Success", 200)
