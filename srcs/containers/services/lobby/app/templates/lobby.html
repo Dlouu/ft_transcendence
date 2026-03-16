@@ -50,7 +50,7 @@ const privacyPublicBtn = document.getElementById("privacy-public");
 const privacyPrivateBtn = document.getElementById("privacy-private");
 
 socket.on("connect", () => {
-  socket.emit("join_lobby", { code: code });
+  socket.emit("join_lobby_socket", { code: code });
 });
 
 socket.on("session_token", (data) => {

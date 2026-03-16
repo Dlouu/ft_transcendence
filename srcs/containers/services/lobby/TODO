@@ -1,0 +1,16 @@
+Lobbies:
+
+utiliser des websockets dans les Lobbies
+passer par l'api pour le reste (create et join lobby)
+
+??
+generer des tokens a create et join lobby
+renvoyer les token dans les cookies de la reponse (de create et join)
+verifier la validite du token a levent connect
+faire des tests --> que se passe til si la connection est refusee
+
+envoyer lurl du dos de carte a yohann
+
+NOW:
+faire en sorte que create et join lobby ne passe que par des websockets
+dans le on_connect, recuperer quelque chose de redis

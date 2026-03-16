@@ -39,6 +39,7 @@ def emit_lobby_state(code):
         "code": code, # what Yohann needs
         "bots_count": data.get("bots", 0), # what Yohann needs
         "humans_id": humans_ids, # user_id # what Yohann needs
+        #"humans_username": humans_username,
         "theme": data.get("theme", False), # what Yohann needs
         "game_ended": data.get("game_ended", False),
         "humans_sid": humans_sids, # socketid

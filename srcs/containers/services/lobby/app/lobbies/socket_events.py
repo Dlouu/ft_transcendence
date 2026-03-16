@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.extensions import socketio, db
 from app.core.state import lobbies, socketid_lobby, max_players
+from app.lobbies.lobby_generator import create_lobby_or_error
 from app.lobbies.services import emit_lobby_state, remove_lobby
 from app.models.user import User
 from app.tokens.generate_token import generate_token
@@ -59,18 +60,37 @@ Store the socket id in users DB for testing.
 @generate_token()
 @check_token()
 def on_connect():
-    current_token = getattr(g, "token", None)
-    if current_token:
-        print(f"Lobby: socket token={current_token}", flush=True)
-    new_token = getattr(g, "x_new_token", None)
-    if new_token:
-        max_age = int(os.getenv("TOKEN_CACHE_LIFETIME", os.getenv("SESSION_TOKEN_EXPIRATION", "3600")))
-        emit("session_token", {"token": new_token, "max_age": max_age}, to=request.sid)
+    pass
 
-    try:
-        _ensure_socket_user(request.sid)
-    except Exception as exc:
-        print(f"Lobby: failed to store socket user ({exc})", flush=True)
+'''
+create_lobby
+le serveur genere toujours un code de room (pas de code fourni par le client)
+renvoie un json ok/false
+'''
+@socketio.on("create_lobby")
+def create_lobby(data):
+    payload = data or {}
+    requested_code = payload.get("code") or payload.get("room_name")
+    if requested_code:
+        return {"ok": False, "message": "Room code cannot be chosen", "status": 400}
+
+    room_name, error = create_lobby_or_error(session.get("user_id"))
+    if error:
+        message, status = error
+        return {"ok": False, "message": message, "status": status}
+    return {"ok": True, "code": room_name}
+    
+@socketio.on("join_lobby_request")
+def join_lobby_request(data):
+    code = (data or {}).get("code", "").strip().upper()
+    if not code:
+        return {"ok": False, "message": "Missing room code", "status": 400}
+    lobby_data = lobbies.get(code)
+    if not lobby_data:
+        return {"ok": False, "message": "Room doesn't exist", "status": 404} #404?
+    return {"ok": True, "code": code}
+
+
 
 """
 SocketIO event: "add_bot"
@@ -265,7 +285,7 @@ def player_ready_to_play():
     emit_lobby_state(code)
 
 """
-SocketIO event: "join_lobby"
+SocketIO event: "join_lobby_socket"
 
 📥 Receives:
 - data:
@@ -280,9 +300,9 @@ SocketIO event: "join_lobby"
 Adds a player to the lobby, updates internal structures,
 and synchronizes all clients.
 """
-@socketio.on("join_lobby")
+@socketio.on("join_lobby_socket")
 def join_lobby_socket(data):
-    code = (data.get("code") or "").strip().upper()
+    code = ((data or {}).get("code") or "").strip().upper()
     if code not in lobbies:
         emit("error", {"message": "Room doesn't eexist"})
         return
