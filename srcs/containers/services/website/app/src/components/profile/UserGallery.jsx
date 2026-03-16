@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
 
 function UserGallery({ userId }) {
 	const [cards, setCards] = useState([]);
 	const [loadingCards, setLoadingCards] = useState(true);
+	const { user } = useContext(AuthContext);
 
 	useEffect(() => {
 		if (!userId) {
@@ -45,7 +47,8 @@ function UserGallery({ userId }) {
 
 	return (
 		<>
-			<h1 className="font-pixelmono mt-10 mb-2">PERSONAL CARDS</h1>
+			<h1 className="font-pixelmono mt-10 mb-2">MY GALLERY ({user.username})</h1>
+			
 			{loadingCards && <p className="mt-10 text-center font-pixelm">Loading gallery...</p>}
 			{!loadingCards && !cards.length && <p>No personal cards yet</p>}
 

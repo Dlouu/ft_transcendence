@@ -2,6 +2,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles/index.css";
 import { GameProvider } from "./context/GameContext";
+import { LobbyProvider } from "./context/LobbyContext";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { AlertProvider } from "./context/AlertContext";
@@ -13,10 +14,12 @@ ReactDOM.createRoot(root).render(
 	<AuthProvider>
 		<AlertProvider>
 			<BrowserRouter>
-				<GameProvider>
-					<App />
-					<Notifications />
-				</GameProvider>
+				<LobbyProvider>
+					<GameProvider>
+						<App />
+						<Notifications />
+					</GameProvider>
+				</LobbyProvider>
 			</BrowserRouter>
 		</AlertProvider>
 	</AuthProvider>
