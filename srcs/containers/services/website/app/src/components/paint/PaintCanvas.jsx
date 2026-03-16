@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { WIDTH, HEIGHT, MAX_HEIGHT_RATIO } from "./constants";
+import { WIDTH, HEIGHT, MAX_HEIGHT_RATIO, MAX_WIDTH_RATIO } from "./constants";
 import { drawCheckerBoard, drawLine, floodFill, selectColor } from "./drawingUtils";
 import { useUndoRedo } from "./useUndoRedo";
 
@@ -16,7 +16,7 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 
 	const scale = Math.floor(
 		Math.min(
-			window.innerWidth / WIDTH,
+			(window.innerWidth * MAX_WIDTH_RATIO) / WIDTH,
 			(window.innerHeight * MAX_HEIGHT_RATIO) / HEIGHT
 		)
 	);

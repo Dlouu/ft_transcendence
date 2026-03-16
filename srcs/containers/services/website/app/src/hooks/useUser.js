@@ -51,7 +51,7 @@ export function useUser() {
 			"/api/user/update_information",
 			"POST",
 			{ [field]: value },
-			`${field} updated`
+			`Your ${field} has been updated`
 		);
 
 		if (setUser) {

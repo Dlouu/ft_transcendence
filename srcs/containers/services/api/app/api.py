@@ -10,6 +10,7 @@ from app.decorators.db_health_check import db_health_check
 Namespace.db_health_check = db_health_check
 
 from app.resources.authentification import ns as authentification_ns
+from app.resources.lobby import ns as lobby_ns
 from app.resources.user import ns as user_ns
 from app.resources.test import ns as test_ns
 
@@ -28,4 +29,5 @@ api = Api(title="TranscendenceAPI",
 
 api.add_namespace(authentification_ns, path="/auth")
 api.add_namespace(user_ns, path="/user")
+api.add_namespace(lobby_ns, path="/lobby")
 api.add_namespace(test_ns, path="/test")

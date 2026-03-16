@@ -8,7 +8,7 @@ COPY app/package.json app/package-lock.json ./
 
 RUN npm install
 
-EXPOSE 3000
+EXPOSE 3010
 
-CMD ["npm", "run", "start:dev"]
+# CMD ["npm", "run", "start:dev"]
 
