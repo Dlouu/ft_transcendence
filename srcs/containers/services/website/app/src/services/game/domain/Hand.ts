@@ -30,6 +30,11 @@ const CARD_CODE_SORT_ORDER: Record<CardCode, number> = {
 };
 
 export class Hand extends Container {
+	private static readonly HOVER_JUMP_PERCENT =
+		GAME_CUSTOMIZATION.hand.hoverJumpPercent;
+	private static readonly HOVER_SPREAD_PERCENT =
+		GAME_CUSTOMIZATION.hand.hoverSpreadPercent;
+
 	private _cards: UnoCard[] = [];
 	private _hoveredCard: UnoCard | null = null;
 	private _underlay: Graphics;
@@ -42,11 +47,6 @@ export class Hand extends Container {
 	private _cardRatio: number; // Card width-to-height ratio used to derive card width from its height (e.g. 0.66 ≈ standard card aspect)
 	private _isInteractive: boolean;
 	private _reverseCards: boolean;
-
-	// Responsiveness
-	private _hoverJumpPercent: number = GAME_CUSTOMIZATION.hand.hoverJumpPercent;
-	private _hoverSpreadPercent: number =
-		GAME_CUSTOMIZATION.hand.hoverSpreadPercent;
 
 	// Dimensions
 	private _canvasWidth: number = 0;
@@ -270,7 +270,7 @@ export class Hand extends Container {
 		if (count === 0) return;
 
 		// --- 3. Spacing Logic ---
-		const hoverSpread = cardWidth * this._hoverSpreadPercent;
+		const hoverSpread = cardWidth * Hand.HOVER_SPREAD_PERCENT;
 		const hoveredIndex = this._hoveredCard
 			? this._cards.indexOf(this._hoveredCard)
 			: -1;
@@ -299,7 +299,7 @@ export class Hand extends Container {
 		}
 
 		let currentX = -actualSpan / 2;
-		const jumpOffset = -(cardHeight * this._hoverJumpPercent);
+		const jumpOffset = -(cardHeight * Hand.HOVER_JUMP_PERCENT);
 
 		for (let i = 0; i < count; i++) {
 			const card = this._cards[i];

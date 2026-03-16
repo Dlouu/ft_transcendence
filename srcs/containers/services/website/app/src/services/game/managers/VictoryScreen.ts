@@ -11,30 +11,29 @@ export class VictoryScreen extends Container {
 		GAME_CUSTOMIZATION.victory.labels.defaultButton;
 	private static readonly HOME_PATH =
 		GAME_CUSTOMIZATION.victory.labels.homePath;
-
-	private _panelWidthRatio: number =
+	private static readonly PANEL_WIDTH_RATIO =
 		GAME_CUSTOMIZATION.victory.ratios.panelWidth;
-	private _panelAspectRatio: number =
+	private static readonly PANEL_ASPECT_RATIO =
 		GAME_CUSTOMIZATION.victory.ratios.panelAspect;
-	private _panelCornerRadiusRatio: number =
+	private static readonly PANEL_CORNER_RADIUS_RATIO =
 		GAME_CUSTOMIZATION.victory.ratios.panelCornerRadius;
-
-	private _titleTopRatio: number = GAME_CUSTOMIZATION.victory.ratios.titleTop;
-	private _statsTopRatio: number = GAME_CUSTOMIZATION.victory.ratios.statsTop;
-	private _buttonBottomRatio: number =
+	private static readonly TITLE_TOP_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.titleTop;
+	private static readonly STATS_TOP_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.statsTop;
+	private static readonly BUTTON_BOTTOM_RATIO =
 		GAME_CUSTOMIZATION.victory.ratios.buttonBottom;
-
-	private _titleFontRatio: number = GAME_CUSTOMIZATION.victory.ratios.titleFont;
-
-	private _statsFontRatio: number = GAME_CUSTOMIZATION.victory.ratios.statsFont;
-
-	private _buttonWidthRatio: number =
+	private static readonly TITLE_FONT_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.titleFont;
+	private static readonly STATS_FONT_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.statsFont;
+	private static readonly BUTTON_WIDTH_RATIO =
 		GAME_CUSTOMIZATION.victory.ratios.buttonWidth;
-	private _buttonHeightRatio: number =
+	private static readonly BUTTON_HEIGHT_RATIO =
 		GAME_CUSTOMIZATION.victory.ratios.buttonHeight;
-	private _buttonCornerRadiusRatio: number =
+	private static readonly BUTTON_CORNER_RADIUS_RATIO =
 		GAME_CUSTOMIZATION.victory.ratios.buttonCornerRadius;
-	private _buttonLabelFontRatio: number =
+	private static readonly BUTTON_LABEL_FONT_RATIO =
 		GAME_CUSTOMIZATION.victory.ratios.buttonLabelFont;
 
 	private _overlay: Graphics;
@@ -138,8 +137,8 @@ export class VictoryScreen extends Container {
 	}
 
 	public resize(width: number, height: number): void {
-		const panelWidth = width * this._panelWidthRatio;
-		const panelHeight = panelWidth / this._panelAspectRatio;
+		const panelWidth = width * VictoryScreen.PANEL_WIDTH_RATIO;
+		const panelHeight = panelWidth / VictoryScreen.PANEL_ASPECT_RATIO;
 		const panelMinDimension = Math.min(panelWidth, panelHeight);
 		const panelLeft = (width - panelWidth) / 2;
 		const panelTop = (height - panelHeight) / 2;
@@ -157,7 +156,7 @@ export class VictoryScreen extends Container {
 				panelTop,
 				panelWidth,
 				panelHeight,
-				panelMinDimension * this._panelCornerRadiusRatio,
+				panelMinDimension * VictoryScreen.PANEL_CORNER_RADIUS_RATIO,
 			)
 			.fill({
 				color: GAME_CUSTOMIZATION.victory.colors.panel,
@@ -169,24 +168,25 @@ export class VictoryScreen extends Container {
 				alpha: GAME_CUSTOMIZATION.victory.alphas.panelStroke,
 			});
 
-		this._title.style.fontSize = panelWidth * this._titleFontRatio;
+		this._title.style.fontSize = panelWidth * VictoryScreen.TITLE_FONT_RATIO;
 		this._title.position.set(
 			width / 2,
-			panelTop + panelHeight * this._titleTopRatio,
+			panelTop + panelHeight * VictoryScreen.TITLE_TOP_RATIO,
 		);
 
-		this._gameStatsLabel.style.fontSize = panelWidth * this._statsFontRatio;
+		this._gameStatsLabel.style.fontSize =
+			panelWidth * VictoryScreen.STATS_FONT_RATIO;
 		this._gameStatsLabel.position.set(
 			width / 2,
-			panelTop + panelHeight * this._statsTopRatio,
+			panelTop + panelHeight * VictoryScreen.STATS_TOP_RATIO,
 		);
 
-		const buttonWidth = panelWidth * this._buttonWidthRatio;
-		const buttonHeight = panelHeight * this._buttonHeightRatio;
+		const buttonWidth = panelWidth * VictoryScreen.BUTTON_WIDTH_RATIO;
+		const buttonHeight = panelHeight * VictoryScreen.BUTTON_HEIGHT_RATIO;
 		this.drawButton(buttonWidth, buttonHeight);
 		this._button.position.set(
 			width / 2,
-			panelTop + panelHeight - panelHeight * this._buttonBottomRatio,
+			panelTop + panelHeight - panelHeight * VictoryScreen.BUTTON_BOTTOM_RATIO,
 		);
 	}
 
@@ -198,7 +198,7 @@ export class VictoryScreen extends Container {
 				-height / 2,
 				width,
 				height,
-				Math.min(width, height) * this._buttonCornerRadiusRatio,
+				Math.min(width, height) * VictoryScreen.BUTTON_CORNER_RADIUS_RATIO,
 			)
 			.fill({ color: GAME_CUSTOMIZATION.victory.colors.buttonFill, alpha: 1 })
 			.stroke({
@@ -208,7 +208,7 @@ export class VictoryScreen extends Container {
 			});
 
 		this._buttonLabel.style.fontSize =
-			Math.min(width, height) * this._buttonLabelFontRatio;
+			Math.min(width, height) * VictoryScreen.BUTTON_LABEL_FONT_RATIO;
 		this._buttonLabel.position.set(0, 0);
 	}
 

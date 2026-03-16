@@ -8,7 +8,7 @@ export class CardPool {
 	private _rootContainer: Container;
 
 	// Standard Uno deck is 108, maybe add buffer just in case
-	private readonly POOL_SIZE = GAME_CUSTOMIZATION.cardPool.initialSize;
+	private static readonly POOL_SIZE = GAME_CUSTOMIZATION.cardPool.initialSize;
 
 	constructor(rootContainer: Container) {
 		this._rootContainer = rootContainer;
@@ -16,7 +16,7 @@ export class CardPool {
 	}
 
 	private initializePool(): void {
-		for (let i = 0; i < this.POOL_SIZE; i++) {
+		for (let i = 0; i < CardPool.POOL_SIZE; i++) {
 			const card = new UnoCard();
 			// We add them to the stage immediately but they are invisible
 			this._rootContainer.addChild(card);

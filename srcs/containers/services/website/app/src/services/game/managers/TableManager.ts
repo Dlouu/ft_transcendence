@@ -17,18 +17,20 @@ import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
 import { UnoButton } from "./UnoButton";
 
 export class TableManager extends Container {
+	private static readonly MIDDLE_ARROW_Y_RATIO =
+		GAME_CUSTOMIZATION.table.middleArrowYRatio;
+	private static readonly MIDDLE_ARROW_SIZE_RATIO =
+		GAME_CUSTOMIZATION.table.middleArrowSizeRatio;
+	private static readonly UNO_BUTTON_Y_RATIO =
+		GAME_CUSTOMIZATION.table.unoButtonYRatio;
+	private static readonly UNO_BUTTON_WIDTH_RATIO =
+		GAME_CUSTOMIZATION.table.unoButtonWidthRatio;
+
 	private _playerIndex: number = -1;
 	private _middleArrow: Sprite;
 	private _unoButton: UnoButton;
 	private _tableWidth: number = 0;
 	private _tableHeight: number = 0;
-	private _middleArrowYRatio: number =
-		GAME_CUSTOMIZATION.table.middleArrowYRatio;
-	private _middleArrowSizeRatio: number =
-		GAME_CUSTOMIZATION.table.middleArrowSizeRatio;
-	private _unoButtonYRatio: number = GAME_CUSTOMIZATION.table.unoButtonYRatio;
-	private _unoButtonWidthRatio: number =
-		GAME_CUSTOMIZATION.table.unoButtonWidthRatio;
 	private _isMiddleArrowMirrored: boolean = false;
 
 	private _tableCenterArea: TableCenterArea;
@@ -282,8 +284,8 @@ export class TableManager extends Container {
 		this._unoButton.resize(
 			width,
 			height,
-			this._unoButtonYRatio,
-			this._unoButtonWidthRatio,
+			TableManager.UNO_BUTTON_Y_RATIO,
+			TableManager.UNO_BUTTON_WIDTH_RATIO,
 		);
 
 		if (this._cardFamilySelector) {
@@ -298,9 +300,9 @@ export class TableManager extends Container {
 			this._middleArrow.texture = this._assetsManager.arrowTexture;
 		}
 
-		const size = Math.min(width, height) * this._middleArrowSizeRatio;
+		const size = Math.min(width, height) * TableManager.MIDDLE_ARROW_SIZE_RATIO;
 
-		this._middleArrow.position.set(width / 2, height * this._middleArrowYRatio);
+		this._middleArrow.position.set(width / 2, height * TableManager.MIDDLE_ARROW_Y_RATIO);
 		this._middleArrow.width = size;
 		this._middleArrow.height = size;
 		this._middleArrow.scale.x =
