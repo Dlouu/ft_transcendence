@@ -1,35 +1,24 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../ui";
-import DeckSelector from "./DeckSelector";
+import ThemeSelector from "./ThemeSelector";
 import PlayerList from "./PlayerList";
+import { useContext } from "react";
+import { LobbyContext } from "../../context/LobbyContext";
 
-function Room({ room, players, setPlayers, deck, setDeck, isHost, onBack }) {
+function Room({ onBack }) {
 	const navigate = useNavigate();
-	
+
+	const { players, bots, code, isHost, addBot, removeBot, masterStart, playerReady } = useContext(LobbyContext);
 	const MAX_PLAYERS = 4;
-	
 	const totalPlayers = players.length;
-	const botCount = players.filter(p => p.type === "bot").length;
-	
+	const canStart = totalPlayers >= 2;
+	const canRemoveBot = bots > 0;
 	const canAddBot = totalPlayers < MAX_PLAYERS;
-	const canRemoveBot = botCount > 0;
-	const canStart = players.length >= 2;
-
-	const addBot = () => {
-		setPlayers([...players, { name: "Bot", type: "bot" }]);
-	};
-
-	const removeBot = () => {
-		const index = players.map(p => p.type).lastIndexOf("bot");
-		if (index === -1) return;
-
-		setPlayers(players.filter((_, i) => i !== index));
-	};
 
 	return (
 		<div className="flex flex-col gap-4">
 			<h2 className="text-2xl font-pixelm text-center font-bold">
-				ROOM {room.code}
+				ROOM {code}
 			</h2>
 
 			<PlayerList players={players} />
@@ -52,16 +41,16 @@ function Room({ room, players, setPlayers, deck, setDeck, isHost, onBack }) {
 						</Button>
 					</div>
 
-					<DeckSelector deck={deck} setDeck={setDeck} />
+					<ThemeSelector />
 				
-					<Button disabled={!canStart} onClick={() => navigate("/game")}>
+					<Button disabled={!canStart} onClick={masterStart}>
 						START
 					</Button>
 				</>
 			)}
 
 			{!isHost && (
-				<Button onClick={() => navigate("/game")}>
+				<Button onClick={playerReady}>
 					READY
 				</Button>
 			)}

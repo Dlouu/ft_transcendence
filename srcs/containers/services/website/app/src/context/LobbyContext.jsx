@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 export const LobbyContext = createContext();
 
 export function LobbyProvider({ children }) {
-	const [roomCode, setRoomCode] = useState("");
+	const [code, setCode] = useState("");
 	const [master, setMaster] = useState("");
 	const [players, setPlayers] = useState([]);
 	const [bots, setBots] = useState(0);
@@ -15,9 +15,18 @@ export function LobbyProvider({ children }) {
 	const { notify } = useNotifications();
 	const navigate = useNavigate();
 	const socketRef = useRef(null);
+	const isHost = master === socketRef.current?.id;
 
 	useEffect(() => {
+		//test a delete quand les sockets fonctionneront
+		console.log("🔌 Tentative de connexion socket...");
 		socketRef.current = io("/lobby");
+		socketRef.current.on("connect", () => {
+			console.log("✅ Socket connecté ! ID:", socketRef.current.id);
+		});
+		socketRef.current.on("connect_error", (err) => {
+			console.log("❌ Erreur connexion:", err.message);
+		});
 
 		socketRef.current.on("lobby_state", (data) => {
 
@@ -29,7 +38,7 @@ export function LobbyProvider({ children }) {
 			}));
 			setMaster(data.supreme_master_sid);
 			setPlayers(playersList);
-			setRoomCode(data.code);
+			setCode(data.code);
 			setBots(data.bots_count ?? 0);
 			setPrivacy(data.privacy);
 			setUwUTheme(data.theme);
@@ -56,6 +65,7 @@ export function LobbyProvider({ children }) {
 	function createLobby() {
 		socketRef.current.emit("create_lobby", {}, (response) => {
 			if (response && response.ok) {
+				socketRef.current.emit("join_lobby_socket", { code: response.code });
 				navigate(`/lobby/${response.code}`);
 				return;
 			}
@@ -66,7 +76,7 @@ export function LobbyProvider({ children }) {
 	function joinLobby(code) {
 		socketRef.current.emit("join_lobby_request", { code }, (response) => {
 			if (response && response.ok) {
-				socketRef.current.emit("join_lobby_socket", { code: code });
+				socketRef.current.emit("join_lobby_socket", { code: response.code });
 				navigate(`/lobby/${response.code}`);
 				return;
 			}
@@ -91,7 +101,7 @@ export function LobbyProvider({ children }) {
 	}
 
 	function setTheme(theme) {
-		socketRef.current.emit("set_theme", { theme: theme === "theme-uwu" });
+		socketRef.current.emit("set_theme", { theme });
 	}
 
 	function setRoomPrivacy(privacy) {
@@ -99,7 +109,13 @@ export function LobbyProvider({ children }) {
 	}
 
 	return (
-		<LobbyContext.Provider value={{ 
+		<LobbyContext.Provider value={{
+			players,
+			bots,
+			privacy,
+			code,
+			isHost,
+			theme: UwUtheme,
 			createLobby,
 			joinLobby,
 			setTheme,
@@ -113,3 +129,13 @@ export function LobbyProvider({ children }) {
 		</LobbyContext.Provider>
 	);
 }
+
+
+// tu cliques CREATE 
+// → emit("create_lobby") 
+// → serveur crée la room et te donne un code
+// → tu navigues vers /lobby/:code
+// → tu emit("join_lobby_socket", { code })
+// → serveur t'ajoute à la room
+// → serveur emit("lobby_state") avec toi dedans
+// → tes états se mettent à jour
