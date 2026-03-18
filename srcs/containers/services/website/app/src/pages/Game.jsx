@@ -22,7 +22,7 @@ function Game() {
         console.log("Game mounted for", playerName);
 
         return () => gameService.destroy();
-    }, []);
+    });
 
     const enterFullscreen = () =>
     {

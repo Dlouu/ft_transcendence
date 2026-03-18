@@ -1,49 +1,35 @@
-import { useState } from "react";
+import { useContext, useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Lobby from "./Lobby";
 import Room from "./Room";
+import { LobbyContext } from "../../context/LobbyContext";
 
 function GameSetup() {
-	const [mode, setMode] = useState("lobby"); // lobby | create | join
-	const [room, setRoom] = useState(null);
-	const [players, setPlayers] = useState([]);
-	const [deck, setDeck] = useState("basic");
-	const [isHost, setIsHost] = useState(false);
+	const { id } = useParams();
+	const [mode, setMode] = useState(id ? "room" : "lobby");
+	const { createLobby, joinLobby } = useContext(LobbyContext);
+    const { code } = useContext(LobbyContext);
+    const navigate = useNavigate();
 
-	const createRoom = (code) => {
-		setIsHost(true);
-		setRoom({ code });
-		setPlayers([{ name: "You", type: "human" }]);
+	const createRoom = () => {
+		createLobby();
 		setMode("room");
 	};
 
-	const joinRoom = (code) => {
-		setIsHost(false);
-		setRoom({ code });
-		setPlayers([
-			{ name: "Host", type: "human" },
-			{ name: "You", type: "human" },
-			{ name: "Bot1", type: "bot" },
-			{ name: "Bot2", type: "bot" },
-		]);
-		setMode("room");
-	};
+	useEffect(() => {
+		if (!code && !id) {
+			navigate("/");
+		}
+	}, [code, id, navigate]);
 
 	return (
 		<>
 			{mode === "lobby" && (
-				<Lobby onCreate={createRoom} onJoin={joinRoom} />
+				<Lobby onCreate={createRoom} onJoin={joinLobby} />
 			)}
 
 			{mode === "room" && (
-				<Room
-					room={room}
-					players={players}
-					setPlayers={setPlayers}
-					deck={deck}
-					setDeck={setDeck}
-					isHost={isHost}
-					onBack={() => setMode("lobby")}
-				/>
+				<Room onBack={() => setMode("lobby")} />
 			)}
 		</>
 	);

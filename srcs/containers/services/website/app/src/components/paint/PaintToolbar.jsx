@@ -3,7 +3,6 @@ import BrushSelector from './BrushSelector';
 import ColorPalette from './ColorPalette';
 import Save from './Save';
 import UndoRedo from './UndoRedo';
-import { WIDTH } from './constants';
 
 function PaintToolbar({
 	tool,
@@ -19,7 +18,7 @@ function PaintToolbar({
 
 	return (
 		<>
-			<div className="grid sm:flex sm:flex-col gap-2 justify-center sm:px-1 mt-2">
+			<div className="grid sm:flex sm:flex-col gap-2 justify-center sm:px-1 ">
 				<div className="flex flex-row sm:flex-col justify-center gap-1">
 					<ToolSelector tool={tool} setTool={setTool} canvasRef={canvasRef} />
 					<UndoRedo onUndo={undo} onRedo={redo} />
@@ -35,8 +34,8 @@ function PaintToolbar({
 				</div>
 			</div>
 
-			<div className="grid sm:w-[100px]">
-				<div className="flex flex-row sm:flex-col justify-center gap-1 py-2">
+			<div className="grid sm:w-12.5">
+				<div className="flex flex-row sm:flex-col justify-center gap-1">
 					<ColorPalette color={color} setColor={setColor} tool={tool} setTool={setTool} />
 				</div>
 			</div>

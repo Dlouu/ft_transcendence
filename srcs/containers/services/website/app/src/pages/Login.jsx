@@ -3,7 +3,7 @@ import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import { Button, Page, Input, Card } from "../ui";
-import { useNotifications } from "../context/AlertContext";
+import { useNotifications } from "../hooks/useNotifications";
 
 function Login() {
 	const { login } = useContext(AuthContext);

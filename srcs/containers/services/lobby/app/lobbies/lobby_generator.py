@@ -26,7 +26,7 @@ def generate_room_code_first_edition():
 
 def generate_code():
     for _ in range(MAX_RANDOM_ATTEMPTS):
-        if len(lobbies) < 1015:
+        if len(lobbies) + 1 < 1015:
             room_name = generate_room_code_first_edition()
         else:
             room_name = generate_room_code_second_edition()
@@ -37,7 +37,7 @@ def generate_code():
 
 
 def create_lobby_or_error(supreme_master_user_id=None):
-    if len(lobbies) > MAX_LOBBIES:
+    if len(lobbies) + 1 > MAX_LOBBIES:
         return None, ("No more rooms available", 603)
 
     room_name, error = generate_code()

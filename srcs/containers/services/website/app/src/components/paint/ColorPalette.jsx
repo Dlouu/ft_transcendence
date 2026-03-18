@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Tooltip } from '../../ui';
 import { COLORS } from './constants';
-import { selectColor } from "./drawingUtils";
-import ToolSelector from "./ToolSelector";
 
 function ColorPalette({ color, setColor, tool, setTool }) {
 
@@ -27,17 +25,15 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 			let index = -1;
 
 			
-			if (key >= 1 && key <= 3) {
+			if (key >= 1 && key <= 9) {
 				index = key - 1; // Keys 1-3 → colors 0-2
-			} else if (key >= 4 && key <= 9) {
-				index = COLORS.length + (key - 4); // Keys 4-9 → custom colors 0-5
 			}
 
 			if (index >= 0 && index < palette.length) {
 				setColor(palette[index]);
 			}
 		},
-		[palette, setColor]
+		[palette, setColor, setTool]
 	);
 
 	useEffect(() => {
@@ -49,19 +45,18 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 	}, [handleKey]);
 
 	const baseColors = palette.slice(0, COLORS.length);
-	const customColors = palette.slice(COLORS.length);
 
 	return (
 		<div className="flex sm:flex-col gap-2">
 
-			<div className="flex sm:flex-col gap-1 items-center">
+			<div className="flex sm:flex-col sm:gap-1 mt-2 sm:mt-0 gap-0 items-center">
 	
 			{/* Active color */}
 				<input
 					type="color"
 					value={color}
 					onChange={(e) => setColor(e.target.value)}
-					className="sm:w-9 sm:h-9 w-7 h-7 border rounded border-purple-300 hover:opacity-80 transition cursor-pointer"
+					className="sm:w-9 sm:h-9 w-5 h-9 border sm:rounded border-purple-300 hover:opacity-80 transition cursor-pointer"
 					title="Custom color"
 				/>
 
@@ -85,7 +80,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 								onClick={() => setColor(c)}
 								onDoubleClick={() => colorInputRefs.current[`base-${index}`]?.click()}
 								style={{ backgroundColor: c }}
-								className="sm:w-9 sm:h-9 w-7 h-7  border rounded border-gray-400 hover:opacity-80 transition"
+								className="sm:w-9 sm:h-9 w-5 h-9  border sm:rounded border-gray-400 hover:opacity-80 transition"
 								title="Click to select, double-click to edit"
 							/>
 						</Tooltip>
@@ -103,55 +98,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 						/>
 					</div>
 				))}
-
-			{/* Add button */}
-				{/* {/* <Tooltip message="add color, switch with [1]~[9]">
-					<Button
-						variant={customColors.length > 5 ? "iconDisabled" : "icon"}
-						onClick={() => setPalette([...palette, color])}
-						className="w-9 h-9 border rounded text-xs"
-						title="Add color"
-						disabled={customColors.length > 5}
-					>
-						+
-					</Button>
-				</Tooltip> */}
 			</div>
-
-		{/* Custom added colors */}
-			{/* {customColors.length > 0 && (
-				<div className="flex gap-1 sm:flex-col items-center">
-					{customColors.map((c, index) => {
-						const globalIndex = baseColors.length + index;
-						return (
-							<div key={`custom-${index}`} className="relative group">
-								<Tooltip message="double click to edit">
-									<button
-										onClick={() => setColor(c)}
-										onDoubleClick={() => colorInputRefs.current[`custom-${index}`]?.click()}
-										onChange={(e) => updateColor(index, e.target.value)}
-										style={{ backgroundColor: c }}
-										className="w-9 h-9 border rounded border-gray-400 hover:opacity-80 transition"
-										title="Click to select, double-click to edit"
-									/>
-								</Tooltip>
-								<input
-									ref={(el) => colorInputRefs.current[`custom-${index}`] = el}
-									type="color"
-									value={c}
-									onChange={(e) => {
-										const newColor = e.target.value
-										updateColor(globalIndex, newColor);
-										setColor(newColor);
-									}}
-									className="hidden"
-									title="Edit color"
-								/>
-							</div>
-						);
-					})}
-				</div>
-			)} */}
 		</div>
 	);
 }

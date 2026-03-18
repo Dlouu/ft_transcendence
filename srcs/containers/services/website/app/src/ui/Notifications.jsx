@@ -1,11 +1,11 @@
-import { useNotifications } from "../context/AlertContext";
+import { useNotifications } from "../hooks/useNotifications";
 
 function Notifications() {
-	const { notifications } = useNotifications();
+	const { alert } = useNotifications();
 
 	return (
 		<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2">
-			{notifications.map((n) => (
+			{alert.map((n) => (
 				<div
 					key={n.id}
 					className={`

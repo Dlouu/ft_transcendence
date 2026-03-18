@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button, Input, EditableField } from "../../ui";
-import { useNotifications } from "../../context/AlertContext";
+import { Button, Input } from "../../ui";
+import { useNotifications } from "../../hooks/useNotifications";
 import { useUser } from "../../hooks/useUser";
 
 function PasswordSection() {

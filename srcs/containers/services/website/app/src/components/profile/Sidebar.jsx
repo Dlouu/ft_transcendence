@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Input, EditableField } from "../../ui";
+import { Button, Input } from "../../ui";
 
 function Sidebar({ profile }) {
 	const [friendName, setFriendName] = useState("");

@@ -1,25 +1,45 @@
-import { useContext } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
-import { deleteImage, getImageById } from "../services/galleryService";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { getDefaultImage } from "../services/gallery/galleryService";
 import { Button, Page, Card } from "../ui";
+import { useUser } from "../hooks/useUser";
 
 function GalleryImage() {
 	const { id } = useParams();
 	const navigate = useNavigate();
-	const { user } = useContext(AuthContext);
-
-	const image = getImageById(id);
+	const { uploadCardBack, removeCard, loading } = useUser();
+	const location = useLocation();
+	const imageFromState = location.state;
+	
+	const image = imageFromState || getDefaultImage(id);
+	const isUserImage = image?.type === "user";
 
 	if (!image) {
 		return (
-			<p>
-				Image not found
-			</p>
+			<p>Image not found</p>
 		);
 	}
 
-	const canDelete = user?.name === image.author;
+	const handleDelete = async () => {
+		try {
+			await removeCard(id);
+			navigate("/gallery");
+		} catch (error) {
+			console.error("Failed to delete: ", error);
+		}
+	}
+
+	const handleDuplicate = async () => {
+		try {
+			const response = await fetch(image.src);
+			const blob = await response.blob();
+			const file = new File([blob], `card-back-${id}.png`, { type: blob.type });
+
+			await uploadCardBack(file);
+			navigate("/gallery");
+		} catch (error) {
+			console.error("Failed to duplicate", error);
+		}
+	}
 
 	return (
 		<Page center>
@@ -32,43 +52,39 @@ function GalleryImage() {
 							className="w-full max-h-[90vh] object-contain"
 							alt={id}
 						/>
-
-
 					</div>
 
 					<div className="flex flex-col gap-1">
 						<p className="text-gray-400">
-							Author: {image.author}
 						</p>
-						<Button>
-							EDIT
-						</Button>
 
-						<Button>
+						{isUserImage && (
+							<Button
+								onClick={() => navigate("/paint", {
+									state: {src: image.src, id: image.id, type: image.type}
+								})}
+							>
+								EDIT
+							</Button>
+						)}
+
+						<Button onClick={handleDuplicate} disabled={loading}>
 							DUPLICATE
 						</Button>
-
-						{/* {canDelete && ( */}
-							<Button
-								onClick={() => {
-									deleteImage(id);
-									navigate("/gallery");
-								}}
-							>
-								DELETE
-							</Button>
-						{/* )} */}
-
-
 
 						<Button>
 							SELECT AS BACK
 						</Button>
 
+						{isUserImage && (
+							<Button onClick={handleDelete}>
+								DELETE
+							</Button>
+						)}
+
 						<Button onClick={() => navigate(-1)}>
 							BACK
 						</Button>
-
 
 					</div>
 				</div>

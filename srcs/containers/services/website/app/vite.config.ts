@@ -11,7 +11,7 @@ export default defineConfig({
         target: "http://service_api:5050",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
-      }
+      },
     }
   }
 })

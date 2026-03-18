@@ -1,30 +1,9 @@
 import { useRef, useEffect } from 'react';
-import { WIDTH, HEIGHT } from './constants';
+import { WIDTH, HEIGHT } from '../components/paint/constants';
 
 export function useUndoRedo(ctxRef) {
 	const undoStack = useRef([]);
 	const redoStack = useRef([]);
-
-	function handleKey(e) {
-		if (e.key === "z" && e.ctrlKey && e.repeat === false)
-			undo();
-		else if (e.key === "y" && e.ctrlKey && e.repeat === false)
-			redo();
-	}
-
-	useEffect(() => {
-		document.addEventListener("keydown", handleKey);
-
-		return () => {document.removeEventListener("keydown", handleKey)}
-	}, []);
-
-	const saveSnapshot = () => {
-		if (!ctxRef.current) return;
-		
-		const imageData = ctxRef.current.getImageData(0, 0, WIDTH, HEIGHT);
-		undoStack.current.push(imageData);
-		redoStack.current = [];
-	};
 
 	const undo = () => {
 		if (undoStack.current.length === 0 || !ctxRef.current) return;
@@ -46,6 +25,27 @@ export function useUndoRedo(ctxRef) {
 		
 		const next = redoStack.current.pop();
 		ctxRef.current.putImageData(next, 0, 0);
+	};
+
+	function handleKey(e) {
+		if (e.key === "z" && e.ctrlKey && e.repeat === false)
+			undo();
+		else if (e.key === "y" && e.ctrlKey && e.repeat === false)
+			redo();
+	}
+
+	useEffect(() => {
+		document.addEventListener("keydown", handleKey);
+
+		return () => {document.removeEventListener("keydown", handleKey)}
+	});
+
+	const saveSnapshot = () => {
+		if (!ctxRef.current) return;
+		
+		const imageData = ctxRef.current.getImageData(0, 0, WIDTH, HEIGHT);
+		undoStack.current.push(imageData);
+		redoStack.current = [];
 	};
 
 	return { saveSnapshot, undo, redo };

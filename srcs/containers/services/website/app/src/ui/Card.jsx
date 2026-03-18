@@ -1,15 +1,16 @@
-function Card({ children, center = false, big = false, paint = false }) {
+function Card({ children, center = false, big = false, plain = false }) {
 	return (
 		<div
 			className={`
-				bg-gray-700/70
 				rounded 
 				shadow-md
 				w-full
-				m-auto 
+				m-auto
+				p-6
+				${plain ? "bg-gray-700/90 max-h-[80vh] overflow-y-auto relative text-left" : ""}
 				${center ? "flex flex-col justify-center items-center" : ""}
-				${paint ? "sm:max-w-xl-[1px] max-none p-2" : "p-6"}
 				${big ? "max-w-2xl" : "max-w-md"}
+				bg-gray-700/70
 			`}
 		>
 			{children}

@@ -1,38 +1,25 @@
-import { useNavigate } from "react-router-dom";
 import { Button } from "../../ui";
-import DeckSelector from "./DeckSelector";
+import SettingsSelector from "./SettingsSelector";
 import PlayerList from "./PlayerList";
+import { useContext } from "react";
+import { LobbyContext } from "../../context/LobbyContext";
 
-function Room({ room, players, setPlayers, deck, setDeck, isHost, onBack }) {
-	const navigate = useNavigate();
-	
+function Room() {
+	const { players, bots, code, isHost, addBot, removeBot, masterStart, playerReady, leaveLobby } = useContext(LobbyContext);
 	const MAX_PLAYERS = 4;
-	
-	const totalPlayers = players.length;
-	const botCount = players.filter(p => p.type === "bot").length;
-	
+	const totalPlayers = players.length + bots.length;
+	const canStart = totalPlayers >= 2;
+	const canRemoveBot = bots.length > 0;
 	const canAddBot = totalPlayers < MAX_PLAYERS;
-	const canRemoveBot = botCount > 0;
-	const canStart = players.length >= 2;
 
-	const addBot = () => {
-		setPlayers([...players, { name: "Bot", type: "bot" }]);
-	};
-
-	const removeBot = () => {
-		const index = players.map(p => p.type).lastIndexOf("bot");
-		if (index === -1) return;
-
-		setPlayers(players.filter((_, i) => i !== index));
-	};
 
 	return (
 		<div className="flex flex-col gap-4">
 			<h2 className="text-2xl font-pixelm text-center font-bold">
-				ROOM {room.code}
+				ROOM {code}
 			</h2>
 
-			<PlayerList players={players} />
+			<PlayerList players={players} bots={bots} />
 
 			{isHost && (
 				<>
@@ -52,21 +39,24 @@ function Room({ room, players, setPlayers, deck, setDeck, isHost, onBack }) {
 						</Button>
 					</div>
 
-					<DeckSelector deck={deck} setDeck={setDeck} />
+					<SettingsSelector />
 				
-					<Button disabled={!canStart} onClick={() => navigate("/game")}>
+					<Button disabled={!canStart} onClick={() => {
+						playerReady();
+						masterStart();
+					}}>
 						START
 					</Button>
 				</>
 			)}
 
 			{!isHost && (
-				<Button onClick={() => navigate("/game")}>
+				<Button onClick={playerReady}>
 					READY
 				</Button>
 			)}
 
-				<Button variant="secondary" onClick={onBack}>
+				<Button variant="secondary" onClick={leaveLobby}>
 					BACK
 				</Button>
 		</div>

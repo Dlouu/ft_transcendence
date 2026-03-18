@@ -1,12 +1,10 @@
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { EditableField } from "../../ui";
-import { useNotifications } from "../../context/AlertContext";
+import { useNotifications } from "../../hooks/useNotifications";
 import { useUser } from "../../hooks/useUser";
 
 function InfoSection({ user }) {
 	const [editingField, setEditingField] = useState(null);
-	const [username, setUsername] = useState("");
-	const [email, setEmail] = useState("");
 	const { notify } = useNotifications();
 	const { updateUser } = useUser();
 

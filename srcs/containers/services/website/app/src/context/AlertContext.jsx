@@ -1,6 +1,6 @@
-import { createContext, useState, useCallback, useContext } from "react";
+import { createContext, useState, useCallback } from "react";
 
-const AlertContext = createContext();
+export const AlertContext = createContext();
 
 export function AlertProvider({ children }) {
 	const [alert, setAlert] = useState([]);
@@ -25,14 +25,9 @@ export function AlertProvider({ children }) {
 			value={{
 				notify,
 				alert,
-				notifications: alert
 			}}
 		>
 			{children}
 		</AlertContext.Provider>
 	);
-}
-
-export function useNotifications() {
-	return useContext(AlertContext);
 }

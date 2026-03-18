@@ -1,11 +1,15 @@
+import { useApi } from "../../hooks/useApi";
 import { useEffect } from "react";
 import { Button, Tooltip } from "../../ui";
 import { prepareCardBack } from "./drawingUtils";
+import { useNavigate } from "react-router-dom";
 import { WIDTH, HEIGHT } from "./constants";
-import { useNotifications } from "../../context/AlertContext";
+import { useNotifications } from "../../hooks/useNotifications";
 
 function Save({ canvasRef }) {
+	const { post } = useApi();
 	const { notify } = useNotifications();
+	const navigate = useNavigate();
 
 	async function saveInGallery() {
 		try {
@@ -15,29 +19,20 @@ function Save({ canvasRef }) {
 				return;
 			}
 
-			canvas.toBlob(async (file) => {
-				if (!file) {
+			canvas.toBlob(async (blob) => {
+				if (!blob) {
 					notify("Failed to generate image", "error");
 					return;
 				}
 
-				const uploadFile = new File([file], "UwUNO-drawing.png", {
+				const uploadFile = new File([blob], "UwUNO-drawing.png", {
 					type: "image/png",
 				});
 				const formData = new FormData();
 				formData.append("image", uploadFile);
 
-				const response = await fetch("/api/user/upload_card_image", {
-					method: "POST",
-					body: formData,
-					credentials: "include",
-				});
-
-				if (!response.ok) {
-					throw new Error(`API error: ${response.status}`);
-				}
-
-				notify("Image saved to gallery successfully", "success");
+				await post("/api/user/upload_card_image", uploadFile, "Image saved to gallery successfully");
+				navigate("/gallery");
 			}, "image/png");
 		} catch (error) {
 			console.error("Error saving to gallery:", error);
@@ -64,7 +59,7 @@ function Save({ canvasRef }) {
 		document.addEventListener("keydown", handleKey);
 
 		return () => {document.removeEventListener("keydown", handleKey)}
-	}, []);
+	});
 
 	function saveCardBack() {
 		const canvas = canvasRef.current;
@@ -99,20 +94,20 @@ function Save({ canvasRef }) {
 	return (
 		<>
 			<Tooltip message="Save in gallery CTRL+S">
-				<Button variant="icon" onClick={saveInGallery} title="Save">󰉉</Button>
+				<Button variant="icon2" onClick={saveInGallery} title="Save">󰉉</Button>
 			</Tooltip>
 
 			<Tooltip message="Download">
-				<Button variant="icon" onClick={savePNG} title="Download">
+				<Button variant="icon2" onClick={savePNG} title="Download">
 					󱑢
 				</Button>
 			</Tooltip>
 
-			{/* <Tooltip message="Set as card's back">
-				<Button variant="icon" onClick={saveCardBack} title="Set as card's back">
-					󱑢
+			<Tooltip message="Set as card's back">
+				<Button variant="icon2" onClick={saveCardBack} title="Set as card's back">
+					󰘹
 				</Button>
-			</Tooltip> */}
+			</Tooltip>
 		</>
 	);
 }

@@ -1,17 +1,39 @@
-import { useContext, useState, useEffect } from "react";
+import { useContext, useRef, useState} from "react";
 import { Button, Page, Card } from "../ui";
+import { useUser } from "../hooks/useUser";
 import { Link, useNavigate } from "react-router-dom";
-import { getGallery } from "../services/galleryService";
+import { getDefaultGallery } from "../services/gallery/galleryService";
 import { AuthContext } from "../context/AuthContext";
 import UserGallery from "../components/profile/UserGallery";
 
-function Gallery() {
-	const navigate = useNavigate();
-	const images = getGallery();
+function Gallery( onUpload ) {
 	const { user } = useContext(AuthContext);
-	const [cards, setCards] = useState([]);
-	const [loadingCards, setLoadingCards] = useState(true);
-	const userId = user?.userId;
+	const userId = user?.user_id;
+	const navigate = useNavigate();
+	const images = getDefaultGallery();
+	const fileInputRef = useRef(null);
+	const { uploadCardBack } = useUser();
+	const [refreshKey, setRefreshKey] = useState(0);
+
+	const refreshGallery = () => {
+		setRefreshKey((prev) => prev + 1);
+	};
+
+	const handleImport = () => {
+		fileInputRef.current.click();
+	};
+
+const handleFileChange = async (event) => {
+	const file = event.target.files?.[0];
+	if (!file) return;
+
+	try {
+		await uploadCardBack(file);
+		onUpload();
+	} catch (err) {
+		console.error("Import failed", err);
+	}
+};
 
 	return (
 		<Page center>
@@ -32,14 +54,14 @@ function Gallery() {
 					))}
 				</div>
 
-				<UserGallery userId={userId} />
+				<UserGallery userId={userId} onUpload={refreshGallery} key={refreshKey} />
 
-				<div className="flex flex-col sm:flex-row gap-4 justify-center">
+				<div className="flex flex-col sm:flex-row sm:gap-4 justify-center">
 					<Button variant="success" onClick={() => navigate("/paint")}>
 						CREATE
 					</Button>
 
-					<Button variant="success">
+					<Button variant="success" onClick={handleImport}>
 						IMPORT
 					</Button>
 
@@ -50,6 +72,13 @@ function Gallery() {
 					<Button variant="secondary" onClick={() => navigate(-1)}>
 						BACK
 					</Button>
+						<input
+							type="file"
+							accept="image/png,image/jpeg"
+							ref={fileInputRef}
+							onChange={handleFileChange}
+							className="hidden"
+						/>
 				</div>
 			</Card>
 		</Page>
