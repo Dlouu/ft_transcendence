@@ -91,7 +91,7 @@ export const toRejoinGameDto = (
 	dto.playerHand = toCardDtoArray(player._hand);
 	dto.opponents = game.players
 		.map((otherPlayer, index) => ({ otherPlayer, index }))
-		.filter(({ otherPlayer }) => otherPlayer._id !== player._id)
+		.filter(({ index }) => index !== localPlayerIndex)
 		.map(({ otherPlayer, index }) => {
 			const opponentDto = new RejoinOpponentHandSizeDto();
 			opponentDto.index = index;

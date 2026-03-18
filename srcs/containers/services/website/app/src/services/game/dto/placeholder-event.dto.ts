@@ -1,7 +1,6 @@
 import { IsString } from "class-validator";
 
-export interface IPlaceholderEvent
-{
+export interface IPlaceholderEvent {
 	message: string;
 }
 

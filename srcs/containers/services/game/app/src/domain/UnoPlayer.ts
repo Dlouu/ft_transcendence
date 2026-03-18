@@ -56,7 +56,7 @@ export class UnoPlayer {
 
 	constructor(
 		public _id: string,
-		public _name: string = generateNickname(), // To replace by uids
+		public _name: string = generateNickname(),
 		public _socket: Socket | null = null,
 		public _isBot: boolean = false,
 		public _cardBack: string = "uwu",

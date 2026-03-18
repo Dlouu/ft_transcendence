@@ -31,6 +31,22 @@ export function registerServerEventCallbacks({
 	startGame,
 	getTableManager,
 }: RegisterServerEventCallbacksOptions): void {
+	let pendingNextTurn: NextTurnDto | null = null;
+
+	const applyPendingNextTurn = (): void => {
+		if (!pendingNextTurn) {
+			return;
+		}
+
+		const tableManager = getTableManager();
+		if (!tableManager) {
+			return;
+		}
+
+		tableManager.setActivePlayer(pendingNextTurn.currentPlayerIndex);
+		pendingNextTurn = null;
+	};
+
 	socket.once("connect", () => {
 		console.log("GameService: Socket connected", socket.id);
 	});
@@ -58,6 +74,7 @@ export function registerServerEventCallbacks({
 		}
 
 		getTableManager()?.applyRejoinState(_payload);
+		applyPendingNextTurn();
 		setHandInitialized(true);
 
 		console.log(`You have rejoined:`, _payload);
@@ -76,11 +93,12 @@ export function registerServerEventCallbacks({
 		await ready;
 		if (hasGameStarted()) return;
 		await startGame();
+		applyPendingNextTurn();
 		console.log("The game started:", _payload);
 	});
 
 	socket.on("game:played:card:self", async (_payload: PlayedCardDto) => {
-		getTableManager()?.removePlayerCard(_payload.cardIndex);
+		getTableManager()?.removePlayerCard(_payload.cardIndex, _payload.card);
 		getTableManager()?.updateDiscardCard(_payload.card);
 		console.log(`${_payload.name} played the card:`, _payload);
 	});
@@ -98,6 +116,7 @@ export function registerServerEventCallbacks({
 
 	socket.on("game:draw:others", async (_payload: DrawnCardDto) => {
 		getTableManager()?.addOpponentCard(_payload.name);
+		console.log("Other draw card !");
 		console.log(`${_payload.name} drawn a card:`, _payload);
 	});
 
@@ -113,14 +132,23 @@ export function registerServerEventCallbacks({
 		console.log(`Turn order reversed:`, _payload);
 	});
 
-	socket.on("game:wild:new-color", async (_payload: { chosenFamily: CardFamily }) => {
-		getTableManager()?.setPilesBackdropColorByCardSet(_payload.chosenFamily);
-		getTableManager()?.hideCardFamilySelector();
-		console.log(`Wild color changed:`, _payload);
-	});
+	socket.on(
+		"game:wild:new-color",
+		async (_payload: { chosenFamily: CardFamily }) => {
+			getTableManager()?.setPilesBackdropColorByCardSet(_payload.chosenFamily);
+			getTableManager()?.hideCardFamilySelector();
+			console.log(`Wild color changed:`, _payload);
+		},
+	);
 
 	socket.on("game:nextTurn", async (_payload: NextTurnDto) => {
-		getTableManager()?.setActivePlayer(_payload.currentPlayerIndex);
+		const tableManager = getTableManager();
+		if (!tableManager) {
+			pendingNextTurn = _payload;
+			return;
+		}
+
+		tableManager.setActivePlayer(_payload.currentPlayerIndex);
 		console.log(`Next turn:`, _payload);
 	});
 
@@ -149,6 +177,11 @@ export function registerServerEventCallbacks({
 	socket.on("game:uno:catched", async (_payload) => {
 		getTableManager()?.setUnoButtonVisible(false);
 		console.log(`Counter uno catched.`);
+	});
+
+	socket.on("game:uno:expired", async (_payload) => {
+		getTableManager()?.setUnoButtonVisible(false);
+		console.log(`Uno catching window expired.`);
 	});
 
 	socket.on("game:win", async (_payload: GameWinDto) => {

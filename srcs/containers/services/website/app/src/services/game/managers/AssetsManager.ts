@@ -1,5 +1,6 @@
 import { Assets, Spritesheet, Texture } from "pixi.js";
 import { CardCode, CardFamily, CardsTheme } from "../domain/GameEnums";
+import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
 
 type ThemeSetMetadata = {
 	hex?: string;
@@ -23,7 +24,9 @@ export class AssetsManager {
 
 	private async _loadArrowTexture(): Promise<void> {
 		try {
-			const texture = await Assets.load<Texture>("game/arrow.png");
+			const texture = await Assets.load<Texture>(
+				GAME_CUSTOMIZATION.assets.arrowTexturePath,
+			);
 			if (texture) {
 				this._arrowTexture = texture;
 			}
@@ -33,14 +36,9 @@ export class AssetsManager {
 	}
 
 	private _normalizeThemeFileName(theme: CardsTheme): string {
-		switch (theme) {
-			case CardsTheme.Basic:
-				return "basic-theme.json";
-			case CardsTheme.Uwu:
-				return "uwu-theme.json";
-			default:
-				return `${theme}-theme.json`;
-		}
+		return (
+			GAME_CUSTOMIZATION.assets.themeFileByTheme[theme] ?? `${theme}-theme.json`
+		);
 	}
 
 	private _buildTextureKeys(color: CardFamily, value: CardCode): string[] {
@@ -71,7 +69,9 @@ export class AssetsManager {
 
 		try {
 			this._spritesheet = await Assets.load(assetPath);
-			this._themeBackdropColors = this._extractThemeBackdropColors(this._spritesheet?.data as ThemeMetadata);
+			this._themeBackdropColors = this._extractThemeBackdropColors(
+				this._spritesheet?.data as ThemeMetadata,
+			);
 
 			if (!this._spritesheet) {
 				console.error(`Failed to load spritesheet for theme: ${theme}`);
@@ -81,7 +81,9 @@ export class AssetsManager {
 		}
 	}
 
-	private _extractThemeBackdropColors(metadata: ThemeMetadata | undefined): Partial<Record<CardFamily, string>> {
+	private _extractThemeBackdropColors(
+		metadata: ThemeMetadata | undefined,
+	): Partial<Record<CardFamily, string>> {
 		const sets = metadata?.uno?.sets;
 
 		if (!sets) {
@@ -90,7 +92,12 @@ export class AssetsManager {
 
 		const colors: Partial<Record<CardFamily, string>> = {};
 
-		for (const family of [CardFamily.ONE, CardFamily.TWO, CardFamily.THREE, CardFamily.FOUR]) {
+		for (const family of [
+			CardFamily.ONE,
+			CardFamily.TWO,
+			CardFamily.THREE,
+			CardFamily.FOUR,
+		]) {
 			const hex = sets[family]?.hex;
 			if (hex) {
 				colors[family] = hex;
@@ -100,14 +107,22 @@ export class AssetsManager {
 		return colors;
 	}
 
-	public async loadCardBacks(variants: string[] = ["uwu"]): Promise<void> {
+	public async loadCardBacks(
+		variants: string[] = [...GAME_CUSTOMIZATION.app.defaultCardBackVariants],
+	): Promise<void> {
 		// Clear previous theme backs if needed, or keep cache depending on needs.
 		// For now, we clear to ensure we only have current theme backs.
 		this._backTextures.clear();
 
 		const loadPromises = variants.map(async (variant) => {
 			const key = variant;
-			const assetPath = `${variant}-back.png`;
+			const isUrl =
+				variant.startsWith("http://") ||
+				variant.startsWith("https://") ||
+				variant.startsWith("/");
+			const assetPath = isUrl
+				? variant
+				: `${variant}${GAME_CUSTOMIZATION.assets.cardBackFileSuffix}`;
 
 			try {
 				const texture = await Assets.load<Texture>(assetPath);
@@ -136,11 +151,15 @@ export class AssetsManager {
 			}
 		}
 
-		console.warn(`AssetsManager: Texture not found for keys: ${keys.join(", ")}`);
+		console.warn(
+			`AssetsManager: Texture not found for keys: ${keys.join(", ")}`,
+		);
 		return Texture.EMPTY;
 	}
 
-	public getCardBack(variant: string = "default"): Texture {
+	public getCardBack(
+		variant: string = GAME_CUSTOMIZATION.assets.defaultCardBackVariant,
+	): Texture {
 		if (this._backTextures.has(variant)) {
 			return this._backTextures.get(variant)!;
 		}

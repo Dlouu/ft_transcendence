@@ -5,11 +5,16 @@ import { GameState } from "./domain/GameEnums";
 import { UnoPlayer } from "./domain/UnoPlayer";
 import { CreateGameDto } from "./dto/create-game.dto";
 import { toRejoinGameDto } from "./dto/rejoin-game.dto";
+import { GameLoggerService } from "./logger.service";
 
 // Handles the storage and retrieval of Game and Player objects
 @Injectable()
 export class GameRepositoryService {
 	private games: Game[] = [];
+	
+		constructor(
+			private readonly logger: GameLoggerService,
+		) {}
 
 	// =================================
 	// ===== CREATION AND DELETION =====
@@ -25,6 +30,7 @@ export class GameRepositoryService {
 	 */
 	create(createGameDto: CreateGameDto): Game {
 		const { roomName, players, botNbr, theme } = createGameDto;
+		const playerUids = players.map((player) => player.id);
 
 		if (this.getGameByName(roomName)) {
 			throw new ConflictException("Game name already exists");
@@ -33,8 +39,8 @@ export class GameRepositoryService {
 		const cardTheme = theme === "UWU" ? "uwu" : "basic";
 		const newGame = new Game(
 			roomName,
-			players,
-			players.length,
+			playerUids,
+			playerUids.length,
 			botNbr,
 			cardTheme,
 		);
@@ -43,7 +49,13 @@ export class GameRepositoryService {
 
 		this.games.push(newGame);
 
-		console.log("Game " + newGame.roomName + " has been created !");
+		this.logger.gameCreate(
+			newGame.roomName,
+			playerUids,
+			playerUids.length,
+			botNbr,
+			cardTheme,
+		);
 
 		return newGame;
 	}
@@ -97,6 +109,7 @@ export class GameRepositoryService {
 			player = newPlayer;
 		} else {
 			player._socket = socket;
+			player._isBot = false;
 		}
 
 		socket.join(game.roomName);
@@ -121,6 +134,8 @@ export class GameRepositoryService {
 
 		game.connectedPlayers.add(playerId);
 
+		this.logger.playerJoin(playerId, player._name, game.roomName, player._socket?.id ?? "NO_SOCKET", game.connectedPlayers.size);
+
 		return game;
 	}
 
@@ -133,7 +148,10 @@ export class GameRepositoryService {
 		if (!rejoinDto) return;
 
 		player._socket.emit("game:rejoin", rejoinDto);
-		console.log(`Player ${player._name} rejoined the game ${game.roomName}`);
+
+		player._isBot = false;
+
+		this.logger.playerRejoin(player._id, player._name, game.roomName, player._socket?.id ?? "NO_SOCKET", game.connectedPlayers.size);
 	}
 
 	/**
@@ -152,7 +170,15 @@ export class GameRepositoryService {
 
 		game.connectedPlayers.delete(playerId);
 
+		const player = this.getPlayerInGame(game, playerId);
+		if (!player) throw new Error("Player's not found in the game.");
+
+		player._socket = null;
+		player._isBot = true;
+
 		socket.to(game.roomName).emit("game:playerLeft", { playerId });
+
+		this.logger.playerLeave(playerId, player._name, game.roomName, game.connectedPlayers.size)
 
 		return game;
 	}
@@ -172,7 +198,7 @@ export class GameRepositoryService {
 			return undefined;
 		}
 
-		const player = game.players.find((p) => p._name === playerId);
+		const player = game.players.find((p) => p._id === playerId);
 		if (!player) {
 			return undefined;
 		}
@@ -186,7 +212,14 @@ export class GameRepositoryService {
 	 * @returns The Game object if found, undefined otherwise.
 	 */
 	getGameByExpectedPlayer(playerId: string): Game | undefined {
-		return this.games.find((g) => g.expectedPlayers.includes(playerId));
+		for (let i = this.games.length - 1; i >= 0; i--) {
+			const game = this.games[i];
+			if (game.expectedPlayers.includes(playerId)) {
+				return game;
+			}
+		}
+
+		return undefined;
 	}
 
 	/**
@@ -195,7 +228,7 @@ export class GameRepositoryService {
 	 * @returns The Game object if found, undefined otherwise.
 	 */
 	getGameByConnectedPlayer(playerId: string): Game | undefined {
-		return this.games.find((g) => g.players.some((p) => p._name === playerId));
+		return this.games.find((g) => g.connectedPlayers.has(playerId));
 	}
 
 	/**

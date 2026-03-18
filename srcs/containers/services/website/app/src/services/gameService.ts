@@ -6,8 +6,13 @@ import { CardsTheme } from "./game/domain/GameEnums";
 import { TableManager } from "./game/managers/TableManager";
 import { InitGameDto } from "./game/dto/init-game.dto";
 import { UnoCard } from "./game/domain/UnoCard";
-import { handleDeckClicked, handlePlayerCardClicked, handleUnoClicked } from "./gameInputCallbacks";
+import {
+	handleDeckClicked,
+	handlePlayerCardClicked,
+	handleUnoClicked,
+} from "./gameInputCallbacks";
 import { registerServerEventCallbacks } from "./gameServerEventCallbacks";
+import { GAME_CUSTOMIZATION } from "./game/config/gameCustomization";
 
 interface IGameInitOptions {
 	canvas: HTMLCanvasElement;
@@ -22,7 +27,7 @@ export class GameService {
 	private _isInitialized: boolean = false;
 	private _hasGameStarted: boolean = false;
 	private _hasHandInitialized: boolean = false;
-	private _ready: Promise<void>;
+	private _ready!: Promise<void>;
 	private _resolveReady!: () => void;
 
 	private _cardPool!: CardPool;
@@ -32,6 +37,10 @@ export class GameService {
 
 	constructor() {
 		this._app = null;
+		this.resetReadyPromise();
+	}
+
+	private resetReadyPromise(): void {
 		this._ready = new Promise((resolve) => {
 			this._resolveReady = resolve;
 		});
@@ -42,6 +51,10 @@ export class GameService {
 			throw new Error("GameService.init: canvas is required");
 		}
 
+		if (this._isInitialized) {
+			this.destroy();
+		}
+
 		this._playerId = playerId;
 
 		this._app = new Application();
@@ -50,7 +63,7 @@ export class GameService {
 			canvas: canvas,
 			width: canvas.clientWidth,
 			height: canvas.clientHeight,
-			backgroundColor: "#291c3d",
+			backgroundColor: GAME_CUSTOMIZATION.app.backgroundColor,
 			// backgroundAlpha: 0.3,
 			resolution: window.devicePixelRatio || 1,
 			autoDensity: true,
@@ -78,10 +91,10 @@ export class GameService {
 			query: {
 				playerId: playerId,
 			},
-			transports: ["websocket"],
+			transports: [...GAME_CUSTOMIZATION.app.socketTransports],
 		};
 
-		this._socket = io("http://localhost:3000", socketOptions);
+		this._socket = io(GAME_CUSTOMIZATION.app.socketUrl, socketOptions);
 		this.registerSocketListeners();
 	}
 
@@ -110,7 +123,8 @@ export class GameService {
 
 		const theme = dto.cardTheme === "basic" ? CardsTheme.Basic : CardsTheme.Uwu;
 		await this._assetsMangr.loadTheme(theme);
-		await this._assetsMangr.loadCardBacks(["uwu"]);
+		const cardBackVariants = [...new Set(dto.players.map((p) => p.cardBack))];
+		await this._assetsMangr.loadCardBacks(cardBackVariants);
 
 		if (this._tableManager.parent !== this._app.stage) {
 			this._app.stage.addChild(this._tableManager);
@@ -128,15 +142,20 @@ export class GameService {
 			this._pendingInitGameDto = null;
 		} else if (this._tableManager && this._app) {
 			if (!this._assetsMangr.isLoaded) {
-				await this._assetsMangr.loadTheme(CardsTheme.Basic);
-				await this._assetsMangr.loadCardBacks(["uwu"]);
+				await this._assetsMangr.loadTheme(GAME_CUSTOMIZATION.app.defaultTheme);
+				await this._assetsMangr.loadCardBacks([
+					...GAME_CUSTOMIZATION.app.defaultCardBackVariants,
+				]);
 			}
 
 			if (this._tableManager.parent !== this._app.stage) {
 				this._app.stage.addChild(this._tableManager);
 			}
 
-			this._tableManager.resize(this._app.screen.width, this._app.screen.height);
+			this._tableManager.resize(
+				this._app.screen.width,
+				this._app.screen.height,
+			);
 		}
 
 		this._hasGameStarted = true;
@@ -152,6 +171,48 @@ export class GameService {
 
 	private onUnoClicked(): void {
 		handleUnoClicked(this._socket);
+	}
+
+	public onResize(width: number, height: number): void {
+		if (!this._app || !this._tableManager) {
+			return;
+		}
+
+		const safeWidth = Math.max(1, Math.floor(width));
+		const safeHeight = Math.max(1, Math.floor(height));
+
+		this._app.renderer.resize(safeWidth, safeHeight);
+		this._tableManager.resize(safeWidth, safeHeight);
+	}
+
+	public destroy(): void {
+		if (this._socket) {
+			this._socket.removeAllListeners();
+			this._socket.disconnect();
+			this._socket = null;
+		}
+
+		if (this._tableManager) {
+			this._tableManager.destroy();
+			this._tableManager = null;
+		}
+
+		if (this._cardPool) {
+			this._cardPool.destroy();
+		}
+
+		if (this._app) {
+			this._app.destroy(true, { children: true });
+			this._app = null;
+		}
+
+		this._isInitialized = false;
+		this._hasGameStarted = false;
+		this._hasHandInitialized = false;
+		this._playerId = null;
+		this._pendingInitGameDto = null;
+		this._assetsMangr = new AssetsManager();
+		this.resetReadyPromise();
 	}
 }
 

@@ -21,6 +21,7 @@ export class Game {
   public createdAt: number; // Timestamp of room creation
   public turnStartTime: number; // Timestamp
   public lastActionTime: number;
+  public turnCount: number;
   public pendingUnoPlayerIndex: number | null;
 
   public state: GameState;
@@ -49,6 +50,7 @@ export class Game {
     this.connectedPlayers = new Set<string>();
 
     this.lastActionTime = 0;
+    this.turnCount = 0;
     this.pendingUnoPlayerIndex = null;
   }
 
@@ -72,13 +74,22 @@ export class Game {
       turnStartTime: this.turnStartTime,
       state: this.state,
       lastActionTime: this.lastActionTime,
+      turnCount: this.turnCount,
       pendingUnoPlayerIndex: this.pendingUnoPlayerIndex,
     };
   }
 
   addBots(): void {
+    const usedNames = new Set(this.players.map((player) => player._name));
+
     for (let i = 0; i < this.botNbr; i++) {
-      const botName = generateNickname();
+      let botName = generateNickname();
+
+      while (usedNames.has(botName)) {
+        botName = generateNickname();
+      }
+
+      usedNames.add(botName);
       this.players.push(new UnoPlayer(botName + "_id", botName, null, true));
     }
   }
@@ -104,5 +115,17 @@ export class Game {
 
     this.players.splice(playerIndex, 1);
     return true;
+  }
+
+  getPlayerByIndex(index: number): UnoPlayer {
+    if (!Number.isInteger(index)) {
+      throw new Error("Player index must be an integer.");
+    }
+
+    if (index < 0 || index >= this.players.length) {
+      throw new Error("Player index is out of bounds.");
+    }
+
+    return this.players[index];
   }
 }

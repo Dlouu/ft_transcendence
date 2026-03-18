@@ -15,6 +15,7 @@ import { Server, Socket } from "socket.io";
 import { PlaceholderEventDto } from "./dto/placeholder-event.dto";
 import { CardDto } from "./dto/card.dto";
 import { CardFamily } from "./domain/GameEnums";
+import { GameLoggerService } from "./logger.service";
 
 @WebSocketGateway({ cors: { origin: "*" } })
 export class GameGateway
@@ -23,6 +24,7 @@ export class GameGateway
 	constructor(
 		private readonly gameService: GameService,
 		private readonly gameLogic: GameLogicService,
+		private readonly logger: GameLoggerService,
 	) {}
 
 	afterInit(server: Server): void {
@@ -32,12 +34,19 @@ export class GameGateway
 	handleConnection(socket: Socket): void {
 		try {
 			const playerId = socket.handshake.query.playerId;
+			// const playerName = socket.handshake.query.playerName;
 
 			if (typeof playerId !== "string" || playerId.trim() === "") {
 				throw new Error("Connection rejected: Missing or invalid playerId.");
 			}
+			// else if (typeof playerName !== "string" || playerName.trim() === "") {
+			// 	throw new Error("Connection rejected: Missing or invalid playerName.");
+			// }
+
+			this.logger.socketConnected(socket.id, playerId, "TODO: Add the player name");
 
 			socket.data.playerId = playerId; // Saving access for disconnection
+			// socket.data.playerName = playerName; // Saving access for disconnection
 
 			this.gameService.join(playerId, socket);
 		} catch (error) {
@@ -48,6 +57,8 @@ export class GameGateway
 
 	handleDisconnect(socket: Socket): void {
 		this.gameService.leave(socket.data.playerId, socket);
+
+		this.logger.socketDisconnected(socket.id, socket.data.playerId, "TODO: Add the player name");
 	}
 
 	@SubscribeMessage("game:init:ready")
@@ -70,10 +81,7 @@ export class GameGateway
 			return;
 		}
 
-		await this.gameService.playCard(playerId, payload);
-		console.log(
-			`Player ${playerId} play the card ${payload.cardCode} ${payload.cardFamily}`,
-		);
+		await this.gameService.playCard(playerId, payload, undefined);
 	}
 
 	@SubscribeMessage("game:play:draw")
@@ -83,7 +91,7 @@ export class GameGateway
 			return;
 		}
 
-		this.gameService.drawCard(playerId);
+		this.gameService.drawCard(playerId, undefined);
 	}
 
 	@SubscribeMessage("game:play:uno")
@@ -107,19 +115,5 @@ export class GameGateway
 		}
 
 		this.gameLogic.onColorPicked(playerId, payload.cardFamily);
-	}
-
-	@SubscribeMessage("placeholder:event")
-	handlePlaceholderEvent(
-		@MessageBody() payload: PlaceholderEventDto, // Gets the client-sent event payload from the message body.
-		@Ack() acknowledgement: (response: any) => void, // Injects the Socket.IO ack callback to answer this event.
-	): void {
-		console.log("placeholder event go !"); // Logs that this listener was triggered.
-		acknowledgement({
-			// Sends an acknowledgement response back to the emitting client.
-			ok: true, // Marks the operation as successful.
-			event: "placeholder:event", // Echoes the event name for client-side confirmation.
-			payload, // Returns the received payload for debugging/verification.
-		});
 	}
 }

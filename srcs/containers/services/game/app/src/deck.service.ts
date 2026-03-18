@@ -79,9 +79,19 @@ export class DeckService {
 		if (game.discard.length <= 1) return;
 
 		const topCard = game.discard.pop();
+		const recycledCards = game.discard.toArray().map((card) => {
+			if (
+				card.value === CardCode.Wild ||
+				card.value === CardCode.WildDrawFour
+			) {
+				card.family = CardFamily.WILD;
+			}
+
+			return card;
+		});
 
 		game.deck.setCards(
-			this.shuffleDeck([...game.deck.toArray(), ...game.discard.toArray()]),
+			this.shuffleDeck([...game.deck.toArray(), ...recycledCards]),
 		);
 
 		game.discard.clear();
@@ -118,7 +128,7 @@ export class DeckService {
 	 * @returns Nothing.
 	 */
 	startDeal(game: Game): void {
-		const cardsPerPlayer = 2;
+		const cardsPerPlayer = 7;
 
 		game.state = GameState.DEALING;
 

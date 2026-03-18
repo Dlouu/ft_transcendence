@@ -1,4 +1,5 @@
-import { Injectable } from "@nestjs/common";
+import { GameDebugService } from './game-debug.service';
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Game } from "./domain/UnoGame";
 import { GameState, CardCode, CardFamily } from "./domain/GameEnums";
 import { DeckService } from "./deck.service";
@@ -7,17 +8,29 @@ import { UnoPlayer } from "./domain/UnoPlayer";
 import { CardDto } from "./dto/card.dto";
 import { Card } from "./domain/UnoCard";
 import { GameWinDto, GameWinPlayerDto } from "./dto/game-win.dto";
+import { toDrewCardDto } from "./dto/drawn-card.dto";
+import { GameService } from "./game.service";
+import { GameLoggerService } from "./logger.service";
 
 // Handles the rules of the game (turns, UNO shouts, card validation).
 @Injectable()
 export class GameLogicService {
 	private colorPickCallbacks = new Map<string, (color: CardFamily) => void>();
-	private readonly unoRevealDelayMs = 500;
+	private readonly unoRevealDelayMs = 750;
+	private readonly unoCallWindowMs = 5000;
+	private readonly unoPendingTimeouts = new Map<string, NodeJS.Timeout>();
 
 	constructor(
 		private readonly deckService: DeckService,
 		private readonly gameRepository: GameRepositoryService,
+		@Inject(forwardRef(() => GameService))
+		private readonly gameService: GameService,
+		private readonly logger: GameLoggerService,
 	) {}
+
+	private getIoServer() {
+		return this.gameService.getServer();
+	}
 
 	// ==========================
 	// ======= START GAME =======
@@ -32,7 +45,6 @@ export class GameLogicService {
 		if (game.connectedPlayers.size === game.expectedPlayers.length) {
 			const started = this.startGame(game);
 			if (started) {
-				console.log(`Game '${game.roomName}' started !`);
 				return started;
 			}
 		}
@@ -66,6 +78,7 @@ export class GameLogicService {
 		}
 
 		game.pendingUnoPlayerIndex = null;
+		game.turnCount = 0;
 
 		const now = Date.now();
 		game.turnStartTime = now;
@@ -116,7 +129,9 @@ export class GameLogicService {
 	 * @returns true if the player index matches the current player index, otherwise false.
 	 */
 	isPlayersTurn(game: Game, player: UnoPlayer): boolean {
-		const playerIndex = game.players.findIndex((p) => p._name === player._name);
+		const playerIndex = game.players.findIndex(
+			(p) => p._id === player._id || p._name === player._name,
+		);
 		return playerIndex === game.currentPlayerIndex;
 	}
 
@@ -158,6 +173,16 @@ export class GameLogicService {
 	 * @returns void
 	 */
 	goToNextPlayerIndex(game: Game): void {
+		if (game.deck.length === 0) {
+			this.deckService.discardToDeck(game);
+
+			if (game.deck.length === 0) {
+				this.getIoServer()?.to(game.roomName).emit("game:deck:empty");
+			} else {
+				this.getIoServer()?.to(game.roomName).emit("game:deck:shuffled");
+			}
+		}
+
 		if (game.currentDirection === "CLOCKWISE") {
 			game.currentPlayerIndex =
 				(game.currentPlayerIndex + 1) % game.players.length;
@@ -208,7 +233,7 @@ export class GameLogicService {
 	}
 
 	async askPlayerColor(game: Game, player: UnoPlayer): Promise<CardFamily> {
-		if (!player._socket) {
+		if (!player._socket || player._isBot) {
 			return this.randomCardFamily();
 		}
 
@@ -232,13 +257,86 @@ export class GameLogicService {
 		const callback = this.colorPickCallbacks.get(playerId);
 		if (callback) {
 			callback(color);
+			return;
+		}
+
+		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
+		if (!game) {
+			return;
+		}
+
+		const player = this.gameRepository.getPlayerInGame(game, playerId);
+		if (!player) {
+			return;
+		}
+
+		this.logger.invalidAction(
+			player._id,
+			player._name,
+			game.roomName,
+			`pick_wild_color_without_prompt:${color}`,
+		);
+	}
+
+	clearPendingUno(game: Game, skipTurnTimeoutRestart = false): void {
+		const timeout = this.unoPendingTimeouts.get(game.roomName);
+		if (timeout) {
+			clearTimeout(timeout);
+			this.unoPendingTimeouts.delete(game.roomName);
+		}
+
+		game.pendingUnoPlayerIndex = null;
+
+		if (!skipTurnTimeoutRestart && game.state === GameState.PLAYING) {
+			this.gameService.startTurnTimeout(game);
 		}
 	}
 
-	onUno(game: Game, player: UnoPlayer): void {
-		if (!player._socket) {
-			return;
+	drawCardsWithEvents(
+		game: Game,
+		player: UnoPlayer,
+		iterNbr: number,
+	): { success: boolean; deckEmpty: boolean } {
+		const io = this.getIoServer();
+
+		if (game.deck.length === 0) {
+			this.deckService.discardToDeck(game);
+			if (game.deck.length === 0) {
+				io?.to(game.roomName).emit("game:deck:empty");
+				return { success: false, deckEmpty: true };
+			}
+
+			io?.to(game.roomName).emit("game:deck:shuffled");
 		}
+
+		for (let i = 0; i < iterNbr; i++) {
+			const card = game.deck.pop();
+			if (!card) {
+				return { success: false, deckEmpty: false };
+			}
+
+			player._hand.push(card);
+			player.hasDrawThisTurn = true;
+
+			if (!player._isBot && player._socket) {
+				player._socket.emit(
+					"game:draw:self",
+					toDrewCardDto(player._name, card),
+				);
+				player._socket.to(game.roomName).emit("game:draw:others", toDrewCardDto(player._name, undefined));
+			}
+			else
+				io?.to(game.roomName).emit(
+					"game:draw:others",
+					toDrewCardDto(player._name, undefined),
+				);
+		}
+
+		return { success: true, deckEmpty: false };
+	}
+
+	onUno(game: Game, player: UnoPlayer): void {
+		const io = this.getIoServer();
 
 		const playerIndex = game.players.findIndex((p) => p._id === player._id);
 		if (playerIndex === -1) {
@@ -247,11 +345,14 @@ export class GameLogicService {
 
 		game.pendingUnoPlayerIndex = playerIndex;
 		player.hasShoutedUno = false;
+		this.clearPendingUno(game, true);
+		game.pendingUnoPlayerIndex = playerIndex;
 
-		player._socket.emit("game:uno:pending:self");
+		if (!player._isBot && player._socket)
+			player._socket.emit("game:uno:pending:self");
 
 		setTimeout(() => {
-			const pendingIndex = game.pendingUnoPlayerIndex;
+			 const pendingIndex = game.pendingUnoPlayerIndex;
 			if (pendingIndex === null) {
 				return;
 			}
@@ -261,8 +362,33 @@ export class GameLogicService {
 				return;
 			}
 
-			player._socket?.to(game.roomName).emit("game:uno:pending:others");
+			if (!player._isBot && player._socket)
+				player._socket.to(game.roomName).emit("game:uno:pending:others");
+			else
+				this.getIoServer()?.to(game.roomName).emit("game:uno:pending:others");
 		}, this.unoRevealDelayMs);
+
+		const timeout = setTimeout(() => {
+			const pendingIndex = game.pendingUnoPlayerIndex;
+			if (pendingIndex === null) {
+				this.unoPendingTimeouts.delete(game.roomName);
+				return;
+			}
+
+			const pendingPlayer = game.players[pendingIndex];
+			if (!pendingPlayer || pendingPlayer._id !== player._id || pendingPlayer._hand.length !== 1) {
+				this.unoPendingTimeouts.delete(game.roomName);
+				return;
+			}
+
+			this.clearPendingUno(game);
+			this.drawCardsWithEvents(game, pendingPlayer, 2);
+
+			this.getIoServer()?.to(game.roomName).emit("game:uno:expired");
+			this.gameService.tryRunBotTurn(game);
+		}, this.unoCallWindowMs);
+
+		this.unoPendingTimeouts.set(game.roomName, timeout);
 	}
 
 	onVictory(game: Game, winner: UnoPlayer): void {
@@ -282,8 +408,12 @@ export class GameLogicService {
 			this.colorPickCallbacks.delete(player._id);
 		}
 
+		this.clearPendingUno(game);
+		this.gameService.clearTurnTimeout(game.roomName);
+
+		const duration = Date.now() - game.createdAt;
 		const durationDdHhMmSs = this.formatDurationToDdHhMmSs(
-			Date.now() - game.createdAt,
+			duration,
 		);
 		const dto: GameWinDto = {
 			winner: winner._name,
@@ -296,19 +426,13 @@ export class GameLogicService {
 				}),
 			),
 			gameDuration: durationDdHhMmSs,
-			turnNbr: Math.max(0, game.discard.length - 1),
+			turnNbr: Math.floor(game.turnCount / game.players.length),
 		};
 
-		const emitterPlayer = game.players.find((player) => !!player._socket);
-		if (emitterPlayer?._socket) {
-			emitterPlayer._socket.emit("game:win", dto);
-			emitterPlayer._socket.to(game.roomName).emit("game:win", dto);
-		}
+		this.getIoServer()?.to(game.roomName).emit("game:win", dto);
+		this.logger.gameEnd(game.roomName, winner._name, duration, Math.floor(game.turnCount / game.players.length));
 
 		this.gameRepository.deleteGame(game);
-
-		console.log(
-			`Game '${game.roomName}' won by '${winner._name}'. Game closed.`,
-		);
+		this.logger.gameDelete(game.roomName, "Game finished.");
 	}
 }

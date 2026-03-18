@@ -6,12 +6,31 @@ import {
   ArrayMinSize,
   Min,
   Max,
+  ValidateNested,
 } from "class-validator";
+import { Type } from "class-transformer";
+
+export interface ICreateGamePlayer {
+  id: string;
+  name: string;
+  cardBackUrl: string;
+}
+
+export class CreateGamePlayerDto implements ICreateGamePlayer {
+  @IsString()
+  id: string;
+
+  @IsString()
+  name: string;
+
+  @IsString()
+  cardBackUrl: string;
+}
 
 export interface ICreateGame
 {
   roomName: string;
-  players: string[]; // To replace by uids
+  players: CreateGamePlayerDto[];
   botNbr: number;
   theme: "BASE" | "UWU";
 }
@@ -21,9 +40,10 @@ export class CreateGameDto implements ICreateGame {
   roomName: string;
 
   @IsArray()
-  @IsString({ each: true })
   @ArrayMinSize(1)
-  players: string[];
+  @ValidateNested({ each: true })
+  @Type(() => CreateGamePlayerDto)
+  players: CreateGamePlayerDto[];
 
   @IsNumber()
   @Min(0)
