@@ -3,4 +3,4 @@ from app.core.extensions import socketio
 app = create_app()
 
 if __name__ == "__main__":
-	app.run(debug=True, host="0.0.0.0", port=5002)
+	socketio.run(app, debug=True, port=5002, host="0.0.0.0", use_reloader=True, allow_unsafe_werkzeug=True)

@@ -45,13 +45,13 @@ def create_lobby_or_error(supreme_master_user_id=None):
         return None, error
 
     lobbies[room_name] = {
-        "players": {},  # {sid: {ready, connected, user_id}}
+        "players": {},  # {user_id: {sid, ready, connected}}
         "bots": 0,
         "game_started": False,
         "game_ended": False,
         "theme": False,
         "supreme_master_user_id": supreme_master_user_id,
-        "supreme_master_sid": None,
+        "supreme_master_sid": None,  # derived from players
         "supreme_master_starts": False,
         "privacy": True,
     }

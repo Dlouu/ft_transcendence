@@ -75,17 +75,36 @@ socket.on("lobby_state", (data) => {
   privacyPublicBtn.disabled = isPrivate === false;
   privacyPrivateBtn.disabled = isPrivate === true;
 
+  const humansIds = Array.isArray(data.humans_id) ? data.humans_id : [];
+  const humansSids = Array.isArray(data.humans_sid) ? data.humans_sid : [];
+  const readyIdSet = Array.isArray(data.ready_humans_id)
+    ? new Set(data.ready_humans_id.map(String))
+    : null;
+  const readySids = Array.isArray(data.ready_humans) ? data.ready_humans : [];
+  const selfIndex = humansSids.indexOf(socket.id);
+  const selfUserId = selfIndex >= 0 ? humansIds[selfIndex] : null;
+  const hostIdStr = (data.supreme_master_user_id !== undefined && data.supreme_master_user_id !== null)
+    ? String(data.supreme_master_user_id)
+    : null;
+  const isHost = hostIdStr
+    ? (selfUserId !== null && String(selfUserId) === hostIdStr)
+    : (socket.id === data.supreme_master_sid);
+
   // panel visible seulement pour l'hôte
-  masterPanel.style.display = (socket.id === data.supreme_master_sid) ? "block" : "none";
+  masterPanel.style.display = isHost ? "block" : "none";
 
   const list = document.getElementById("player-list");
   list.innerHTML = "";
 
-  data.humans_sid.forEach(player => {
+  humansIds.forEach((playerId, idx) => {
     const li = document.createElement("li");
-    const ready = data.ready_humans.includes(player);
-    const crown = (player === data.supreme_master_sid) ? " 👑" : "";
-    li.textContent = player + (ready ? " ✅" : " ❌") + crown;
+    const ready = readyIdSet
+      ? readyIdSet.has(String(playerId))
+      : readySids.includes(humansSids[idx]);
+    const crown = hostIdStr
+      ? (String(playerId) === hostIdStr ? " 👑" : "")
+      : (humansSids[idx] === data.supreme_master_sid ? " 👑" : "");
+    li.textContent = playerId + (ready ? " ✅" : " ❌") + crown;
     list.appendChild(li);
   });
 

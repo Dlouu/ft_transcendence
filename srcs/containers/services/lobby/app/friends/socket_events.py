@@ -5,12 +5,34 @@ from app.core.extensions import socketio, db
 from app.models.friends import Friends
 from app.models.user import User
 
+def _get_db_user_id():
+    db_user_id = session.get("db_user_id")
+    if db_user_id:
+        return db_user_id
+
+    external_user_id = session.get("user_id")
+    if not external_user_id:
+        return None
+
+    user = User.query.filter_by(user_id=external_user_id).first()
+    if not user:
+        return None
+
+    session["db_user_id"] = user.id
+    if not session.get("username"):
+        session["username"] = user.username
+    return user.id
+
 
 #adding friends
 @socketio.on("accept_friend")
 def accept_friend(data):
     requester_id = data.get("requester_id")
-    accepter_id = data.get("accepter_id") or session.get("user_id")
+    accepter_id = data.get("accepter_id") or _get_db_user_id()
+
+    if not accepter_id:
+        emit("friend_error", {"message": "Not logged"})
+        return
 
     friend = Friends.query.filter_by(
         requester_id=requester_id,
@@ -36,7 +58,11 @@ def accept_friend(data):
 @socketio.on("reject_friend")
 def reject_friend(data):
     requester_id = data.get("requester_id")
-    accepter_id = data.get("accepter_id") or session.get("user_id")
+    accepter_id = data.get("accepter_id") or _get_db_user_id()
+
+    if not accepter_id:
+        emit("friend_error", {"message": "Not logged"})
+        return
 
     friend = Friends.query.filter_by(
         requester_id=requester_id,
@@ -61,7 +87,7 @@ def reject_friend(data):
 @socketio.on("add_friend")
 def add_friend(data):
     socket_id = (data.get("username") or "").strip()
-    requester_id = session.get("user_id")
+    requester_id = _get_db_user_id()
 
     if not requester_id:
         emit("friend_request_sent", {"username": socket_id, "status": "not logged", "type": "sent"}, to=request.sid)
