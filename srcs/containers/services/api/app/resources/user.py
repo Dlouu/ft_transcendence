@@ -15,6 +15,7 @@ from app.models.card_gallery import CardGallery
 from app.services import request_service as rs
 from app.services import me_service as ms
 from app.utils.logger import logger
+from app.utils.image_mask import mask
 from app.schemas import user as su
 from app.models.user import User
 from app.extensions import db
@@ -95,103 +96,6 @@ class UpdateInformation(Resource):
 
 		logger.info("User information updated.", extra=extra_logger)
 		return {"message": "success"}, 200
-
-updade_profile_picture_model = reqparse.RequestParser()
-updade_profile_picture_model.add_argument(
-	"image",
-	type=FileStorage,
-	location="files",
-	required=True,
-	help="New profile picture."
-)
-
-@ns.route("/update_profile_picture")
-class UpdateProfilePicture(Resource):
-	"""
-	Allow the user to change his profile picture.
-
-	API:
-		Method: POST
-		Endpoint: /user/update_profile_picture
-		Token: yes
-
-	Response:
-		200: Profile picture updated.
-		400: Body is not valid, image is missing or invalid.
-		401: A problem occured while trying to delete the old profile picture or to add the new one to the s3 bucket.
-	"""
-	@ns.jwt_required()
-	@ns.expect(updade_profile_picture_model)
-	@ns.s3_bucket_health_check()
-	def post(self):
-		try:
-			args = updade_profile_picture_model.parse_args()
-			image_file = args["image"]
-
-			if image_file.content_type not in {"image/jpeg", "image/png"}:
-				return {"message": "File format not supported."}, 400
-		except Exception as e:
-			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
-			return {"message": "Content invalid or wrong type."}, 400
-
-		image_file.stream.seek(0, 2)
-		file_size = image_file.stream.tell()
-		image_file.stream.seek(0)
-
-		max_size = int(os.getenv("MAX_IMAGE_SIZE", 2097152))
-		if file_size > max_size:
-			max_mb = max_size / (max_size * 0.5)
-			return {"message": f"The image is too big (max: {max_mb:.0f}mb)."}, 400
-
-		user_id = g.token_payload["user_id"]
-		user = User.query.filter_by(user_id=user_id).first()
-		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
-
-		if not user:
-			logger.critical("The user does not exist in the user database.", extra=extra_logger)
-			return {"message": f"No user found with the id {user_id}, contact an admin if the problem persist."}, 401
-
-		if not s3s.delete_all_resources(f"profile_picture/{user_id}"):
-			logger.critical("Unable to delete the old profile picture", extra=extra_logger)
-			return {"message": "Unable to delete the old profile picture."}, 401
-
-		try:
-			img = Image.open(image_file.stream)
-
-			if image_file.content_type == "image/png":
-				img = img.convert("RGBA")
-			else:
-				img = img.convert("RGB")
-
-			small_image = img.resize((50, 50), Image.NEAREST)
-			pixelated_img = small_image.resize((100, 100), Image.NEAREST)
-
-			output = BytesIO()
-			format = "PNG" if image_file.content_type == "image/png" else "JPEG"
-			pixelated_img.save(output, format=format)
-			output.seek(0)
-
-			processed_file = FileStorage(
-				stream=output,
-				filename=image_file.filename,
-				content_type=image_file.content_type,
-			)
-		except Exception as e:
-			print(e, flush=True)
-
-		file_ext = image_file.filename.rsplit(".", 1)[-1]
-		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
-
-		if not s3s.add_resource(image_file, s3_url):
-			logger.critical("Unable to upload the new profile picture", extra_logger)
-			return {"message": "Unable to upload the new profile picture."}, 401
-
-		user.profile_picture_url = s3_url
-		db.session.commit()
-
-		logger.info("User's profile picture updated.", extra=extra_logger)
-		return {"message": "success"}, 200
-
 
 update_password_model = ns.model("UpdatePasswordModel", {
 	"password": fields.String(required=True),
@@ -289,6 +193,103 @@ class DeleteAccount(Resource):
 		logger.info("User's account deleted.", extra=logger.extra(request=request, user_id=user_id))
 		return {"message": "success"}, 200
 
+
+updade_profile_picture_model = reqparse.RequestParser()
+updade_profile_picture_model.add_argument(
+	"image",
+	type=FileStorage,
+	location="files",
+	required=True,
+	help="New profile picture."
+)
+
+@ns.route("/update_profile_picture")
+class UpdateProfilePicture(Resource):
+	"""
+	Allow the user to change his profile picture.
+
+	API:
+		Method: POST
+		Endpoint: /user/update_profile_picture
+		Token: yes
+
+	Response:
+		200: Profile picture updated.
+		400: Body is not valid, image is missing or invalid.
+		401: A problem occured while trying to delete the old profile picture or to add the new one to the s3 bucket.
+	"""
+	@ns.jwt_required()
+	@ns.expect(updade_profile_picture_model)
+	@ns.s3_bucket_health_check()
+	def post(self):
+		try:
+			args = updade_profile_picture_model.parse_args()
+			image_file = args["image"]
+
+			if image_file.content_type not in {"image/jpeg", "image/png"}:
+				return {"message": "File format not supported."}, 400
+		except Exception as e:
+			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
+			return {"message": "Content invalid or wrong type."}, 400
+
+		image_file.stream.seek(0, 2)
+		file_size = image_file.stream.tell()
+		image_file.stream.seek(0)
+
+		max_size = int(os.getenv("MAX_IMAGE_SIZE", 2097152))
+		if file_size > max_size:
+			max_mb = max_size / (max_size * 0.5)
+			return {"message": f"The image is too big (max: {max_mb:.0f}mb)."}, 400
+
+		user_id = g.token_payload["user_id"]
+		user = User.query.filter_by(user_id=user_id).first()
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
+
+		if not user:
+			logger.critical("The user does not exist in the user database.", extra=extra_logger)
+			return {"message": f"No user found with the id {user_id}, contact an admin if the problem persist."}, 401
+
+		if not s3s.delete_all_resources(f"profile_picture/{user_id}"):
+			logger.critical("Unable to delete the old profile picture", extra=extra_logger)
+			return {"message": "Unable to delete the old profile picture."}, 401
+
+		try:
+			img = Image.open(image_file.stream)
+
+			if image_file.content_type == "image/png":
+				img = img.convert("RGBA")
+			else:
+				img = img.convert("RGB")
+
+			small_image = img.resize((50, 50), Image.NEAREST)
+			pixelated_img = small_image.resize((100, 100), Image.NEAREST)
+
+			output = BytesIO()
+			format = "PNG" if image_file.content_type == "image/png" else "JPEG"
+			pixelated_img.save(output, format=format)
+			output.seek(0)
+
+			processed_file = FileStorage(
+				stream=output,
+				filename=image_file.filename,
+				content_type=image_file.content_type,
+			)
+		except Exception as e:
+			print(e, flush=True)
+
+		file_ext = image_file.filename.rsplit(".", 1)[-1]
+		s3_url = f"profile_picture/{user_id}/{uuid4()}.{file_ext}"
+
+		if not s3s.add_resource(processed_file, s3_url):
+			logger.critical("Unable to upload the new profile picture", extra_logger)
+			return {"message": "Unable to upload the new profile picture."}, 401
+
+		user.profile_picture_url = s3_url
+		db.session.commit()
+
+		logger.info("User's profile picture updated.", extra=extra_logger)
+		return {"message": "success"}, 200
+
 upload_model = reqparse.RequestParser()
 upload_model.add_argument(
 	"image",
@@ -296,6 +297,14 @@ upload_model.add_argument(
 	location="files",
 	required=True,
 	help="Image to upload."
+)
+
+upload_model.add_argument(
+    "image_id",
+    type=int,
+    location="form",
+    required=False,
+    help="Card ID"
 )
 
 @ns.route("/upload_card_image")
@@ -313,6 +322,7 @@ class UploadCardImage(Resource):
 		400: The body is not valid or the image have a wrong format.
 		401: Failed to upload the image to the s3 bucket.
 	"""
+	# check if image size is 136*88, if not resize it
 	@ns.jwt_required()
 	@ns.expect(upload_model)
 	@ns.s3_bucket_health_check()
@@ -329,22 +339,76 @@ class UploadCardImage(Resource):
 
 		user_id = g.token_payload["user_id"]
 		file_ext = image_file.filename.rsplit(".", 1)[-1]
+
+		card = None
+
+		if args["image_id"] is not None:
+			card = CardGallery.query.filter_by(id=args["image_id"], user_id=user_id).first()
 		s3_url = f"card_gallery/{user_id}/{uuid4()}.{file_ext}"
+		if card:
+			s3_url = card.img_url
+
 		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
+		if not card:
+			try:
+				image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
+				db.session.add(image_db_obj)
+			except ValidationError as e:
+				db.session.rollback()
+				logger.warning("Validation error when trying to load the image schema.", extra=extra_logger)
+				return {"message": "Failure, something wrong happened while uploading this image."}, 400
+			except Exception as e:
+				db.session.rollback()
+				logger.critical(f"Unhandled error happened while creating image database's object.", extra=extra_logger | logger.extra(exception=e))
+				return {"message": "Failure, something wrong happened while uploading this image."}, 400
+		else:
+			if not s3s.delete_all_resources(card.img_url):
+				db.session.rollback()
+				logger.critical("Unable to delete the old profile picture", extra=extra_logger)
+				return {"message": "Unable to delete the old profile picture."}, 401
+
+		image_file.stream.seek(0, 2)
+		file_size = image_file.stream.tell()
+		image_file.stream.seek(0)
+
 		try:
-			image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
-			db.session.add(image_db_obj)
-		except ValidationError as e:
-			db.session.rollback()
-			logger.warning("Validation error when trying to load the image schema.", extra=extra_logger)
-			return {"message": "Failure, something wrong happened while uploading this image."}, 400
+			img = Image.open(image_file.stream)
+
+			if image_file.content_type == "image/png":
+				img = img.convert("RGBA")
+			else:
+				img = img.convert("RGB")
+
+			small_image = img.resize((88, 136), Image.NEAREST)
+
+			pixels = small_image.load()
+
+			for y in range(136):
+				for x in range(88):
+					m = mask[y][x]
+
+					if m == 0:
+						pixels[x, y] = (0, 0, 0, 0)
+					elif m == 2:
+						pixels[x, y] = (255, 255, 255, 255)
+
+			output = BytesIO()
+			format = "PNG" if image_file.content_type == "image/png" else "JPEG"
+			small_image.save(output, format=format)
+			output.seek(0)
+
+			processed_file = FileStorage(
+				stream=output,
+				filename=image_file.filename,
+				content_type=image_file.content_type,
+			)
 		except Exception as e:
 			db.session.rollback()
-			logger.critical(f"Unhandled error happened while creating image database's object.", extra=extra_logger | logger.extra(exception=e))
+			logger.critical(f"Unhandled error happened while converting the image to the good format.", extra=extra_logger, exc_info=e)
 			return {"message": "Failure, something wrong happened while uploading this image."}, 400
 
-		if not s3s.add_resource(image_file, s3_url):
+		if not s3s.add_resource(processed_file, s3_url):
 			db.session.rollback()
 			logger.critical(f"Failed to upload the image.", extra=extra_logger)
 			return {"message": "Failed to upload the image."}, 401
@@ -357,6 +421,23 @@ class UploadCardImage(Resource):
 remove_card_image_model = ns.model("RemoveCardImageModel", {
 	"card_id": fields.Integer(required=True)
 })
+
+update_img_model = reqparse.RequestParser()
+update_img_model.add_argument(
+	"image",
+	type=FileStorage,
+	location="files",
+	required=True,
+	help="Image to upload."
+)
+
+update_img_model.add_argument(
+    "image_id",
+    type=int,
+    location="form",
+    required=True,
+    help="Card ID"
+)
 
 @ns.route("/remove_card_image")
 class RemoveCardImage(Resource):
@@ -419,11 +500,11 @@ class GetCardImage(Resource):
 		query = CardGallery.query.filter_by(user_id=user_id)
 
 		if query.first() is None:
-			return {"message": "No card image found for this user id "}, 404
+			return {"message": "No card image found for this user id "}, 200
 
 		images_url = []
 		for row in query.yield_per(50):
-			url = s3s.get_resource_url(row.img_url, 3600)
+			url = s3s.get_resource_url(row.img_url, -1)
 			if url is not None:
 				images_url.append({"url": url, "image_id": row.id})
 
