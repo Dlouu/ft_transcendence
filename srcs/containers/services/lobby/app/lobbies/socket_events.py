@@ -13,40 +13,6 @@ from app.lobbies.services import emit_lobby_state, remove_lobby
 from app.models.user import User
 from app.services import session_service as st
 
-""" def _ensure_socket_user(socket_id: str) -> User | None:
-    if not socket_id:
-        return None
-
-    existing = User.query.filter_by(username=socket_id).first()
-    if existing:
-        existing.is_active = True
-        db.session.commit()
-        session["user_id"] = existing.id
-        session["username"] = existing.username
-        return existing
-
-    default_picture = os.getenv("DEFAULT_PROFILE_PICTURE", "default_profile_picture.jpg")
-
-    for _ in range(5):
-        candidate_user_id = SOCKET_USER_ID_BASE + secrets.randbelow(SOCKET_USER_ID_RANGE)
-        user = User(
-            user_id=candidate_user_id,
-            username=socket_id,
-            profile_picture_url=default_picture,
-            is_active=True
-        )
-        db.session.add(user)
-        try:
-            db.session.commit()
-            session["user_id"] = user.id
-            session["username"] = user.username
-            return user
-        except IntegrityError:
-            db.session.rollback()
-            continue
-    return None """
-
-
 """
 SocketIO event: "connect"
 
@@ -142,7 +108,12 @@ def add_bot():
     if not code or code not in lobbies:
         return
     data = lobbies[code]
-    if data["game_started"] or sid != data["supreme_master_sid"]:
+    user_id = session.get("user_id")
+    if not user_id:
+        emit("error", {"message": "Not logged"})
+        return
+
+    if data["game_started"] or user_id != data["supreme_master_user_id"]:
         emit("error", {"message": "Only host can add bots"})
         return
 
@@ -175,7 +146,12 @@ def remove_bot():
         return
 
     data = lobbies[code]
-    if data["game_started"] or sid != data["supreme_master_sid"]:
+    user_id = session.get("user_id")
+    if not user_id:
+        emit("error", {"message": "Not logged"})
+        return
+
+    if data["game_started"] or user_id != data["supreme_master_user_id"]:
         emit("error", {"message": "Only host can remove bots"})
         return
 
@@ -207,7 +183,12 @@ def master_start():
         return
 
     data = lobbies[code]
-    if sid != data["supreme_master_sid"]:
+    user_id = session.get("user_id")
+    if not user_id:
+        emit("error", {"message": "Not logged"})
+        return
+
+    if user_id != data["supreme_master_user_id"]:
         emit("error", {"message": "Only host can start"})
         return
 
@@ -253,7 +234,12 @@ def set_theme(data):
         return
 
     lobby_data = lobbies[code]
-    if lobby_data["game_started"] or sid != lobby_data["supreme_master_sid"]:
+    user_id = session.get("user_id")
+    if not user_id:
+        emit("error", {"message": "Not logged"})
+        return
+
+    if lobby_data["game_started"] or user_id != lobby_data["supreme_master_user_id"]:
         emit("error", {"message": "Only host can change theme"})
         return
 
@@ -276,7 +262,12 @@ def set_privacy(data):
         return
 
     lobby_data = lobbies[code]
-    if lobby_data["game_started"] or sid != lobby_data["supreme_master_sid"]:
+    user_id = session.get("user_id")
+    if not user_id:
+        emit("error", {"message": "Not logged"})
+        return
+
+    if lobby_data["game_started"] or user_id != lobby_data["supreme_master_user_id"]:
         emit("error", {"message": "Only host can setup privacy lobby"})
         return
 
@@ -308,10 +299,11 @@ def player_ready_to_play():
         return
 
     data = lobbies[code]
-    if data["game_started"] or sid not in data["players"]:
+    user_id = session.get("user_id")
+    if data["game_started"] or not user_id or user_id not in data["players"]:
         return
 
-    data["players"][sid]["ready"] = not data["players"][sid]["ready"]
+    data["players"][user_id]["ready"] = not data["players"][user_id]["ready"]
     emit_lobby_state(code)
 
 """
@@ -338,36 +330,55 @@ def join_lobby_socket(data):
         return
 
     lobby_data = lobbies[code]
+    user_id = session.get("user_id")
+    if not user_id:
+        emit("error", {"message": "Not logged"})
+        return
+
+    def _bind_player_sid():
+        player = lobby_data["players"][user_id]
+        old_sid = player.get("sid")
+        if old_sid and old_sid != request.sid:
+            socketid_lobby.pop(old_sid, None)
+        player["sid"] = request.sid
+        player["connected"] = True
+        socketid_lobby[request.sid] = code
 
     if lobby_data["game_started"]:
-        if request.sid in lobby_data["players"]:
+        if user_id in lobby_data["players"]:
             # Reconnexion autorisee
-            lobby_data["players"][request.sid]["connected"] = True
-            if lobby_data["players"][request.sid].get("user_id") is None:
-                lobby_data["players"][request.sid]["user_id"] = session.get("user_id")
             join_room(code)
-            socketid_lobby[request.sid] = code
+            _bind_player_sid()
+            if lobby_data.get("supreme_master_user_id") == user_id:
+                lobby_data["supreme_master_sid"] = request.sid
             emit_lobby_state(code)
         else:
             emit("error", {"message": "Game already started"})
         return
 
-    total_players = len(lobby_data["players"]) + lobby_data["bots"]
-    if total_players >= max_players:
-        emit("room_full", {"message": "Room is full"})
-        return
+    if user_id not in lobby_data["players"]:
+        total_players = len(lobby_data["players"]) + lobby_data["bots"]
+        if total_players >= max_players:
+            emit("room_full", {"message": "Room is full"})
+            return
+
+        lobby_data["players"][user_id] = {
+            "ready": False,
+            "connected": True,
+            "sid": request.sid,
+        }
+    else:
+        lobby_data["players"][user_id]["connected"] = True
+        _bind_player_sid()
 
     # Ajout du joueur
     join_room(code)
     socketid_lobby[request.sid] = code
-    lobby_data["players"][request.sid] = {
-        "ready": False,
-        "connected": True,
-        "user_id": session.get("user_id")
-    }
 
     # Definir le host si inexistant
-    if lobby_data["supreme_master_sid"] is None:
+    if lobby_data["supreme_master_user_id"] is None:
+        lobby_data["supreme_master_user_id"] = user_id
+    if lobby_data["supreme_master_user_id"] == user_id:
         lobby_data["supreme_master_sid"] = request.sid
 
     emit_lobby_state(code)
@@ -399,15 +410,27 @@ def on_disconnect():
         return
 
     data = lobbies[code]
-    if sid not in data["players"]:
+    user_id = None
+    for candidate_user_id, player in data["players"].items():
+        if player.get("sid") == sid:
+            user_id = candidate_user_id
+            break
+    if user_id is None:
         return
 
     if data["game_started"]:
-        data["players"][sid]["connected"] = False
+        data["players"][user_id]["connected"] = False
     else:
-        del data["players"][sid]
-        if data["supreme_master_sid"] == sid:
-            data["supreme_master_sid"] = next(iter(data["players"]), None)
+        del data["players"][user_id]
+        if data["supreme_master_user_id"] == user_id:
+            data["supreme_master_user_id"] = next(iter(data["players"]), None)
+
+    supreme_master_user_id = data.get("supreme_master_user_id")
+    if supreme_master_user_id and supreme_master_user_id in data["players"]:
+        host_player = data["players"][supreme_master_user_id]
+        data["supreme_master_sid"] = host_player.get("sid") if host_player.get("connected") else None
+    else:
+        data["supreme_master_sid"] = None
 
     if not data["players"] and not data["game_started"]:
         lobbies.pop(code, None)
