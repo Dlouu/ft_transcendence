@@ -19,12 +19,12 @@ function BrushSelector({ brushSize, setBrushSize }) {
 
 	return (
 		<Tooltip message="Size, press + or -">
-			<div className="flex gap-1">
+			<div className="flex gap-1 sm:flex-col justify-center">
 				{BRUSH_SIZES.map((size, index) => (
 					<button
 						key={size}
 						onClick={() => setBrushSize(size)}
-						className={`sm:w-8 sm:h-8 w-6 h-6 font-icon rounded transition ${
+						className={`w-9 h-9 font-icon rounded transition ${
 							brushSize === size
 								? "bg-white text-black"
 								: "bg-gray-700 hover:bg-gray-600"

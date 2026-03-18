@@ -1,4 +1,3 @@
-
 import img from "../../assets/default-back.png"
 
 function PersonalGallery() {

@@ -61,5 +61,6 @@ privileged:
 commit:
 	@git add .
 	@git commit -m "$(MESSAGE)"
+	@git push
 
 .PHONY: all build run stop restart create logs clean fclean re enter ps privileged

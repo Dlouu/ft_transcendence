@@ -1,6 +1,6 @@
 from flask import render_template, Blueprint, request, redirect, url_for, g, session
 import threading
-from flask_socketio import join_room, emit, SocketIO
+from flask_socketio import join_room, emit, send, SocketIO
 from functools import wraps
 
 
@@ -9,10 +9,14 @@ lobby = Blueprint("lobby", __name__)
 # "*" only in production. Allows each to connect to the lobby no matter the origin. Has to be replaced by the actual domain main (localhost:5173)
 socketio = SocketIO(cors_allowed_origins="*")
 
-lobbies= {} # Dictionnary with: 4-characters room code -> {"players": int, "game_started": bool}      
+lobbies= {} # Dictionnary with: 4-characters room code -> {"players": int, "game_started": bool}
 socketid_lobby = {}    # Dictionnary with: socket id -> room code
 max_players  = 4       # Max players per lobby
 
+
+@lobby.route("/pong", methods=["GET"])
+def pong():
+    return {"message": "pong"}, 200
 
 # Debugging. Shows all lobbies with players count, state of the game. Shows all socket ids for each room
 @lobby.route("/debuglobbies", methods=["GET"])
@@ -118,7 +122,7 @@ def create_lobby():
         "supreme_master_sid": None,
         "supreme_master_starts": False
     }
-                        
+
     lobby_removal(room_name, delay=200)
     return redirect(url_for("lobby.join_lobby", code=room_name))
 
@@ -178,8 +182,6 @@ def join_lobby_socket(data):
 
     emit_lobby_state(code)
 
-
-
 # SocketIO event for disconnecting from a lobby. Decrease player count, remove socket id from socketid_lobby dict. If lobby is empty, start a timer to remove the lobby after X seconds
 @socketio.on("disconnect")
 def on_disconnect():
@@ -215,7 +217,7 @@ def remove_lobby(code):
 
     if lobby_data["game_started"] == False:
         socketio.emit("room_expired", {"message": "Lobby closed due to inactivity"}, room=code)
-    
+
     lobbies.pop(code, None)
 
     for sid, lobby_code in list(socketid_lobby.items()):
@@ -263,11 +265,11 @@ def add_bot():
 
     if data["game_started"]:
         return
-    
+
     if sid != data["supreme_master_sid"]:
         emit("error", {"message": "Only host can add bots"})
         return
-    
+
     if data["players"] + data["bots"] >= max_players:
         emit("error", {"message": "Lobby is full"})
         return
@@ -288,11 +290,11 @@ def remove_bot():
 
     if data["game_started"]:
         return
-    
+
     if sid != data["supreme_master_sid"]:
         emit("error", {"message": "Only host can delete bots"})
         return
-    
+
     if data["bots"] <= 0:
         return
 

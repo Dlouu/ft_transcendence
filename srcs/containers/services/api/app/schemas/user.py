@@ -1,5 +1,6 @@
 from app.extensions import ma, db
 from app.models.user import User
+from app.models.gamestats import GameStats
 from marshmallow import fields, Schema
 
 class UserSchema(ma.SQLAlchemyAutoSchema):
@@ -49,3 +50,22 @@ class DeleteCardImageSchema(Schema):
 	card_id = fields.Integer(required=True)
 
 delete_card_image_schema = DeleteCardImageSchema()
+
+class GameStatsSchema(ma.SQLAlchemyAutoSchema):
+	class Meta:
+		model = GameStats
+		load_instance = True
+		sqla_session = db.session
+
+	winrate = fields.Float()
+
+	games_played = fields.Integer()
+	games_won = fields.Integer()
+	nbr_uno = fields.Integer()
+	nbr_uwu = fields.Integer()
+	nbr_4cards = fields.Integer()
+	nbr_drew = fields.Integer()
+	biggest_hand = fields.Integer()
+
+	created_at = fields.DateTime(dump_only=True)
+	updated_at = fields.DateTime(dump_only=True)

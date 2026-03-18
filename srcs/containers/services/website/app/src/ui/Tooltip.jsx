@@ -3,7 +3,7 @@ function Tooltip({ message, children }) {
 	<div className="group relative flex">
 		{children}
 		<span className={`
-			absolute top-8 z-99 scale-0
+			absolute left-8 top-8 z-99 scale-0
 			transition-all rounded text-left
 			bg-gray-500 p-1
 			text-xs text-white
