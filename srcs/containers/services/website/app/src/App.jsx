@@ -5,17 +5,16 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
-import Lobby from "./components/game/Lobby";
 import Me from "./pages/Profile";
 import Gallery from "./pages/Gallery";
 import GalleryImage from "./pages/GalleryImage";
+import LobbyPage from "./pages/Lobby";
 import Paint from "./pages/Paint";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext";
-
 
 function App() {
 	const { user, loading } = useContext(AuthContext);
@@ -30,7 +29,7 @@ function App() {
 				<Route path="/" element={user ? <Home /> : <Login />} />
 				{/* <Route path="/game" element={<Game />}/> */}
 				<Route path="/game/:id" element={<ProtectedRoute><Game /></ProtectedRoute>} />
-				<Route path="/lobby/:id" element={<ProtectedRoute><Lobby /></ProtectedRoute>} />
+				<Route path="/lobby/:id" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>} />
 				<Route path="/register" element={<Register />}/>
 				<Route path="/me" element={<ProtectedRoute><Me /></ProtectedRoute>} />
 				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />

@@ -1,6 +1,5 @@
 import os
 import secrets
-import jwt
 
 from flask import request, session, g
 from flask_socketio import join_room, emit
@@ -11,7 +10,6 @@ from app.core.state import lobbies, socketid_lobby, max_players
 from app.lobbies.lobby_generator import create_lobby_or_error
 from app.lobbies.services import emit_lobby_state, remove_lobby
 from app.models.user import User
-from app.tokens.generate_token import generate_token
 from app.tokens.check_token import check_token
 
 """
@@ -24,7 +22,6 @@ SocketIO event: "connect"
 Verify if user can be associated with the socket connection.
 """
 @socketio.on("connect")
-@generate_token()
 @check_token()
 def on_connect():
     '''
@@ -34,32 +31,19 @@ def on_connect():
     cookie --> token de session (client)
     cookie --> token de session --> user_id
     '''
-    session_token = request.cookies.get("session_token")
-    if not session_token:
+    payload = getattr(g, "token_payload", None)
+    user_id = payload.get("user_id") if isinstance(payload, dict) else session.get("user_id")
+    if not user_id:
         return False
 
-    if session_token.startswith("Bearer "):
-        session_token = session_token.split(" ", 1)[1]
+    session["user_id"] = user_id
 
-    if not st.does_session_token_exist(session_token):
-        return False
-
-    try:
-        payload = st.decode_session_token(session_token)
-    except jwt.PyJWTError:
-        return False
-
-    if not payload or "user_id" not in payload:
-        return False
-
-    user = User.query.filter_by(user_id=payload["user_id"]).first()
-    if not user:
-        return False
-
-    session["user_id"] = payload["user_id"]
-    session["username"] = user.username
-    session["db_user_id"] = user.id
-    join_room(user.username)
+    # Do not reject a valid token if DB lookup fails/unavailable.
+    user = User.query.filter_by(user_id=user_id).first()
+    if user:
+        session["username"] = user.username
+        session["db_user_id"] = user.id
+        join_room(user.username)
 
 '''
 create_lobby
@@ -427,6 +411,41 @@ def on_disconnect():
         del data["players"][user_id]
         if data["supreme_master_user_id"] == user_id:
             data["supreme_master_user_id"] = next(iter(data["players"]), None)
+
+    supreme_master_user_id = data.get("supreme_master_user_id")
+    if supreme_master_user_id and supreme_master_user_id in data["players"]:
+        host_player = data["players"][supreme_master_user_id]
+        data["supreme_master_sid"] = host_player.get("sid") if host_player.get("connected") else None
+    else:
+        data["supreme_master_sid"] = None
+
+    if not data["players"] and not data["game_started"]:
+        lobbies.pop(code, None)
+        return
+
+    emit_lobby_state(code)
+
+@socketio.on("leave_lobby")
+def leave_lobby():
+    sid = request.sid
+    code = socketid_lobby.pop(sid, None)
+    if not code or code not in lobbies:
+        return
+
+    data = lobbies[code]
+    user_id = None
+    for candidate_user_id, player in data["players"].items():
+        if player.get("sid") == sid:
+            user_id = candidate_user_id
+            break
+
+    if user_id is None:
+        return
+
+    del data["players"][user_id]
+
+    if data["supreme_master_user_id"] == user_id:
+        data["supreme_master_user_id"] = next(iter(data["players"]), None)
 
     supreme_master_user_id = data.get("supreme_master_user_id")
     if supreme_master_user_id and supreme_master_user_id in data["players"]:

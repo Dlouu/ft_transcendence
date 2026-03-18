@@ -1,19 +1,17 @@
-import { useNavigate } from "react-router-dom";
 import { Button } from "../../ui";
-import ThemeSelector from "./ThemeSelector";
+import SettingsSelector from "./SettingsSelector";
 import PlayerList from "./PlayerList";
 import { useContext } from "react";
 import { LobbyContext } from "../../context/LobbyContext";
 
-function Room({ onBack }) {
-	const navigate = useNavigate();
-
-	const { players, bots, code, isHost, addBot, removeBot, masterStart, playerReady } = useContext(LobbyContext);
+function Room() {
+	const { players, bots, code, isHost, addBot, removeBot, masterStart, playerReady, leaveLobby } = useContext(LobbyContext);
 	const MAX_PLAYERS = 4;
-	const totalPlayers = players.length;
+	const totalPlayers = players.length + bots.length;
 	const canStart = totalPlayers >= 2;
-	const canRemoveBot = bots > 0;
+	const canRemoveBot = bots.length > 0;
 	const canAddBot = totalPlayers < MAX_PLAYERS;
+
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -21,7 +19,7 @@ function Room({ onBack }) {
 				ROOM {code}
 			</h2>
 
-			<PlayerList players={players} />
+			<PlayerList players={players} bots={bots} />
 
 			{isHost && (
 				<>
@@ -41,9 +39,12 @@ function Room({ onBack }) {
 						</Button>
 					</div>
 
-					<ThemeSelector />
+					<SettingsSelector />
 				
-					<Button disabled={!canStart} onClick={masterStart}>
+					<Button disabled={!canStart} onClick={() => {
+						playerReady();
+						masterStart();
+					}}>
 						START
 					</Button>
 				</>
@@ -55,7 +56,7 @@ function Room({ onBack }) {
 				</Button>
 			)}
 
-				<Button variant="secondary" onClick={onBack}>
+				<Button variant="secondary" onClick={leaveLobby}>
 					BACK
 				</Button>
 		</div>

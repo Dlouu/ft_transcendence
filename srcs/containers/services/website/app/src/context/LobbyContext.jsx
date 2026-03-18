@@ -1,7 +1,8 @@
-import { createContext, useEffect, useState, useRef } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import { useNotifications } from "../hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "./AuthContext";
 
 export const LobbyContext = createContext();
 
@@ -9,37 +10,43 @@ export function LobbyProvider({ children }) {
 	const [code, setCode] = useState("");
 	const [master, setMaster] = useState("");
 	const [players, setPlayers] = useState([]);
-	const [bots, setBots] = useState(0);
+	const [bots, setBots] = useState([]);
 	const [privacy, setPrivacy] = useState(true);
 	const [UwUtheme, setUwUTheme] = useState(false);
 	const { notify } = useNotifications();
 	const navigate = useNavigate();
+	const { user, loading } = useContext(AuthContext);
 	const socketRef = useRef(null);
 	const isHost = master === socketRef.current?.id;
+	const [connected, setConnected] = useState(false);
 
 	useEffect(() => {
-		//test a delete quand les sockets fonctionneront
-		console.log("🔌 Tentative de connexion socket...");
-		socketRef.current = io("/lobby");
-		socketRef.current.on("connect", () => {
-			console.log("✅ Socket connecté ! ID:", socketRef.current.id);
-		});
-		socketRef.current.on("connect_error", (err) => {
-			console.log("❌ Erreur connexion:", err.message);
+		if (loading || !user) {
+			if (socketRef.current) {
+				socketRef.current.disconnect();
+				socketRef.current = null;
+			}
+			return;
+		}
+
+		socketRef.current = io("https://localhost:4443", {
+			path: "/ws",
+			withCredentials: true,
 		});
 
 		socketRef.current.on("lobby_state", (data) => {
 
-			const playersList = data.humans_sid.map(sid => ({
-				sid,
-				id: data.humans_id[data.humans_sid.indexOf(sid)],
-				ready: data.ready_humans.includes(sid),
-				isHost: sid === data.supreme_master_sid,
+			console.log("lobby_state reçu:", data);
+			const playersList = data.humans_id.map(id => ({
+				id,
+				username: data.humans_usernames?.[id] ?? id,
+				ready: data.ready_humans_id.includes(id),
+				isHost: id === data.supreme_master_user_id,
 			}));
 			setMaster(data.supreme_master_sid);
 			setPlayers(playersList);
 			setCode(data.code);
-			setBots(data.bots_count ?? 0);
+			setBots(data.bots ?? []);
 			setPrivacy(data.privacy);
 			setUwUTheme(data.theme);
 		});
@@ -56,11 +63,16 @@ export function LobbyProvider({ children }) {
 			notify("Game is full", "error");
 		});
 
+		socketRef.current.on("connect", () => setConnected(true));
+		socketRef.current.on("disconnect", () => setConnected(false));
+
 		return () => {
-			socketRef.current.disconnect();
+			if (socketRef.current) {
+				socketRef.current.disconnect();
+				socketRef.current = null;
+			}
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [loading, user]);
 
 	function createLobby() {
 		socketRef.current.emit("create_lobby", {}, (response) => {
@@ -73,7 +85,18 @@ export function LobbyProvider({ children }) {
 		});
 	}
 
+	function leaveLobby() {
+		socketRef.current.emit("leave_lobby");
+		setCode("");
+		setPlayers([]);
+		setBots([]);
+		setMaster("");
+		navigate("/");
+	}
+
 	function joinLobby(code) {
+		if (!socketRef.current)
+			return;
 		socketRef.current.emit("join_lobby_request", { code }, (response) => {
 			if (response && response.ok) {
 				socketRef.current.emit("join_lobby_socket", { code: response.code });
@@ -81,6 +104,7 @@ export function LobbyProvider({ children }) {
 				return;
 			}
 			notify(response?.message || "Unable to join this lobby.", "error");
+			navigate("/");
 		});
 	}
 
@@ -97,7 +121,7 @@ export function LobbyProvider({ children }) {
 	}
 
 	function masterStart() {
-		socketRef.current.emit("master-start");
+		socketRef.current.emit("master_start");
 	}
 
 	function setTheme(theme) {
@@ -110,7 +134,9 @@ export function LobbyProvider({ children }) {
 
 	return (
 		<LobbyContext.Provider value={{
+			connected,
 			players,
+			master,
 			bots,
 			privacy,
 			code,
@@ -118,6 +144,7 @@ export function LobbyProvider({ children }) {
 			theme: UwUtheme,
 			createLobby,
 			joinLobby,
+			leaveLobby,
 			setTheme,
 			setRoomPrivacy,
 			addBot,
@@ -129,13 +156,3 @@ export function LobbyProvider({ children }) {
 		</LobbyContext.Provider>
 	);
 }
-
-
-// tu cliques CREATE 
-// → emit("create_lobby") 
-// → serveur crée la room et te donne un code
-// → tu navigues vers /lobby/:code
-// → tu emit("join_lobby_socket", { code })
-// → serveur t'ajoute à la room
-// → serveur emit("lobby_state") avec toi dedans
-// → tes états se mettent à jour

@@ -2,6 +2,7 @@ import threading
 
 from app.core.state import lobbies, socketid_lobby, max_players
 from app.core.extensions import socketio
+from app.models.user import User
 
 """
 Emits the current lobby state via SocketIO
@@ -34,6 +35,10 @@ def emit_lobby_state(code):
 
     players = data["players"]
     connected_players = [(user_id, p) for user_id, p in players.items() if p.get("connected")]
+    humans_usernames = {
+        user_id: User.query.get(user_id).username 
+        for user_id, _ in connected_players
+    }
     humans_ids = [user_id for user_id, _ in connected_players]
     humans_sids = [p.get("sid") for _, p in connected_players]
     ready_ids = [user_id for user_id, p in players.items() if p.get("ready")]
@@ -49,7 +54,7 @@ def emit_lobby_state(code):
         "code": code, # what Yohann needs
         "bots_count": data.get("bots", 0), # what Yohann needs
         "humans_id": humans_ids, # user_id # what Yohann needs
-        #"humans_username": humans_username,
+        "humans_usernames": humans_usernames,
         "theme": data.get("theme", False), # what Yohann needs
         "game_ended": data.get("game_ended", False),
         "humans_sid": humans_sids, # socketid (debug/compat)
