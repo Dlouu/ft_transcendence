@@ -9,6 +9,7 @@ import { GameRepositoryService } from "./game-repository";
 import { BotLogicService } from "./bot-logic.service";
 import { GameDebugService } from "./game-debug.service";
 import { BotScoringService } from "./bot-scoring.service";
+import { LoggerModule } from "./logger.module";
 
 @Module({
 	providers: [
@@ -34,5 +35,8 @@ import { BotScoringService } from "./bot-scoring.service";
 		BotScoringService,
 		GameDebugService,
 	],
+	imports: [
+    	LoggerModule,
+  ],
 })
 export class GameModule {}

@@ -11,6 +11,7 @@ import { toCardDtoArray } from "./dto/init-game.dto";
 import { CardDto } from "./dto/card.dto";
 import { NextTurnDto } from "./dto/next-turn.dto";
 import { BotLogicService } from "./bot-logic.service";
+import { GameLoggerService } from "./logger.service";
 
 @Injectable()
 export class GameService {
@@ -26,6 +27,7 @@ export class GameService {
 		@Inject(forwardRef(() => GamePlayService))
 		private readonly gamePlay: GamePlayService,
 		private readonly botLogic: BotLogicService,
+		private readonly logger: GameLoggerService,
 	) {}
 
 	setServer(io: Server): void {
@@ -197,10 +199,8 @@ export class GameService {
 			this.gameInitReadyByRoom.delete(game.roomName);
 			this.clearTurnTimeout(game.roomName);
 
-			console.log(
-				`No connected players left in ${game.roomName}. Deleting game.`,
-			);
 			this.gameRepository.deleteGame(game);
+			this.logger.gameDelete(game.roomName, "No more real player left in game.");
 			return;
 		}
 
@@ -226,10 +226,22 @@ export class GameService {
 		}
 
 		if (game.pendingUnoPlayerIndex !== null) {
+			this.logger.invalidAction(
+				player._id,
+				player._name,
+				game.roomName,
+				"play_card_during_uno_window",
+			);
 			return;
 		}
 
 		if (!this.gameLogic.isPlayersTurn(game, player)) {
+			this.logger.invalidAction(
+				player._id,
+				player._name,
+				game.roomName,
+				"play_card_out_of_turn",
+			);
 			return;
 		}
 
@@ -286,6 +298,22 @@ export class GameService {
 		}
 
 		if (game.pendingUnoPlayerIndex !== null) {
+			this.logger.invalidAction(
+				player._id,
+				player._name,
+				game.roomName,
+				"draw_card_during_uno_window",
+			);
+			return;
+		}
+
+		if (!this.gameLogic.isPlayersTurn(game, player)) {
+			this.logger.invalidAction(
+				player._id,
+				player._name,
+				game.roomName,
+				"draw_card_out_of_turn",
+			);
 			return;
 		}
 
@@ -305,6 +333,8 @@ export class GameService {
 			}
 			return;
 		}
+
+		this.logger.drawCard(player._id, player._name, game.roomName, 1, "Player drew.");
 
 		game.turnCount += 1;
 
@@ -332,6 +362,16 @@ export class GameService {
 
 		const player = this.gameRepository.getPlayerInGame(game, playerId);
 		if (!player) {
+			return;
+		}
+
+		if (game.pendingUnoPlayerIndex === null) {
+			this.logger.invalidAction(
+				player._id,
+				player._name,
+				game.roomName,
+				"shout_uno_without_pending_uno",
+			);
 			return;
 		}
 

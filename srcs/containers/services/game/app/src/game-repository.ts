@@ -5,11 +5,16 @@ import { GameState } from "./domain/GameEnums";
 import { UnoPlayer } from "./domain/UnoPlayer";
 import { CreateGameDto } from "./dto/create-game.dto";
 import { toRejoinGameDto } from "./dto/rejoin-game.dto";
+import { GameLoggerService } from "./logger.service";
 
 // Handles the storage and retrieval of Game and Player objects
 @Injectable()
 export class GameRepositoryService {
 	private games: Game[] = [];
+	
+		constructor(
+			private readonly logger: GameLoggerService,
+		) {}
 
 	// =================================
 	// ===== CREATION AND DELETION =====
@@ -44,7 +49,13 @@ export class GameRepositoryService {
 
 		this.games.push(newGame);
 
-		console.log("Game " + newGame.roomName + " has been created !");
+		this.logger.gameCreate(
+			newGame.roomName,
+			playerUids,
+			playerUids.length,
+			botNbr,
+			cardTheme,
+		);
 
 		return newGame;
 	}
@@ -123,6 +134,8 @@ export class GameRepositoryService {
 
 		game.connectedPlayers.add(playerId);
 
+		this.logger.playerJoin(playerId, player._name, game.roomName, player._socket?.id ?? "NO_SOCKET", game.connectedPlayers.size);
+
 		return game;
 	}
 
@@ -138,7 +151,7 @@ export class GameRepositoryService {
 
 		player._isBot = false;
 
-		console.log(`Player ${player._name} rejoined the game ${game.roomName}`);
+		this.logger.playerRejoin(player._id, player._name, game.roomName, player._socket?.id ?? "NO_SOCKET", game.connectedPlayers.size);
 	}
 
 	/**
@@ -164,6 +177,8 @@ export class GameRepositoryService {
 		player._isBot = true;
 
 		socket.to(game.roomName).emit("game:playerLeft", { playerId });
+
+		this.logger.playerLeave(playerId, player._name, game.roomName, game.connectedPlayers.size)
 
 		return game;
 	}

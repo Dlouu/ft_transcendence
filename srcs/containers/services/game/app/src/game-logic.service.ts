@@ -1,3 +1,4 @@
+import { GameDebugService } from './game-debug.service';
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Game } from "./domain/UnoGame";
 import { GameState, CardCode, CardFamily } from "./domain/GameEnums";
@@ -9,6 +10,7 @@ import { Card } from "./domain/UnoCard";
 import { GameWinDto, GameWinPlayerDto } from "./dto/game-win.dto";
 import { toDrewCardDto } from "./dto/drawn-card.dto";
 import { GameService } from "./game.service";
+import { GameLoggerService } from "./logger.service";
 
 // Handles the rules of the game (turns, UNO shouts, card validation).
 @Injectable()
@@ -23,6 +25,7 @@ export class GameLogicService {
 		private readonly gameRepository: GameRepositoryService,
 		@Inject(forwardRef(() => GameService))
 		private readonly gameService: GameService,
+		private readonly logger: GameLoggerService,
 	) {}
 
 	private getIoServer() {
@@ -42,7 +45,6 @@ export class GameLogicService {
 		if (game.connectedPlayers.size === game.expectedPlayers.length) {
 			const started = this.startGame(game);
 			if (started) {
-				console.log(`Game '${game.roomName}' started !`);
 				return started;
 			}
 		}
@@ -255,7 +257,25 @@ export class GameLogicService {
 		const callback = this.colorPickCallbacks.get(playerId);
 		if (callback) {
 			callback(color);
+			return;
 		}
+
+		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
+		if (!game) {
+			return;
+		}
+
+		const player = this.gameRepository.getPlayerInGame(game, playerId);
+		if (!player) {
+			return;
+		}
+
+		this.logger.invalidAction(
+			player._id,
+			player._name,
+			game.roomName,
+			`pick_wild_color_without_prompt:${color}`,
+		);
 	}
 
 	clearPendingUno(game: Game, skipTurnTimeoutRestart = false): void {
@@ -391,8 +411,9 @@ export class GameLogicService {
 		this.clearPendingUno(game);
 		this.gameService.clearTurnTimeout(game.roomName);
 
+		const duration = Date.now() - game.createdAt;
 		const durationDdHhMmSs = this.formatDurationToDdHhMmSs(
-			Date.now() - game.createdAt,
+			duration,
 		);
 		const dto: GameWinDto = {
 			winner: winner._name,
@@ -409,11 +430,9 @@ export class GameLogicService {
 		};
 
 		this.getIoServer()?.to(game.roomName).emit("game:win", dto);
+		this.logger.gameEnd(game.roomName, winner._name, duration, Math.floor(game.turnCount / game.players.length));
 
 		this.gameRepository.deleteGame(game);
-
-		console.log(
-			`Game '${game.roomName}' won by '${winner._name}'. Game closed.`,
-		);
+		this.logger.gameDelete(game.roomName, "Game finished.");
 	}
 }

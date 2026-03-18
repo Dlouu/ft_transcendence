@@ -1,3 +1,4 @@
+import { Logger } from 'winston';
 import { GameLogicService } from './game-logic.service';
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { DeckService } from "./deck.service";
@@ -10,6 +11,7 @@ import { toPlayedCardDto } from './dto/played-card.dto';
 import { GameService } from './game.service';
 import { GameRepositoryService } from './game-repository';
 import { NextTurnDto } from './dto/next-turn.dto';
+import { GameLoggerService } from './logger.service';
 
 // Handles the inputs of the players of the game (play card, draw, uno).
 @Injectable()
@@ -20,6 +22,7 @@ export class GamePlayService {
 		private readonly gameRepository: GameRepositoryService,
 		@Inject(forwardRef(() => GameService))
 		private readonly gameService: GameService,
+		private readonly logger: GameLoggerService,
 	) {}
 
 	private getIoServer() {
@@ -52,14 +55,19 @@ export class GamePlayService {
 
 		this.getIoServer()?.to(game.roomName).emit("game:turn:reverse")
 
+		this.logger.turnDirectionChanged(game.roomName, game.currentDirection);
+
 		return true;
 	}
 
 	playDrawTwoCard(game: Game, playedCard: Card): boolean {
 		game.discard.push(playedCard);
 		game.currentFamily = playedCard.family;
+		const targetPlayer = this.gameLogicService.getNextPlayer(game);
 
-		this.drawCard(game, 2, true, this.gameLogicService.getNextPlayer(game));
+		this.drawCard(game, 2, true, targetPlayer);
+
+		this.logger.drawCard(targetPlayer._id, targetPlayer._name, game.roomName, 4, "Player took a draw two.");
 
 		return true;
 	}
@@ -84,6 +92,9 @@ export class GamePlayService {
 		const chosenFamily = await this.gameLogicService.askPlayerColor(game, player);
 		console.log(`Choosen color: ${chosenFamily}`);
 		this.drawCard(game, 4, true, targetPlayer);
+
+		this.logger.drawCard(targetPlayer._id, targetPlayer._name, game.roomName, 4, "Player took a draw four.");
+
 		game.currentFamily = chosenFamily;
 		playedCard.family = chosenFamily;
 		this.getIoServer()?.to(game.roomName).emit("game:wild:new-color", { chosenFamily });
@@ -95,14 +106,24 @@ export class GamePlayService {
 	async playCard(game: Game, dto: CardDto, player: UnoPlayer): Promise<boolean> {
 		if (!this.gameLogicService.isPlayersTurn(game, player))
 		{
-			console.log(`It's not player ${player._name}'s turn is not in the game ${game.roomName}`); // TODO: Replace this console log
+			this.logger.invalidAction(
+				player._id,
+				player._name,
+				game.roomName,
+				"play_card_out_of_turn",
+			);
 			return false;
 		}
 
 		const cardIndex = this.gameLogicService.doesPlayerHaveCard(dto, player);
 		if (cardIndex === -1)
 		{
-			console.log(`Player ${player._name} is not in the game ${game.roomName} does not have the card ${dto.cardCode} ${dto.cardFamily}`); // TODO: Replace this console log
+			this.logger.invalidAction(
+				player._id,
+				player._name,
+				game.roomName,
+				`play_card_not_in_hand:${dto.cardCode}:${dto.cardFamily}`,
+			);
 			return false;
 		}
 
@@ -114,7 +135,12 @@ export class GamePlayService {
 		const topCard = game.discard.peek();
 		if (!this.gameLogicService.isPlayable(topCard, dto))
 		{
-			console.log(`Player ${player._name}'s card is not playable in the game ${game.roomName}`); // TODO: Replace this console log
+			this.logger.invalidAction(
+				player._id,
+				player._name,
+				game.roomName,
+				`play_card_not_playable:${dto.cardCode}:${dto.cardFamily}`,
+			);
 			player._hand.splice(cardIndex, 0, playedCard);
 			return false;
 		}
@@ -161,6 +187,8 @@ export class GamePlayService {
 			return false;
 		}
 
+		this.logger.cardPlayed(player._id, player._name, game.roomName, dto.cardCode, dto.cardFamily);
+
 		return true;
 	}
 
@@ -200,6 +228,10 @@ export class GamePlayService {
 
 		this.getIoServer()?.to(game.roomName).emit("game:uno:catched");
 
+		const isPendingUnoPlayer = pendingPlayer._id === player._id;
+
+		this.logger.unoCalled(player._id, player._name, game.roomName, isPendingUnoPlayer);
+
 		return true;
 	}
 
@@ -211,7 +243,12 @@ export class GamePlayService {
 	{
 		if (!this.gameLogicService.isPlayersTurn(game, player) && !isDrawCard)
 		{
-			console.log(`It's not player ${player._id}'s turn is not in the game ${game.roomName}`); // TODO: Replace this console log
+			this.logger.invalidAction(
+				player._id,
+				player._name,
+				game.roomName,
+				"draw_card_out_of_turn",
+			);
 			return false;
 		}
 
