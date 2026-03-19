@@ -5,6 +5,7 @@ import { GameState } from "./domain/GameEnums";
 import { UnoPlayer } from "./domain/UnoPlayer";
 import { CreateGameDto } from "./dto/create-game.dto";
 import { toRejoinGameDto } from "./dto/rejoin-game.dto";
+import { RejoinGameFromLobbyDto } from "./dto/rejoin-game-from-lobby.dto";
 import { GameLoggerService } from "./logger.service";
 
 // Handles the storage and retrieval of Game and Player objects
@@ -181,6 +182,25 @@ export class GameRepositoryService {
 		this.logger.playerLeave(playerId, player._name, game.roomName, game.connectedPlayers.size)
 
 		return game;
+	}
+
+	/**
+	 * Updates a player's information from rejoin lobby data.
+	 *
+	 * Use this when a player rejoins from the lobby with updated player info.
+	 * @param game - The game instance the player is in.
+	 * @param playerId - The unique player identifier.
+	 * @param playerData - The rejoin data containing updated player info.
+	 * @returns The updated UnoPlayer object, or null if player not found.
+	 */
+	updatePlayerById(game: Game, playerId: string, playerData: RejoinGameFromLobbyDto): UnoPlayer | null {
+		const player = this.getPlayerInGame(game, playerId);
+		if (!player) return null;
+
+		player._name = playerData.name;
+		player._cardBack = playerData.backCardURL;
+
+		return player;
 	}
 
 	// ===============================

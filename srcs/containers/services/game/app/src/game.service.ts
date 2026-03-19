@@ -1,5 +1,6 @@
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { CreateGameDto } from "./dto/create-game.dto";
+import { RejoinGameFromLobbyDto } from "./dto/rejoin-game-from-lobby.dto";
 import { Game } from "./domain/UnoGame";
 import { CardCode, GameState } from "./domain/GameEnums";
 import { Server, Socket } from "socket.io";
@@ -101,6 +102,26 @@ export class GameService {
 
 	create(dto: CreateGameDto): Game {
 		return this.gameRepository.create(dto);
+	}
+
+	rejoinFromLobby(playerId: string, dto: RejoinGameFromLobbyDto): Game | null {
+		const game = this.gameRepository.getGameByExpectedPlayer(playerId);
+		if (!game) return null;
+
+		const updatedPlayer = this.gameRepository.updatePlayerById(game, playerId, dto);
+		
+		if (updatedPlayer && this.io) {
+			// Find the player's index in the game
+			const playerIndex = game.players.findIndex(p => p._id === playerId);
+			
+			this.io.to(game.roomName).emit("game:playerUpdated", {
+				playerIndex: playerIndex,
+				name: updatedPlayer._name,
+				cardBack: updatedPlayer._cardBack,
+			});
+		}
+
+		return game;
 	}
 
 	join(playerId: string, socket: Socket): void {

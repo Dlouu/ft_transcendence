@@ -224,6 +224,17 @@ export class OpponentsManager extends Container {
 		return "left";
 	}
 
+	public updateOpponentInfo(playerIndex: number, name: string, cardBackVariant: string): void {
+		const opponent = this._opponents.get(playerIndex);
+		if (!opponent) {
+			return;
+		}
+
+		opponent.name = name;
+		const cardBack = this._assetsManager.getCardBack(cardBackVariant);
+		opponent.setCardBack(cardBack);
+	}
+
 	public destroy(): void {
 		this._opponents.forEach((opp) => {
 			if (opp.hand.parent) {

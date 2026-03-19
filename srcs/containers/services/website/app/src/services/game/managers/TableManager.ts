@@ -226,6 +226,10 @@ export class TableManager extends Container {
 		this._opponentsManager.addOpponentCard(playerName);
 	}
 
+	public updateOpponentInfo(playerIndex: number, name: string, cardBackVariant: string): void {
+		this._opponentsManager.updateOpponentInfo(playerIndex, name, cardBackVariant);
+	}
+
 	public setDeckVisible(isVisible: boolean): void {
 		this._deck.setVisible(isVisible);
 	}
