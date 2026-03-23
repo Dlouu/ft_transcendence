@@ -31,19 +31,19 @@ function SettingsSelector() {
 				<label>
 					<input
 						type="radio"
-						checked={privacy}
+						checked={!privacy}
 						onChange={() => setRoomPrivacy(false)}
 					/>
-					Private
+					Public
 				</label>
 
 				<label>
 					<input
 						type="radio"
-						checked={!privacy}
+						checked={privacy}
 						onChange={() => setRoomPrivacy(true)}
 					/>
-					Public
+					Private
 				</label>
 			</div>
 		</>

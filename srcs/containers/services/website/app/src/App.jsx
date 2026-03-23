@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Game from "./pages/Game";
 import Me from "./pages/Profile";
+import UserProfile from "./pages/UserProfile";
 import Gallery from "./pages/Gallery";
 import GalleryImage from "./pages/GalleryImage";
 import LobbyPage from "./pages/Lobby";
@@ -28,17 +29,16 @@ function App() {
 				{/* <Route path="/" element={user ? <Game /> : <Login />}/> */}
 				<Route path="/" element={user ? <Home /> : <Login />} />
 				{/* <Route path="/game" element={<Game />}/> */}
-				<Route path="/game/:id" element={<ProtectedRoute><Game /></ProtectedRoute>} />
+				<Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>} />
 				<Route path="/lobby/:id" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>} />
 				<Route path="/register" element={<Register />}/>
 				<Route path="/me" element={<ProtectedRoute><Me /></ProtectedRoute>} />
+				<Route path="/profile/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
 				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
 				<Route path="/gallery/:id" element={<ProtectedRoute><GalleryImage /></ProtectedRoute>} />
 				<Route path="/paint" element={<ProtectedRoute><Paint /></ProtectedRoute>} />
 				<Route path="/terms" element={<Terms />} />
 				<Route path="/privacy" element={<Privacy />} />
-			{/*	// profile/:id
-				// friendlist (statut online uniquement)*/}
 				<Route path="*" element={<NotFound />} />
 			</Routes>
 		</AppLayout>

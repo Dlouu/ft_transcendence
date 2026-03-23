@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../hooks/useUser";
 import img from "../../assets/default-back.png"
 
-function AvatarSection({ user }) {
+function AvatarSection({ user, readOnly }) {
 	const navigate = useNavigate();
 	const fileInputRef = useRef(null);
 	const { updateProfilePicture } = useUser();
@@ -33,19 +33,23 @@ const handleChangeAvatar = async (e) => {
 					className="h-34 w-34 rounded"
 					alt={user?.username}
 				/>
-				<input
-					type="file"
-					accept="image/*"
-					ref={fileInputRef}
-					className="hidden"
-					onChange={handleChangeAvatar}
-				/>
-				<Button
-					variant="icon"
-					onClick={() => fileInputRef.current.click()}
-				>
-					󱇤
-				</Button>
+				{ !readOnly && (
+					<>
+						<input
+							type="file"
+							accept="image/*"
+							ref={fileInputRef}
+							className="hidden"
+							onChange={handleChangeAvatar}
+						/>
+						<Button
+							variant="icon"
+							onClick={() => fileInputRef.current.click()}
+						>
+							󱇤
+						</Button>
+					</>
+				)}
 			</div>
 
 			<div className="flex flex-col gap-2">
@@ -57,9 +61,11 @@ const handleChangeAvatar = async (e) => {
 					className="h-34 w-22"
 					alt="Card back"
 				/>
-				<Button variant="icon" onClick={() => navigate("/gallery")}>
-					󱇤
-				</Button>
+				{ readOnly || (
+					<Button variant="icon" onClick={() => navigate("/gallery")}>
+						󱇤
+					</Button>
+				)}
 			</div>
 
 		</div>

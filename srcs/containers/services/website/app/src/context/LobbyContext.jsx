@@ -56,7 +56,7 @@ export function LobbyProvider({ children }) {
 		});
 
 		socketRef.current.on("game_start", (data) => {
-			navigate(`/game/${data.code}`);
+			navigate("/game");
 		});
 
 		socketRef.current.on("room_full", () => {
@@ -129,7 +129,7 @@ export function LobbyProvider({ children }) {
 	}
 
 	function setRoomPrivacy(privacy) {
-		socketRef.current.emit("set_privacy", { privacy: privacy === "privacy_private" });
+		socketRef.current.emit("set_privacy", { privacy });
 	}
 
 	return (
