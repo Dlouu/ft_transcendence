@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { WIDTH, HEIGHT } from '../components/paint/constants';
+import { WIDTH, HEIGHT, MAX_HISTORY } from '../components/paint/constants';
 
 export function useUndoRedo(ctxRef) {
 	const undoStack = useRef([]);
@@ -44,7 +44,13 @@ export function useUndoRedo(ctxRef) {
 		if (!ctxRef.current) return;
 		
 		const imageData = ctxRef.current.getImageData(0, 0, WIDTH, HEIGHT);
+
 		undoStack.current.push(imageData);
+
+		if (undoStack.current.length > MAX_HISTORY) {
+			undoStack.current.shift();
+		}
+
 		redoStack.current = [];
 	};
 

@@ -42,7 +42,7 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 		bgCanvas.width = WIDTH;
 		bgCanvas.height = HEIGHT;
 
-		const bgCtx = bgCanvas.getContext("2d");
+		const bgCtx = bgCanvas.getContext("2d", { willReadFrequently: true });
 		drawCheckerBoard(bgCtx, WIDTH, HEIGHT);
 
 	}, []);
@@ -53,21 +53,33 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 		previewCanvas.width = WIDTH;
 		previewCanvas.height = HEIGHT;
 
-		const previewCtx = previewCanvas.getContext("2d");
+		const previewCtx = previewCanvas.getContext("2d", { willReadFrequently: true });
 		previewCtx.imageSmoothingEnabled = false;
 		previewCtxRef.current = previewCtx;
 
 	}, []);
 
-	useEffect((undo, redo) => {
+	useEffect((undo, redo, imageFromState) => {
+		const img = new Image();
 		const canvas = canvasRef.current;
 		canvas.width = WIDTH;
 		canvas.height = HEIGHT;
 
-		const ctx = canvas.getContext("2d");
+		const ctx = canvas.getContext("2d", { willReadFrequently: true });
 		ctx.imageSmoothingEnabled = false;
 		ctxRef.current = ctx;
-		
+
+		if (imageFromState?.src) {
+			img.src = imageFromState.src;
+		} else {
+			img.src = "/blank.png";
+		}
+
+		img.onload = () => {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+		}
+
 		if (onUndoRedoReady) {
 			onUndoRedoReady({ undo, redo });
 		}

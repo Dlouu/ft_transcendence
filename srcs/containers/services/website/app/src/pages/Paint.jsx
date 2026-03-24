@@ -27,7 +27,7 @@ function Paint() {
 			const canvas = canvasRef.current;
 			if (!canvas) return;
 
-			const ctx = canvas.getContext("2d");
+			const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 			ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
