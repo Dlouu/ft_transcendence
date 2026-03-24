@@ -189,6 +189,15 @@ export function registerServerEventCallbacks({
 		console.log(`Game won:`, _payload);
 	});
 
+	socket.on("game:playerUpdated", async (_payload: { playerIndex: number; name: string; cardBack: string }) => {
+		const tableManager = getTableManager();
+		if (!tableManager) return;
+
+		tableManager.updateOpponentInfo(_payload.playerIndex, _payload.name, _payload.cardBack);
+
+		console.log(`Player ${_payload.playerIndex} updated:`, _payload);
+	});
+
 	socket.on("game:error", (payload) => {
 		console.error("GameService: Game error", payload);
 		socket.disconnect();

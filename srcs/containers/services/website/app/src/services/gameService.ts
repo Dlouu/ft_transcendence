@@ -73,6 +73,7 @@ export class GameService {
 		this.initSocket(playerId);
 
 		this._cardPool = new CardPool(this._app.stage);
+		await this._assetsMangr.loadArrowTexture();
 
 		this._tableManager = new TableManager(
 			this._cardPool,
@@ -123,7 +124,12 @@ export class GameService {
 
 		const theme = dto.cardTheme === "basic" ? CardsTheme.Basic : CardsTheme.Uwu;
 		await this._assetsMangr.loadTheme(theme);
-		const cardBackVariants = [...new Set(dto.players.map((p) => p.cardBack))];
+		const cardBackVariants = [
+			...new Set([
+				...GAME_CUSTOMIZATION.app.defaultCardBackVariants,
+				...dto.players.map((p) => p.cardBack),
+			]),
+		];
 		await this._assetsMangr.loadCardBacks(cardBackVariants);
 
 		if (this._tableManager.parent !== this._app.stage) {

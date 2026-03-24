@@ -17,7 +17,7 @@ import { GameLoggerService } from "./logger.service";
 export class GameLogicService {
 	private colorPickCallbacks = new Map<string, (color: CardFamily) => void>();
 	private readonly unoRevealDelayMs = 750;
-	private readonly unoCallWindowMs = 5000;
+	private readonly unoCallWindowMs = 100000;
 	private readonly unoPendingTimeouts = new Map<string, NodeJS.Timeout>();
 
 	constructor(

@@ -1,0 +1,43 @@
+Finir endpoint/friendlist (websocket)
+Donner le dos des cartes a yohann: (json)
+	- roomname
+    - players
+        - id
+        - name
+        - cardbackurl
+    - botnbr
+    - theme
+
+Donner a yohann un moyen d'acceder aux stats (yohann envoie dans bdd, marie recupere)
+
+Si y'a assez de place dans un lobby public, afficher sur le site
+
+problemes lobbies:
+    #TEST: liste de tous les lobbies (prive + public)
+    #tous les lobbies rejoignables + public + pas en game
+
+envoyer une simple requete a yohann
+
+http://localhost:3000/game/create
+
+{
+    "roomName": "Dragon-Room-1",
+    "players": [
+        {
+            "id": "1",
+            "name": "test",
+            "cardBackUrl": "uwu"
+        }
+    ],
+    "botNbr": 3,
+    "theme": "UWU"
+}
+
+http://localhost:3000/game/rejoin
+"player": [
+        {
+            "id": "1",
+            "name": "test",
+            "cardBackUrl": "uwu"
+        }
+    ],

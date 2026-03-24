@@ -17,10 +17,7 @@ export class AssetsManager {
 	private _backTextures: Map<string, Texture> = new Map();
 	private _arrowTexture: Texture = Texture.EMPTY;
 	private _themeBackdropColors: Partial<Record<CardFamily, string>> = {};
-
-	constructor() {
-		this._loadArrowTexture();
-	}
+	private _arrowTextureLoadingPromise: Promise<void> | null = null;
 
 	private async _loadArrowTexture(): Promise<void> {
 		try {
@@ -33,6 +30,18 @@ export class AssetsManager {
 		} catch (error) {
 			console.error("Error loading arrow texture:", error);
 		}
+	}
+
+	public async loadArrowTexture(): Promise<void> {
+		if (this._arrowTexture !== Texture.EMPTY) {
+			return;
+		}
+
+		if (!this._arrowTextureLoadingPromise) {
+			this._arrowTextureLoadingPromise = this._loadArrowTexture();
+		}
+
+		await this._arrowTextureLoadingPromise;
 	}
 
 	private _normalizeThemeFileName(theme: CardsTheme): string {
@@ -60,6 +69,47 @@ export class AssetsManager {
 		}
 
 		return keys;
+	}
+
+	private _normalizeCardBackVariant(variant: string): string {
+		return variant.trim();
+	}
+
+	private _isUrlVariant(variant: string): boolean {
+		return (
+			variant.startsWith("http://") ||
+			variant.startsWith("https://") ||
+			variant.startsWith("/")
+		);
+	}
+
+	private _getCardBackLookupKeys(variant: string): string[] {
+		const normalized = this._normalizeCardBackVariant(variant);
+		const keys = new Set<string>([variant, normalized]);
+
+		if (this._isUrlVariant(normalized)) {
+			try {
+				const url = new URL(normalized, window.location.origin);
+				keys.add(url.toString());
+				keys.add(url.href);
+				keys.add(url.pathname);
+
+				const pathname = url.pathname;
+				const filename = pathname.split("/").pop();
+				if (filename) {
+					keys.add(filename);
+					keys.add(filename.replace(/\.[^.]+$/, ""));
+				}
+			} catch {
+				const filename = normalized.split("/").pop();
+				if (filename) {
+					keys.add(filename);
+					keys.add(filename.replace(/\.[^.]+$/, ""));
+				}
+			}
+		}
+
+		return [...keys].filter(Boolean);
 	}
 
 	public async loadTheme(theme: CardsTheme): Promise<void> {
@@ -110,27 +160,29 @@ export class AssetsManager {
 	public async loadCardBacks(
 		variants: string[] = [...GAME_CUSTOMIZATION.app.defaultCardBackVariants],
 	): Promise<void> {
-		// Clear previous theme backs if needed, or keep cache depending on needs.
-		// For now, we clear to ensure we only have current theme backs.
-		this._backTextures.clear();
-
 		const loadPromises = variants.map(async (variant) => {
-			const key = variant;
-			const isUrl =
-				variant.startsWith("http://") ||
-				variant.startsWith("https://") ||
-				variant.startsWith("/");
+			const normalizedVariant = this._normalizeCardBackVariant(variant);
+			if (!normalizedVariant) {
+				return;
+			}
+
+			const isUrl = this._isUrlVariant(normalizedVariant);
 			const assetPath = isUrl
-				? variant
-				: `${variant}${GAME_CUSTOMIZATION.assets.cardBackFileSuffix}`;
+				? normalizedVariant
+				: `${normalizedVariant}${GAME_CUSTOMIZATION.assets.cardBackFileSuffix}`;
 
 			try {
 				const texture = await Assets.load<Texture>(assetPath);
 				if (texture) {
-					this._backTextures.set(key, texture);
+					for (const key of this._getCardBackLookupKeys(normalizedVariant)) {
+						this._backTextures.set(key, texture);
+					}
 				}
 			} catch (error) {
-				console.error(`Error loading card back '${variant}' : `, error);
+				console.error(
+					`Error loading card back '${normalizedVariant}' : `,
+					error,
+				);
 			}
 		});
 
@@ -160,8 +212,30 @@ export class AssetsManager {
 	public getCardBack(
 		variant: string = GAME_CUSTOMIZATION.assets.defaultCardBackVariant,
 	): Texture {
-		if (this._backTextures.has(variant)) {
-			return this._backTextures.get(variant)!;
+		for (const key of this._getCardBackLookupKeys(variant)) {
+			const texture = this._backTextures.get(key);
+			if (texture) {
+				return texture;
+			}
+		}
+
+		const fallbackVariant = GAME_CUSTOMIZATION.table.defaultRejoinCardBackVariant;
+		for (const fallbackKey of this._getCardBackLookupKeys(fallbackVariant)) {
+			const fallbackTexture = this._backTextures.get(fallbackKey);
+			if (fallbackTexture) {
+				console.warn(
+					`AssetsManager: Card back variant '${variant}' not found. Falling back to '${fallbackVariant}'.`,
+				);
+				return fallbackTexture;
+			}
+		}
+
+		const firstLoadedTexture = this._backTextures.values().next().value;
+		if (firstLoadedTexture) {
+			console.warn(
+				`AssetsManager: Card back variant '${variant}' not found. Falling back to first loaded card back texture.`,
+			);
+			return firstLoadedTexture;
 		}
 
 		console.warn(`AssetsManager: Card back variant '${variant}' not found.`);

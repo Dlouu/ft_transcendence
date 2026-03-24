@@ -18,11 +18,11 @@ type PlayableBotCard = {
 // Handles bot decision making and automated turn progression.
 @Injectable()
 export class BotLogicService {
-	private static readonly BOT_TURN_DELAY_MS = 450;
+	private static readonly BOT_TURN_DELAY_MS = 100; // TODO: Change to random
 	private static readonly BOT_UNO_REACTION_MIN_DELAY_MS = 900;
 	private static readonly BOT_UNO_REACTION_MAX_DELAY_MS = 3200;
-	private static readonly BOT_SELF_UNO_SHOUT_CHANCE = 0.8;
-	private static readonly BOT_CATCH_PLAYER_UNO_CHANCE = 0.35;
+	private static readonly BOT_SELF_UNO_SHOUT_CHANCE = 0.9;
+	private static readonly BOT_CATCH_PLAYER_UNO_CHANCE = 1;
 
 	constructor(
 		@Inject(forwardRef(() => GamePlayService))
@@ -73,8 +73,10 @@ export class BotLogicService {
 		return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
 	}
 
-	private pickRandomBotId(game: Game): string | null {
-		const bots = game.players.filter((player) => player._isBot);
+	private pickRandomBotId(game: Game, excludeBotId?: string): string | null {
+		const bots = game.players.filter(
+			(player) => player._isBot && player._id !== excludeBotId,
+		);
 		if (bots.length === 0) {
 			return null;
 		}
@@ -94,14 +96,12 @@ export class BotLogicService {
 			return;
 		}
 
-		const shouterId = pendingPlayer._isBot
-			? pendingPlayer._id
-			: this.pickRandomBotId(game);
+		const shouterId = this.pickRandomBotId(game);
 		if (!shouterId) {
 			return;
 		}
 
-		const chance = pendingPlayer._isBot
+		const chance = shouterId === pendingPlayer._id
 			? BotLogicService.BOT_SELF_UNO_SHOUT_CHANCE
 			: BotLogicService.BOT_CATCH_PLAYER_UNO_CHANCE;
 		if (Math.random() > chance) {
@@ -128,7 +128,7 @@ export class BotLogicService {
 				return;
 			}
 
-			this.gameService.shoutUno(shouterId);
+			this.gameService.shoutUno(shouterId, game);
 		}, reactionDelay);
 	}
 

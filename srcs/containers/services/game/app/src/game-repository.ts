@@ -5,6 +5,7 @@ import { GameState } from "./domain/GameEnums";
 import { UnoPlayer } from "./domain/UnoPlayer";
 import { CreateGameDto } from "./dto/create-game.dto";
 import { toRejoinGameDto } from "./dto/rejoin-game.dto";
+import { RejoinGameFromLobbyDto } from "./dto/rejoin-game-from-lobby.dto";
 import { GameLoggerService } from "./logger.service";
 
 // Handles the storage and retrieval of Game and Player objects
@@ -30,7 +31,6 @@ export class GameRepositoryService {
 	 */
 	create(createGameDto: CreateGameDto): Game {
 		const { roomName, players, botNbr, theme } = createGameDto;
-		const playerUids = players.map((player) => player.id);
 
 		if (this.getGameByName(roomName)) {
 			throw new ConflictException("Game name already exists");
@@ -39,8 +39,8 @@ export class GameRepositoryService {
 		const cardTheme = theme === "UWU" ? "uwu" : "basic";
 		const newGame = new Game(
 			roomName,
-			playerUids,
-			playerUids.length,
+			players,
+			players.length,
 			botNbr,
 			cardTheme,
 		);
@@ -51,8 +51,8 @@ export class GameRepositoryService {
 
 		this.logger.gameCreate(
 			newGame.roomName,
-			playerUids,
-			playerUids.length,
+			players,
+			players.length,
 			botNbr,
 			cardTheme,
 		);
@@ -93,7 +93,7 @@ export class GameRepositoryService {
 			throw new ConflictException("Player is already connected in this game");
 		}
 
-		if (!game.expectedPlayers.includes(playerId)) {
+		if (!game.isExpectedPlayer(playerId)) {
 			throw new ConflictException("Player is not expected in this game");
 		}
 
@@ -101,7 +101,14 @@ export class GameRepositoryService {
 		const isFirstJoin = !player;
 
 		if (!player) {
-			const newPlayer = new UnoPlayer(playerId, playerId, socket, false);
+			const expectedPlayer = game.getExpectedPlayer(playerId);
+			const newPlayer = new UnoPlayer(
+				playerId,
+				expectedPlayer?.name ?? playerId,
+				socket,
+				false,
+				expectedPlayer?.cardBackUrl ?? "uwu",
+			);
 			const hasJoined = game.addPlayer(newPlayer);
 			if (!hasJoined) {
 				throw new ConflictException("Unable to join game: game is full");
@@ -183,6 +190,25 @@ export class GameRepositoryService {
 		return game;
 	}
 
+	/**
+	 * Updates a player's information from rejoin lobby data.
+	 *
+	 * Use this when a player rejoins from the lobby with updated player info.
+	 * @param game - The game instance the player is in.
+	 * @param playerId - The unique player identifier.
+	 * @param playerData - The rejoin data containing updated player info.
+	 * @returns The updated UnoPlayer object, or null if player not found.
+	 */
+	updatePlayerById(game: Game, playerId: string, playerData: RejoinGameFromLobbyDto): UnoPlayer | null {
+		const player = this.getPlayerInGame(game, playerId);
+		if (!player) return null;
+
+		player._name = playerData.name;
+		player._cardBack = playerData.backCardURL;
+
+		return player;
+	}
+
 	// ===============================
 	// ===== FIND GAME OF PLAYER =====
 	// ===============================
@@ -214,7 +240,7 @@ export class GameRepositoryService {
 	getGameByExpectedPlayer(playerId: string): Game | undefined {
 		for (let i = this.games.length - 1; i >= 0; i--) {
 			const game = this.games[i];
-			if (game.expectedPlayers.includes(playerId)) {
+			if (game.isExpectedPlayer(playerId)) {
 				return game;
 			}
 		}

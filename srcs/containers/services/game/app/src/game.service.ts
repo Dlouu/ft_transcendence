@@ -1,5 +1,6 @@
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { CreateGameDto } from "./dto/create-game.dto";
+import { RejoinGameFromLobbyDto } from "./dto/rejoin-game-from-lobby.dto";
 import { Game } from "./domain/UnoGame";
 import { CardCode, GameState } from "./domain/GameEnums";
 import { Server, Socket } from "socket.io";
@@ -103,6 +104,26 @@ export class GameService {
 		return this.gameRepository.create(dto);
 	}
 
+	rejoinFromLobby(playerId: string, dto: RejoinGameFromLobbyDto): Game | null {
+		const game = this.gameRepository.getGameByExpectedPlayer(playerId);
+		if (!game) return null;
+
+		const updatedPlayer = this.gameRepository.updatePlayerById(game, playerId, dto);
+		
+		if (updatedPlayer && this.io) {
+			// Find the player's index in the game
+			const playerIndex = game.players.findIndex(p => p._id === playerId);
+			
+			this.io.to(game.roomName).emit("game:playerUpdated", {
+				playerIndex: playerIndex,
+				name: updatedPlayer._name,
+				cardBack: updatedPlayer._cardBack,
+			});
+		}
+
+		return game;
+	}
+
 	join(playerId: string, socket: Socket): void {
 		const game = this.gameRepository.join(playerId, socket);
 
@@ -124,7 +145,7 @@ export class GameService {
 			return;
 		}
 
-		if (!game.expectedPlayers.includes(playerId)) {
+		if (!game.isExpectedPlayer(playerId)) {
 			return;
 		}
 
@@ -159,6 +180,8 @@ export class GameService {
 			name: player._name,
 			cardBack: player._cardBack,
 		}));
+
+		console.log("Players = ", players);
 
 		game.players.forEach((player, index) => {
 			const initGameDto = {
@@ -354,8 +377,9 @@ export class GameService {
 		this.tryRunBotTurn(game);
 	}
 
-	shoutUno(playerId: string): void {
-		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
+	shoutUno(playerId: string, gameOverride?: Game): void {
+		const game =
+			gameOverride ?? this.gameRepository.getGameByConnectedPlayer(playerId);
 		if (!game || game.state !== GameState.PLAYING) {
 			return;
 		}

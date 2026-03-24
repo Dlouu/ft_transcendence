@@ -39,6 +39,15 @@ export class Opponent {
 		this._hand.addCard(card);
 	}
 
+	public setCardBack(cardBack: Texture): void {
+		this._cardBack = cardBack;
+		// Update all existing cards in hand with new cardBack
+		const cards = this._hand.children.filter((child) => child instanceof UnoCard);
+		cards.forEach((card: any) => {
+			card.setFaceBackCard(this._cardBack, null);
+		});
+	}
+
 	public removeCard(card: UnoCard): void {
 		this._hand.removeCard(card);
 	}
