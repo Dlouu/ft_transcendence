@@ -36,7 +36,7 @@ def me(user_id, email=None):
 	if not card_back_url:
 		card_back_url = "default/url"
 	else:
-		card_back_url = card_back_url.img_url
+		card_back_url = s3s.get_resource_url(card_back_url.img_url, -1)
 
 	return {
 		"message": "success",

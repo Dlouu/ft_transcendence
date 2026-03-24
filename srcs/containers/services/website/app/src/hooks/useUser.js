@@ -56,6 +56,21 @@ export function useUser() {
 		}
 	};
 
+	const setCardBack = async (cardId) => {
+		try {
+			setLoading(true);
+
+			return await post(
+				"/api/user/select_card_image",
+				{ image_id: Number(cardId) },
+				"Card selected as back"
+			);
+
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	const uploadCardBack = async (file) => {
 		try {
 			setLoading(true);
@@ -84,6 +99,7 @@ export function useUser() {
 		updateUser,
 		updateProfilePicture,
 		uploadCardBack,
+		setCardBack,
 		removeCard,
 		changePassword,
 		deleteAccount,

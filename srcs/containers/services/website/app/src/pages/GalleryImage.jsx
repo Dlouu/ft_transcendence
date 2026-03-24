@@ -6,7 +6,7 @@ import { useUser } from "../hooks/useUser";
 function GalleryImage() {
 	const { id } = useParams();
 	const navigate = useNavigate();
-	const { uploadCardBack, removeCard, loading } = useUser();
+	const { uploadCardBack, setCardBack, removeCard, loading, refreshUser } = useUser();
 	const location = useLocation();
 	const imageFromState = location.state;
 	
@@ -25,6 +25,16 @@ function GalleryImage() {
 			navigate("/gallery");
 		} catch (error) {
 			console.error("Failed to delete: ", error);
+		}
+	}
+
+	const handleSetBack = async () => {
+		try {
+			await setCardBack(id);
+			navigate("/gallery");
+			await refreshUser();
+		} catch (error) {
+			console.error("Failed to set as back card: ", error);
 		}
 	}
 
@@ -72,7 +82,7 @@ function GalleryImage() {
 							DUPLICATE
 						</Button>
 
-						<Button>
+						<Button onClick={handleSetBack} disabled={loading}>
 							SELECT AS BACK
 						</Button>
 

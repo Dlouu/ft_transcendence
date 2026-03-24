@@ -57,7 +57,7 @@ const handleChangeAvatar = async (e) => {
 					Card's back:
 				</p>
 				<img
-					src={user?.card_back_id || img}
+					src={user?.card_back_url ?? img}
 					className="h-34 w-22"
 					alt="Card back"
 				/>
