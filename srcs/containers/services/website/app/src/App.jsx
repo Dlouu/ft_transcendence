@@ -28,7 +28,7 @@ function App() {
 				{/* <Route path="/" element={user ? <Game /> : <Login />}/> */}
 				<Route path="/" element={user ? <Home /> : <Login />} />
 				{/* <Route path="/game" element={<Game />}/> */}
-				<Route path="/game/:id" element={<ProtectedRoute><Game /></ProtectedRoute>} />
+				<Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>} />
 				<Route path="/lobby/:id" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>} />
 				<Route path="/register" element={<Register />}/>
 				<Route path="/me" element={<ProtectedRoute><Me /></ProtectedRoute>} />

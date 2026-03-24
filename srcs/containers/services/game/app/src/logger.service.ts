@@ -2,6 +2,7 @@ import { CardCode, CardFamily } from './domain/GameEnums';
 import { Injectable, Inject } from "@nestjs/common";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
 import { Logger } from "winston";
+import { CreateGamePlayerDto } from "./dto/create-game.dto";
 
 type LogLevel = "info" | "warn" | "error";
 
@@ -79,13 +80,6 @@ export class GameLoggerService {
 		socketId: string,
 		playersCount: number,
 	) {
-		console.log("[GameLoggerService] playerJoin", {
-			playerId,
-			playerName,
-			roomName,
-			socketId,
-			playersCount,
-		});
 		this.event(
 			"player_join",
 			"Player joined room",
@@ -101,13 +95,6 @@ export class GameLoggerService {
 		socketId: string,
 		playersCount: number,
 	) {
-		console.log("[GameLoggerService] playerRejoin", {
-			playerId,
-			playerName,
-			roomName,
-			socketId,
-			playersCount,
-		});
 		this.event(
 			"player_rejoin",
 			"Player rejoined room",
@@ -122,12 +109,6 @@ export class GameLoggerService {
 		roomName: string,
 		playersCount: number,
 	) {
-		console.log("[GameLoggerService] playerLeave", {
-			playerId,
-			playerName,
-			roomName,
-			playersCount,
-		});
 		this.event(
 			"player_leave",
 			"Player left room",
@@ -137,29 +118,21 @@ export class GameLoggerService {
 	}
 
 	gameStart(roomName: string, players: string[]) {
-		console.log("[GameLoggerService] gameStart", { roomName, players });
 		this.event("game_start", "Game started", { roomName }, { players });
 	}
 
 	gameCreate(
 		roomName: string,
-		expectedPlayersIds: string[],
+		expectedPlayers: CreateGamePlayerDto[],
 		realPlayersCount: number,
 		botCount: number,
 		theme: string,
 	) {
-		console.log("[GameLoggerService] gameCreate", {
-			roomName,
-			expectedPlayersIds,
-			realPlayersCount,
-			botCount,
-			theme,
-		});
 		this.event(
 			"game_create",
 			"Game created",
 			{ roomName },
-			{ expectedPlayersIds, realPlayersCount, botCount, theme },
+			{ expectedPlayers, realPlayersCount, botCount, theme },
 		);
 	}
 
@@ -169,12 +142,6 @@ export class GameLoggerService {
 		durationMs: number,
 		totalTurns: number,
 	) {
-		console.log("[GameLoggerService] gameEnd", {
-			roomName,
-			winnerName,
-			durationMs,
-			totalTurns,
-		});
 		this.event(
 			"game_end",
 			"Game ended",
@@ -184,7 +151,6 @@ export class GameLoggerService {
 	}
 
 	gameDelete(roomName: string, reason: string) {
-		console.log("[GameLoggerService] gameDelete", { roomName, reason });
 		this.event("game_delete", "Game deleted", { roomName }, { reason });
 	}
 
@@ -195,13 +161,6 @@ export class GameLoggerService {
 		cardCode: CardCode,
 		cardFamily: CardFamily,
 	) {
-		console.log("[GameLoggerService] cardPlayed", {
-			playerId,
-			playerName,
-			roomName,
-			cardCode,
-			cardFamily,
-		});
 		this.event(
 			"card_played",
 			"Card played",
@@ -217,13 +176,6 @@ export class GameLoggerService {
 		count: number,
 		reason: string,
 	) {
-		console.log("[GameLoggerService] drawCard", {
-			playerId,
-			playerName,
-			roomName,
-			count,
-			reason,
-		});
 		this.event(
 			"draw_card",
 			"Player drew card(s)",
@@ -238,12 +190,6 @@ export class GameLoggerService {
 		roomName: string,
 		isPendingUnoPlayer: boolean,
 	) {
-		console.log("[GameLoggerService] unoCalled", {
-			playerId,
-			playerName,
-			roomName,
-			isPendingUnoPlayer,
-		});
 		this.event(
 			"uno_called",
 			"UNO called",
@@ -256,10 +202,6 @@ export class GameLoggerService {
 		roomName: string,
 		direction: string,
 	) {
-		console.log("[GameLoggerService] turnDirectionChanged", {
-			roomName,
-			direction,
-		});
 		this.event(
 			"turn_direction_changed",
 			"Turn direction changed",
@@ -274,12 +216,6 @@ export class GameLoggerService {
 		roomName: string,
 		action: string,
 	) {
-		console.log("[GameLoggerService] invalidAction", {
-			playerId,
-			playerName,
-			roomName,
-			action,
-		});
 		this.warn(
 			"Invalid action attempted",
 			{ playerId, playerName, roomName },
@@ -288,11 +224,6 @@ export class GameLoggerService {
 	}
 
 	socketConnected(socketId: string, playerId: string, playerName: string) {
-		console.log("[GameLoggerService] socketConnected", {
-			socketId,
-			playerId,
-			playerName,
-		});
 		this.event("socket_connected", "Socket connected", {
 			socketId,
 			playerId,
@@ -305,11 +236,6 @@ export class GameLoggerService {
 		playerId: string,
 		playerName: string,
 	) {
-		console.log("[GameLoggerService] socketDisconnected", {
-			socketId,
-			playerId,
-			playerName,
-		});
 		this.event(
 			"socket_disconnected",
 			"Socket disconnected",

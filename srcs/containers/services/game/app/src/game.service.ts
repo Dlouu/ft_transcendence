@@ -145,7 +145,7 @@ export class GameService {
 			return;
 		}
 
-		if (!game.expectedPlayers.includes(playerId)) {
+		if (!game.isExpectedPlayer(playerId)) {
 			return;
 		}
 
@@ -180,6 +180,8 @@ export class GameService {
 			name: player._name,
 			cardBack: player._cardBack,
 		}));
+
+		console.log("Players = ", players);
 
 		game.players.forEach((player, index) => {
 			const initGameDto = {
@@ -375,8 +377,9 @@ export class GameService {
 		this.tryRunBotTurn(game);
 	}
 
-	shoutUno(playerId: string): void {
-		const game = this.gameRepository.getGameByConnectedPlayer(playerId);
+	shoutUno(playerId: string, gameOverride?: Game): void {
+		const game =
+			gameOverride ?? this.gameRepository.getGameByConnectedPlayer(playerId);
 		if (!game || game.state !== GameState.PLAYING) {
 			return;
 		}

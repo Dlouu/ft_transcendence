@@ -12,7 +12,6 @@ import {
 import { GameService } from "./game.service";
 import { GameLogicService } from "./game-logic.service";
 import { Server, Socket } from "socket.io";
-import { PlaceholderEventDto } from "./dto/placeholder-event.dto";
 import { CardDto } from "./dto/card.dto";
 import { CardFamily } from "./domain/GameEnums";
 import { GameLoggerService } from "./logger.service";

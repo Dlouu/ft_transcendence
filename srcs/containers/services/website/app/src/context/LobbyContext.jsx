@@ -56,7 +56,7 @@ export function LobbyProvider({ children }) {
 		});
 
 		socketRef.current.on("game_start", (data) => {
-			navigate(`/game/${data.code}`);
+			navigate(`/game`);
 		});
 
 		socketRef.current.on("room_full", () => {

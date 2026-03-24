@@ -2,13 +2,19 @@ import { generateNickname, UnoPlayer } from "./UnoPlayer";
 import { CardFamily, GameState } from "./GameEnums";
 import { DeckPile } from "./DeckPile";
 
+export interface ExpectedPlayer {
+  id: string;
+  name: string;
+  cardBackUrl: string;
+}
+
 export class Game {
   public roomName: string;
   public cardTheme: "basic" | "uwu";
 
   public players: UnoPlayer[];
   public connectedPlayers: Set<string>;
-  public expectedPlayers: string[];
+  public expectedPlayers: ExpectedPlayer[];
   private realPlayersNbr: number;
   private botNbr: number;
 
@@ -28,7 +34,7 @@ export class Game {
 
   constructor(
     name: string,
-    players: string[], // To replace by uids
+    players: ExpectedPlayer[],
     playerNbr: number,
     botNbr: number,
     cardTheme: "basic" | "uwu",
@@ -54,6 +60,18 @@ export class Game {
     this.pendingUnoPlayerIndex = null;
   }
 
+  isExpectedPlayer(playerId: string): boolean {
+    return this.expectedPlayers.some((player) => player.id === playerId);
+  }
+
+  getExpectedPlayer(playerId: string): ExpectedPlayer | undefined {
+    return this.expectedPlayers.find((player) => player.id === playerId);
+  }
+
+  getExpectedPlayerIds(): string[] {
+    return this.expectedPlayers.map((player) => player.id);
+  }
+
   toJson() {
     return {
       roomName: this.roomName,
@@ -63,6 +81,7 @@ export class Game {
         name: player._name,
         isBot: player._isBot,
         handSize: player._hand.length,
+        cardBack: player._cardBack,
       })),
       connectedPlayers: Array.from(this.connectedPlayers),
       deck: this.deck.toArray(),
