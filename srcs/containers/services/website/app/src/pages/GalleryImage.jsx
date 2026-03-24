@@ -2,16 +2,22 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { getDefaultImage } from "../services/gallery/galleryService";
 import { Button, Page, Card } from "../ui";
 import { useUser } from "../hooks/useUser";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
 function GalleryImage() {
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const { uploadCardBack, setCardBack, removeCard, loading, refreshUser } = useUser();
+	const { user } = useContext(AuthContext);
 	const location = useLocation();
 	const imageFromState = location.state;
 	
 	const image = imageFromState || getDefaultImage(id);
-	const isUserImage = image?.type === "user";
+	const ownerId = image?.ownerId;
+	const isOwnerImage = ownerId != null
+		? Number(ownerId) === Number(user?.user_id)
+		: image?.type === "user";
 
 	if (!image) {
 		return (
@@ -20,6 +26,10 @@ function GalleryImage() {
 	}
 
 	const handleDelete = async () => {
+		if (!isOwnerImage) {
+			return;
+		}
+
 		try {
 			await removeCard(id);
 			navigate("/gallery");
@@ -29,6 +39,10 @@ function GalleryImage() {
 	}
 
 	const handleSetBack = async () => {
+		if (!isOwnerImage) {
+			return;
+		}
+
 		try {
 			await setCardBack(id);
 			navigate("/gallery");
@@ -68,10 +82,10 @@ function GalleryImage() {
 						<p className="text-gray-400">
 						</p>
 
-						{isUserImage && (
+						{isOwnerImage && (
 							<Button
 								onClick={() => navigate("/paint", {
-									state: {src: image.src, id: image.id, type: image.type}
+									state: {src: image.src, id: image.id, type: image.type, ownerId: image.ownerId}
 								})}
 							>
 								EDIT
@@ -82,11 +96,13 @@ function GalleryImage() {
 							DUPLICATE
 						</Button>
 
-						<Button onClick={handleSetBack} disabled={loading}>
-							SELECT AS BACK
-						</Button>
+						{isOwnerImage && (
+							<Button onClick={handleSetBack} disabled={loading}>
+								SELECT AS BACK
+							</Button>
+						)}
 
-						{isUserImage && (
+						{isOwnerImage && (
 							<Button onClick={handleDelete}>
 								DELETE
 							</Button>

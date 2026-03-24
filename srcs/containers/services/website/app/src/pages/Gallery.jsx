@@ -23,17 +23,22 @@ function Gallery( onUpload ) {
 		fileInputRef.current.click();
 	};
 
-const handleFileChange = async (event) => {
-	const file = event.target.files?.[0];
-	if (!file) return;
+	const handleAllImages = () => {
+		navigate("/gallery/all");
+	};
 
-	try {
-		await uploadCardBack(file);
-		onUpload();
-	} catch (err) {
-		console.error("Import failed", err);
-	}
-};
+
+	const handleFileChange = async (event) => {
+		const file = event.target.files?.[0];
+		if (!file) return;
+
+		try {
+			await uploadCardBack(file);
+			onUpload();
+		} catch (err) {
+			console.error("Import failed", err);
+		}
+	};
 
 	return (
 		<Page center>
@@ -65,7 +70,7 @@ const handleFileChange = async (event) => {
 						IMPORT
 					</Button>
 
-					<Button variant="success">
+					<Button variant="success" onClick={handleAllImages}>
 						BROWSE ALL IMAGES
 					</Button>
 

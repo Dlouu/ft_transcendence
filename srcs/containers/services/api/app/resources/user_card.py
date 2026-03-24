@@ -287,7 +287,7 @@ class GetCardImage(Resource):
 		for row in pagination.items:
 			url = s3s.get_resource_url(row.img_url, -1)
 			if url is not None:
-				images_url.append({"url": url, "image_id": row.id})
+				images_url.append({"url": url, "image_id": row.id, "user_id": row.user_id})
 
 		logger.info(f"Cards successfully retrieved for the user id {user_id}.",
 			extra=logger.extra(request=request, user_id=user_id, target="aws"))

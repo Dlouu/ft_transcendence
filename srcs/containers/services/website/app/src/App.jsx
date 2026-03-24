@@ -9,6 +9,7 @@ import Me from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import Gallery from "./pages/Gallery";
 import GalleryImage from "./pages/GalleryImage";
+import GalleryAll from "./pages/GalleryAll";
 import LobbyPage from "./pages/Lobby";
 import Paint from "./pages/Paint";
 import Terms from "./pages/Terms";
@@ -35,6 +36,7 @@ function App() {
 				<Route path="/me" element={<ProtectedRoute><Me /></ProtectedRoute>} />
 				<Route path="/profile/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
 				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
+				<Route path="/gallery/all" element={<ProtectedRoute><GalleryAll /></ProtectedRoute>} />
 				<Route path="/gallery/:id" element={<ProtectedRoute><GalleryImage /></ProtectedRoute>} />
 				<Route path="/paint" element={<ProtectedRoute><Paint /></ProtectedRoute>} />
 				<Route path="/terms" element={<Terms />} />
