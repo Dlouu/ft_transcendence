@@ -22,7 +22,8 @@ from app.extensions import db
 
 ns = Namespace("User", description="User endpoints")
 
-@ns.route("/me")
+@ns.route("/me", defaults={"user_id": None})
+@ns.route("/me/<user_id>")
 class Me(Resource):
 	"""
 	Return usefull information about the user
@@ -36,10 +37,12 @@ class Me(Resource):
 		200: Data can be send to the user.
 	"""
 	@ns.jwt_required()
-	def get(self):
+	def get(self, user_id):
 		payload = g.token_payload
 
-		return ms.me(payload["user_id"])
+		if user_id is None:
+			return ms.me(payload["user_id"])
+		return ms.me(user_id, email="")
 
 update_information_model = ns.model("UpdateInformationModel", {
 	"username": fields.String(required=False),
@@ -289,225 +292,3 @@ class UpdateProfilePicture(Resource):
 
 		logger.info("User's profile picture updated.", extra=extra_logger)
 		return {"message": "success"}, 200
-
-upload_model = reqparse.RequestParser()
-upload_model.add_argument(
-	"image",
-	type=FileStorage,
-	location="files",
-	required=True,
-	help="Image to upload."
-)
-
-upload_model.add_argument(
-    "image_id",
-    type=int,
-    location="form",
-    required=False,
-    help="Card ID"
-)
-
-@ns.route("/upload_card_image")
-class UploadCardImage(Resource):
-	"""
-	Allow the user to upload image for his cards.
-
-	API:
-		Method: POST
-		Endpoint: /user/upload_card_image
-		Token: yes
-
-	Response:
-		200: The image have been added to the s3 bucket and is now available for the user.
-		400: The body is not valid or the image have a wrong format.
-		401: Failed to upload the image to the s3 bucket.
-	"""
-	# check if image size is 136*88, if not resize it
-	@ns.jwt_required()
-	@ns.expect(upload_model)
-	@ns.s3_bucket_health_check()
-	def post(self):
-		try:
-			args = upload_model.parse_args()
-			image_file = args["image"]
-
-			if image_file.content_type not in {"image/jpeg", "image/png"}:
-				return {"message": "File format not supported."}, 400
-		except Exception as e:
-			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
-			return {"message": "Content invalid or wrong type."}, 400
-
-		user_id = g.token_payload["user_id"]
-		file_ext = image_file.filename.rsplit(".", 1)[-1]
-
-		card = None
-
-		if args["image_id"] is not None:
-			card = CardGallery.query.filter_by(id=args["image_id"], user_id=user_id).first()
-		s3_url = f"card_gallery/{user_id}/{uuid4()}.{file_ext}"
-		if card:
-			s3_url = card.img_url
-
-		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
-
-		if not card:
-			try:
-				image_db_obj = card_gallery_schema.load({"user_id": user_id, "img_url": s3_url})
-				db.session.add(image_db_obj)
-			except ValidationError as e:
-				db.session.rollback()
-				logger.warning("Validation error when trying to load the image schema.", extra=extra_logger)
-				return {"message": "Failure, something wrong happened while uploading this image."}, 400
-			except Exception as e:
-				db.session.rollback()
-				logger.critical(f"Unhandled error happened while creating image database's object.", extra=extra_logger | logger.extra(exception=e))
-				return {"message": "Failure, something wrong happened while uploading this image."}, 400
-		else:
-			if not s3s.delete_all_resources(card.img_url):
-				db.session.rollback()
-				logger.critical("Unable to delete the old profile picture", extra=extra_logger)
-				return {"message": "Unable to delete the old profile picture."}, 401
-
-		image_file.stream.seek(0, 2)
-		file_size = image_file.stream.tell()
-		image_file.stream.seek(0)
-
-		try:
-			img = Image.open(image_file.stream)
-
-			if image_file.content_type == "image/png":
-				img = img.convert("RGBA")
-			else:
-				img = img.convert("RGB")
-
-			small_image = img.resize((88, 136), Image.NEAREST)
-
-			pixels = small_image.load()
-
-			for y in range(136):
-				for x in range(88):
-					m = mask[y][x]
-
-					if m == 0:
-						pixels[x, y] = (0, 0, 0, 0)
-					elif m == 2:
-						pixels[x, y] = (255, 255, 255, 255)
-
-			output = BytesIO()
-			format = "PNG" if image_file.content_type == "image/png" else "JPEG"
-			small_image.save(output, format=format)
-			output.seek(0)
-
-			processed_file = FileStorage(
-				stream=output,
-				filename=image_file.filename,
-				content_type=image_file.content_type,
-			)
-		except Exception as e:
-			db.session.rollback()
-			logger.critical(f"Unhandled error happened while converting the image to the good format.", extra=extra_logger, exc_info=e)
-			return {"message": "Failure, something wrong happened while uploading this image."}, 400
-
-		if not s3s.add_resource(processed_file, s3_url):
-			db.session.rollback()
-			logger.critical(f"Failed to upload the image.", extra=extra_logger)
-			return {"message": "Failed to upload the image."}, 401
-
-		db.session.commit()
-
-		logger.info("User's card picture uploaded.", extra=extra_logger)
-		return {"message": "success"}, 201
-
-remove_card_image_model = ns.model("RemoveCardImageModel", {
-	"card_id": fields.Integer(required=True)
-})
-
-update_img_model = reqparse.RequestParser()
-update_img_model.add_argument(
-	"image",
-	type=FileStorage,
-	location="files",
-	required=True,
-	help="Image to upload."
-)
-
-update_img_model.add_argument(
-    "image_id",
-    type=int,
-    location="form",
-    required=True,
-    help="Card ID"
-)
-
-@ns.route("/remove_card_image")
-class RemoveCardImage(Resource):
-	"""
-	Allow the user to delete one of his card image.
-
-	API:
-		Method: POST
-		Endpoint: /user/remove_card_image
-		Token: yes
-
-	Response:
-		200: The image have been deleted from the s3 bucket.
-		400: The body is not valid.
-		404: The image can't be found in the s3 bucket.
-	"""
-	@ns.jwt_required()
-	@ns.expect(remove_card_image_model)
-	@ns.s3_bucket_health_check()
-	def post(self):
-		try:
-			data = su.delete_card_image_schema.load(request.json)
-		except ValidationError:
-			logger.warning("Request validation error.", extra=logger.extra(request=request))
-			return {"message": "The body is not valid."}, 400
-
-		user_id = g.token_payload["user_id"]
-		card = CardGallery.query.filter_by(user_id=user_id, id=data["card_id"]).first()
-		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
-
-		if not card:
-			logger.warning("A non-existent card was attempted to be deleted.", extra=extra_logger)
-			return {"message": f"No card found with the id {data["card_id"]} for the user id {user_id}."}, 404
-
-		s3s.delete_resource(card.img_url)
-		db.session.delete(card)
-		db.session.commit()
-
-		logger.info("card successfully removed.", extra=extra_logger)
-		return {"message": "success"}, 200
-
-@ns.route("/<user_id>/get_card_images")
-class GetCardImage(Resource):
-	"""
-	This endpoint is used to get ALL the card images of a user.
-
-	API:
-		Method: GET
-		Endpoint: /<user_id>/get_card_images
-		Token: no
-
-	Response:
-		200: Success, all the image URL can be found in the response body.
-		404: No image found for the given user id, can be caused because the user don't exist or
-			simply because he don't have any image.
-	"""
-	@ns.jwt_required()
-	def get(self, user_id):
-
-		query = CardGallery.query.filter_by(user_id=user_id)
-
-		if query.first() is None:
-			return {"message": "No card image found for this user id "}, 200
-
-		images_url = []
-		for row in query.yield_per(50):
-			url = s3s.get_resource_url(row.img_url, -1)
-			if url is not None:
-				images_url.append({"url": url, "image_id": row.id})
-
-		logger.info(f"Cards successfully retrieved for the user id {user_id}.",
-			  extra=logger.extra(request=request, user_id=user_id, target="aws"))
-		return {"message": "success", "images_url": images_url}, 200
