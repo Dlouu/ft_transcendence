@@ -22,7 +22,8 @@ from app.extensions import db
 
 ns = Namespace("User", description="User endpoints")
 
-@ns.route("/me")
+@ns.route("/me", defaults={"user_id": None})
+@ns.route("/me/<user_id>")
 class Me(Resource):
 	"""
 	Return usefull information about the user
@@ -36,10 +37,12 @@ class Me(Resource):
 		200: Data can be send to the user.
 	"""
 	@ns.jwt_required()
-	def get(self):
+	def get(self, user_id):
 		payload = g.token_payload
 
-		return ms.me(payload["user_id"])
+		if user_id is None:
+			return ms.me(payload["user_id"])
+		return ms.me(user_id, email="")
 
 update_information_model = ns.model("UpdateInformationModel", {
 	"username": fields.String(required=False),
