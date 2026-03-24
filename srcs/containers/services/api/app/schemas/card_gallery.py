@@ -12,3 +12,13 @@ class CardGallerySchema(ma.SQLAlchemyAutoSchema):
 		sqla_session = db.session
 
 card_gallery_schema = CardGallerySchema()
+
+class DeleteCardImageSchema(Schema):
+	card_id = fields.Integer(required=True)
+
+delete_card_image_schema = DeleteCardImageSchema()
+
+class SelectCardImageSchema(Schema):
+	image_id = fields.Integer(required=True)
+
+select_card_image_schema = SelectCardImageSchema()
