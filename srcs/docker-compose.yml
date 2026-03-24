@@ -90,6 +90,7 @@ services:
       - lobby_network
       - redis_network
       - user_db_network
+      - game_network
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     env_file:
