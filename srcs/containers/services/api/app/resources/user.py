@@ -290,6 +290,32 @@ class UpdateProfilePicture(Resource):
 		logger.info("User's profile picture updated.", extra=extra_logger)
 		return {"message": "success"}, 200
 
+select_card_model = ns.model("UpdatePasswordModel", {
+	"img_id": fields.Integer(required=True)
+})
+
+@ns.route("/select_card_image")
+class SelectCardImage(Resource):
+	@ns.jwt_required()
+	@ns.expect(select_card_model)
+	def post(self):
+		user_id = g.token_payload["user_id"]
+		extra_logger = logger.extra(request=request, user_id=user_id, target="user_db")
+
+		user = User.query.filter_by(user_id=user_id).first()
+		if not user:
+			logger.critical("The user id does not exist in the user database",extra=extra_logger)
+
+		card = CardGallery.query.filter_by(id=request.json["image_id"], user_id=user_id)
+		if not card:
+			logger.critical("No card have been found with the given id.", extra=extra_logger)
+
+		user.card_back_id = request.json["image_id"]
+
+		db.session.commit()
+
+		return {"message": "success"}, 200
+
 upload_model = reqparse.RequestParser()
 upload_model.add_argument(
 	"image",

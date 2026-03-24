@@ -19,9 +19,9 @@ const handleChangeAvatar = async (e) => {
 	} catch (error) {
 		console.error(error);
 	}
-	
+
 };
-		
+
 	return (
 		<div className="grid grid-cols-2">
 			<div className="flex flex-col gap-2">
@@ -53,7 +53,7 @@ const handleChangeAvatar = async (e) => {
 					Card's back:
 				</p>
 				<img
-					src={user?.card_back_url || img}
+					src={user?.card_back_id || img}
 					className="h-34 w-22"
 					alt="Card back"
 				/>

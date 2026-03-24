@@ -2,6 +2,7 @@ import os
 
 from app.services import request_service as rs
 from app.models.user import User
+from app.models.card_gallery import CardGallery
 from app.extensions import s3
 from app.services import s3_bucket_service as s3s
 
@@ -31,12 +32,19 @@ def me(user_id, email=None):
 	except Exception as e:
 		profile_picture_url = None
 
+	card_back_url = CardGallery.query.filter_by(id=user.card_back_id).first()
+	if not card_back_url:
+		card_back_url = "default/url"
+	else:
+		card_back_url = card_back_url.img_url
+
 	return {
 		"message": "success",
 		"user_id": user_id,
 		"username": user.username,
 		"email": response.json()["email"] if email is None else email,
 		"profile_picture_url": profile_picture_url,
+		"card_back_url": card_back_url,
 		"created_at": user.created_at.timestamp(),
 		"updated_at": user.updated_at.timestamp(),
 	}, 200
