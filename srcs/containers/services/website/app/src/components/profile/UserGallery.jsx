@@ -16,7 +16,7 @@ function UserGallery({ userId }) {
 
 		const fetchCards = async () => {
 			try {
-				const res = await fetch(`/api/user/${userId}/get_card_images`, {
+				const res = await fetch(`/api/user/get_card_images/${userId}`, {
 					method: "GET",
 					credentials: "include",
 				});
