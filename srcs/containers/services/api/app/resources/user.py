@@ -508,6 +508,11 @@ class RemoveCardImage(Resource):
 		logger.info("card successfully removed.", extra=extra_logger)
 		return {"message": "success"}, 200
 
+get_card_img_model = reqparse.RequestParser()
+get_card_img_model.add_argument("page", type=int, default=1, help="Page number.")
+get_card_img_model.add_argument("per_page", type=int, default=50, help="Image URL per page.")
+
+@ns.route("/get_card_images", defaults={"user_id": None})
 @ns.route("/<user_id>/get_card_images")
 class GetCardImage(Resource):
 	"""
@@ -524,19 +529,31 @@ class GetCardImage(Resource):
 			simply because he don't have any image.
 	"""
 	@ns.jwt_required()
+	@ns.expect(get_card_img_model)
 	def get(self, user_id):
+		page = request.args.get("page", 1, type=int)
+		per_page = request.args.get("per_page", 50, type=int)
 
-		query = CardGallery.query.filter_by(user_id=user_id)
+		per_page = min(per_page, 100)
 
-		if query.first() is None:
-			return {"message": "No card image found for this user id "}, 200
+		if user_id:
+			query = CardGallery.query.filter_by(user_id=user_id)
+		else:
+			query = CardGallery.query
+
+		pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+		# if not pagination.items:
+		# 	logger.info(f"No card image found.",
+		# 		extra=logger.extra(request=request, user_id=user_id, target="aws"))
+		# 	return {"message": "No card image found."}, 200
 
 		images_url = []
-		for row in query.yield_per(50):
+		for row in pagination.items:
 			url = s3s.get_resource_url(row.img_url, -1)
 			if url is not None:
 				images_url.append({"url": url, "image_id": row.id})
 
 		logger.info(f"Cards successfully retrieved for the user id {user_id}.",
-			  extra=logger.extra(request=request, user_id=user_id, target="aws"))
+			extra=logger.extra(request=request, user_id=user_id, target="aws"))
 		return {"message": "success", "images_url": images_url}, 200
