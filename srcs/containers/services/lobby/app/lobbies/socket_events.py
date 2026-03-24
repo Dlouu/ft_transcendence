@@ -1,6 +1,7 @@
 import os
 import secrets
 
+import requests
 from flask import request, session, g
 from flask_socketio import join_room, emit
 from sqlalchemy.exc import IntegrityError
@@ -11,6 +12,9 @@ from app.lobbies.lobby_generator import create_lobby_or_error
 from app.lobbies.services import emit_lobby_state, remove_lobby
 from app.models.user import User
 from app.tokens.check_token import check_token
+
+GAME_CREATE_URL = os.getenv("GAME_SERVICE_URL") or os.getenv("GAME_CREATE_URL", "http://game:3000/game/create")
+GAME_JOIN_URL = os.getenv("GAME_JOIN_URL", "http://game:3000/game/rejoin")
 
 """
 SocketIO event: "connect"
@@ -192,6 +196,13 @@ def master_start():
         return
     
     if all(p["ready"] for p in data["players"].values()):
+        ok, error_message = send_datas_on_game_created({
+            **data,
+            "code": code,
+        })
+        if not ok:
+            emit("error", {"message": error_message})
+            return
         data["game_started"] = True
         socketio.emit("game_start", {"code": code}, room=code)
     else:
@@ -338,6 +349,13 @@ def join_lobby_socket(data):
             _bind_player_sid()
             if lobby_data.get("supreme_master_user_id") == user_id:
                 lobby_data["supreme_master_sid"] = request.sid
+            ok, error_message = send_datas_on_game_joined({
+                "player_id": user_id,
+                "theme": lobby_data.get("theme"),
+            })
+            if not ok:
+                emit("error", {"message": error_message})
+                return
             emit_lobby_state(code)
         else:
             emit("error", {"message": "Game already started"})
@@ -459,3 +477,63 @@ def leave_lobby():
         return
 
     emit_lobby_state(code)
+
+def get_users_by_player_ids(player_ids):
+    users = (
+        User.query.filter(User.user_id.in_(player_ids)).all()
+        if player_ids
+        else []
+    )
+    return {str(user.user_id): user for user in users}
+
+
+def build_player_entry(player_id, users_by_user_id, default_card_back):
+    player_key = str(player_id)
+    user = users_by_user_id.get(player_key)
+    return {
+        "id": player_key,
+        "name": user.username if user else player_key,
+        "cardBackUrl": getattr(user, "card_back_url", None) or default_card_back,
+    }
+
+
+def send_datas_on_game_created(data):
+    player_ids = list((data.get("players") or {}).keys())
+    users_by_user_id = get_users_by_player_ids(player_ids)
+    default_card_back = "uwu" if data.get("theme") else "basic"
+
+    payload = {
+        "roomName": data.get("code"),
+        "players": [
+            build_player_entry(player_id, users_by_user_id, default_card_back)
+            for player_id in player_ids
+        ],
+        "botNbr": data.get("bots", 0),
+        "theme": "UWU" if data.get("theme") else "BASE",
+    }
+    try:
+        response = requests.post(GAME_CREATE_URL, json=payload, timeout=5)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        return False, f"Unable to create game: {exc}"
+    return True, payload
+
+
+def send_datas_on_game_joined(data):
+    player_id = data.get("player_id")
+    if player_id is None:
+        return False, "Missing player id"
+
+    default_card_back = "uwu" if data.get("theme") else "basic"
+    users_by_user_id = get_users_by_player_ids([player_id])
+    payload = {
+        "player": [
+            build_player_entry(player_id, users_by_user_id, default_card_back)
+        ]
+    }
+    try:
+        response = requests.post(GAME_JOIN_URL, json=payload, timeout=5)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        return False, f"Unable to join game: {exc}"
+    return True, payload
