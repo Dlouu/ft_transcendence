@@ -493,7 +493,7 @@ def build_player_entry(player_id, users_by_user_id, default_card_back):
     return {
         "id": player_key,
         "name": user.username if user else player_key,
-        "cardBackUrl": getattr(user, "card_back_url", None) or default_card_back,
+        "cardBackUrl": getattr(user, "card_back_id", None) or default_card_back,
     }
 
 

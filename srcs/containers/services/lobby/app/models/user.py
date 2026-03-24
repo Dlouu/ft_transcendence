@@ -9,7 +9,7 @@ class User(db.Model):
 	user_id = db.Column(db.BigInteger, nullable=False, unique=True)
 	username = db.Column(db.String(255), nullable=False, unique=True)
 	profile_picture_url = db.Column(db.String(255), nullable=False)
-	card_back_url = db.Column(db.String(255), nullable=False)
+	card_back_id = db.Column(db.String(255), nullable=False)
 
 	is_active = db.Column(db.Boolean, nullable=False, default=True)
 
