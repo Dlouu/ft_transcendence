@@ -19,8 +19,10 @@ type PlayableBotCard = {
 @Injectable()
 export class BotLogicService {
 	private static readonly BOT_TURN_DELAY_MS = 100; // TODO: Change to random
-	private static readonly BOT_UNO_REACTION_MIN_DELAY_MS = 900;
-	private static readonly BOT_UNO_REACTION_MAX_DELAY_MS = 3200;
+	private static readonly BOT_SELF_UNO_REACTION_MIN_DELAY_MS = 850;
+	private static readonly BOT_SELF_UNO_REACTION_MAX_DELAY_MS = 3000;
+	private static readonly BOT_COUNTER_UNO_REACTION_MIN_DELAY_MS = 900;
+	private static readonly BOT_COUNTER_UNO_REACTION_MAX_DELAY_MS = 3200;
 	private static readonly BOT_SELF_UNO_SHOUT_CHANCE = 0.9;
 	private static readonly BOT_CATCH_PLAYER_UNO_CHANCE = 1;
 
@@ -85,6 +87,39 @@ export class BotLogicService {
 		return bots[randomIndex]._id;
 	}
 
+	private scheduleBotUnoAttempt(
+		game: Game,
+		pendingPlayerId: string,
+		shouterId: string,
+		chance: number,
+		minDelayMs: number,
+		maxDelayMs: number,
+	): void {
+		if (Math.random() > chance) {
+			return;
+		}
+
+		const reactionDelay = this.getRandomDelay(minDelayMs, maxDelayMs);
+
+		setTimeout(() => {
+			const currentPendingIndex = game.pendingUnoPlayerIndex;
+			if (currentPendingIndex === null) {
+				return;
+			}
+
+			const currentPendingPlayer = game.players[currentPendingIndex];
+			if (
+				!currentPendingPlayer ||
+				currentPendingPlayer._id !== pendingPlayerId ||
+				currentPendingPlayer._hand.length !== 1
+			) {
+				return;
+			}
+
+			this.gameService.shoutUno(shouterId, game);
+		}, reactionDelay);
+	}
+
 	scheduleUnoReaction(game: Game): void {
 		const pendingIndex = game.pendingUnoPlayerIndex;
 		if (pendingIndex === null) {
@@ -96,40 +131,46 @@ export class BotLogicService {
 			return;
 		}
 
-		const shouterId = this.pickRandomBotId(game);
-		if (!shouterId) {
+		const pendingPlayerId = pendingPlayer._id;
+
+		if (pendingPlayer._isBot) {
+			this.scheduleBotUnoAttempt(
+				game,
+				pendingPlayerId,
+				pendingPlayerId,
+				BotLogicService.BOT_SELF_UNO_SHOUT_CHANCE,
+				BotLogicService.BOT_SELF_UNO_REACTION_MIN_DELAY_MS,
+				BotLogicService.BOT_SELF_UNO_REACTION_MAX_DELAY_MS,
+			);
+
+			const counterBotId = this.pickRandomBotId(game, pendingPlayerId);
+			if (counterBotId) {
+				this.scheduleBotUnoAttempt(
+					game,
+					pendingPlayerId,
+					counterBotId,
+					BotLogicService.BOT_CATCH_PLAYER_UNO_CHANCE,
+					BotLogicService.BOT_COUNTER_UNO_REACTION_MIN_DELAY_MS,
+					BotLogicService.BOT_COUNTER_UNO_REACTION_MAX_DELAY_MS,
+				);
+			}
+
 			return;
 		}
 
-		const chance = shouterId === pendingPlayer._id
-			? BotLogicService.BOT_SELF_UNO_SHOUT_CHANCE
-			: BotLogicService.BOT_CATCH_PLAYER_UNO_CHANCE;
-		if (Math.random() > chance) {
+		const counterBotId = this.pickRandomBotId(game);
+		if (!counterBotId) {
 			return;
 		}
 
-		const reactionDelay = this.getRandomDelay(
-			BotLogicService.BOT_UNO_REACTION_MIN_DELAY_MS,
-			BotLogicService.BOT_UNO_REACTION_MAX_DELAY_MS,
+		this.scheduleBotUnoAttempt(
+			game,
+			pendingPlayerId,
+			counterBotId,
+			BotLogicService.BOT_CATCH_PLAYER_UNO_CHANCE,
+			BotLogicService.BOT_COUNTER_UNO_REACTION_MIN_DELAY_MS,
+			BotLogicService.BOT_COUNTER_UNO_REACTION_MAX_DELAY_MS,
 		);
-
-		setTimeout(() => {
-			const currentPendingIndex = game.pendingUnoPlayerIndex;
-			if (currentPendingIndex === null) {
-				return;
-			}
-
-			const currentPendingPlayer = game.players[currentPendingIndex];
-			if (
-				!currentPendingPlayer ||
-				currentPendingPlayer._id !== pendingPlayer._id ||
-				currentPendingPlayer._hand.length !== 1
-			) {
-				return;
-			}
-
-			this.gameService.shoutUno(shouterId, game);
-		}, reactionDelay);
 	}
 
 	async playTurn(game: Game, botIndex: number): Promise<void> {
