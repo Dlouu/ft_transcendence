@@ -8,8 +8,8 @@ import { AuthContext } from "../context/AuthContext";
 function GalleryImage() {
 	const { id } = useParams();
 	const navigate = useNavigate();
-	const { uploadCardBack, setCardBack, removeCard, loading, refreshUser } = useUser();
-	const { user } = useContext(AuthContext);
+	const { uploadCardBack, setCardBack, removeCard, loading } = useUser();
+	const { user, refreshUser } = useContext(AuthContext);
 	const location = useLocation();
 	const imageFromState = location.state;
 	

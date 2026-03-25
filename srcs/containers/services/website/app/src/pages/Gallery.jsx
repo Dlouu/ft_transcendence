@@ -6,7 +6,7 @@ import { getDefaultGallery } from "../services/gallery/galleryService";
 import { AuthContext } from "../context/AuthContext";
 import UserGallery from "../components/profile/UserGallery";
 
-function Gallery( onUpload ) {
+function Gallery() {
 	const { user } = useContext(AuthContext);
 	const userId = user?.user_id;
 	const navigate = useNavigate();
@@ -34,7 +34,7 @@ function Gallery( onUpload ) {
 
 		try {
 			await uploadCardBack(file);
-			onUpload();
+			refreshGallery();
 		} catch (err) {
 			console.error("Import failed", err);
 		}
@@ -59,7 +59,7 @@ function Gallery( onUpload ) {
 					))}
 				</div>
 
-				<UserGallery userId={userId} onUpload={refreshGallery} key={refreshKey} />
+				<UserGallery userId={userId} key={refreshKey} />
 
 				<div className="flex flex-col sm:flex-row sm:gap-4 justify-center">
 					<Button variant="success" onClick={() => navigate("/paint")}>
