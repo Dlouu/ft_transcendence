@@ -11,6 +11,7 @@ export interface ExpectedPlayer {
 export class Game {
   public roomName: string;
   public cardTheme: "basic" | "uwu";
+  private _winner_player_id: string | null;
 
   public players: UnoPlayer[];
   public connectedPlayers: Set<string>;
@@ -25,7 +26,7 @@ export class Game {
   public currentPlayerIndex: number;
 
   public createdAt: number; // Timestamp of room creation
-  public turnStartTime: number; // Timestamp
+  public turnStartTime: number; // Timestamp of turn start
   public lastActionTime: number;
   public turnCount: number;
   public pendingUnoPlayerIndex: number | null;
@@ -58,6 +59,23 @@ export class Game {
     this.lastActionTime = 0;
     this.turnCount = 0;
     this.pendingUnoPlayerIndex = null;
+    this._winner_player_id = null;
+  }
+
+  private normalizeNonNegativeInt(value: number): number {
+    if (!Number.isFinite(value) || value < 0) {
+      return 0;
+    }
+
+    return Math.floor(value);
+  }
+
+  get winner_player_id(): string | null {
+    return this._winner_player_id;
+  }
+
+  set winner_player_id(value: string | null) {
+    this._winner_player_id = value;
   }
 
   isExpectedPlayer(playerId: string): boolean {
@@ -95,6 +113,7 @@ export class Game {
       lastActionTime: this.lastActionTime,
       turnCount: this.turnCount,
       pendingUnoPlayerIndex: this.pendingUnoPlayerIndex,
+      winnerPlayerId: this.winner_player_id,
     };
   }
 

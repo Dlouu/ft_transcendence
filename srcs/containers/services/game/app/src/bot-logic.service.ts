@@ -19,10 +19,10 @@ type PlayableBotCard = {
 @Injectable()
 export class BotLogicService {
 	private static readonly BOT_TURN_DELAY_MS = 100; // TODO: Change to random
-	private static readonly BOT_SELF_UNO_REACTION_MIN_DELAY_MS = 850;
-	private static readonly BOT_SELF_UNO_REACTION_MAX_DELAY_MS = 3000;
-	private static readonly BOT_COUNTER_UNO_REACTION_MIN_DELAY_MS = 900;
-	private static readonly BOT_COUNTER_UNO_REACTION_MAX_DELAY_MS = 3200;
+	private static readonly BOT_SELF_UNO_REACTION_MIN_DELAY_MS = 400;
+	private static readonly BOT_SELF_UNO_REACTION_MAX_DELAY_MS = 2750;
+	private static readonly BOT_COUNTER_UNO_REACTION_MIN_DELAY_MS = 600;
+	private static readonly BOT_COUNTER_UNO_REACTION_MAX_DELAY_MS = 2900;
 	private static readonly BOT_SELF_UNO_SHOUT_CHANCE = 0.9;
 	private static readonly BOT_CATCH_PLAYER_UNO_CHANCE = 1;
 
