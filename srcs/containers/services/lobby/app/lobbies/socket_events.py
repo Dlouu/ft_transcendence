@@ -1,6 +1,5 @@
 import os
 import secrets
-
 import requests
 from flask import request, session, g
 from flask_socketio import join_room, emit
@@ -490,14 +489,15 @@ def get_users_by_player_ids(player_ids):
 def build_player_entry(player_id, users_by_user_id, default_card_back):
     player_key = str(player_id)
     user = users_by_user_id.get(player_key)
-    card_back = default_card_back
+    card_back_url = default_card_back
+
     if user and user.card_back_id:
-        card_back = user.card_back_id
+        card_back_url = f"https://{os.getenv("S3_BUCKET_NAME")}.s3.amazonaws.com/{user.card_back_id}"
 
     return {
         "id": player_key,
         "name": user.username if user else player_key,
-        "cardBackUrl": card_back,
+        "cardBackUrl": card_back_url,
     }
 
 
