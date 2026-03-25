@@ -49,7 +49,7 @@ function Lobby({ onCreate, onJoin }) {
 					
 				</div>
 				<p className="text-center mt-5">
-					You are logged as <Link to="/me">{user?.username}</Link>
+					You are logged as <Link to={`/profile/${user?.user_id}`}>{user?.username}</Link>
 				</p>
 			</div>
 		</>
