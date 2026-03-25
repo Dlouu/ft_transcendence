@@ -490,17 +490,21 @@ def get_users_by_player_ids(player_ids):
 def build_player_entry(player_id, users_by_user_id, default_card_back):
     player_key = str(player_id)
     user = users_by_user_id.get(player_key)
+    card_back = default_card_back
+    if user and user.card_back_id:
+        card_back = user.card_back_id
+
     return {
         "id": player_key,
         "name": user.username if user else player_key,
-        "cardBackUrl": getattr(user, "card_back_id", None) or default_card_back,
+        "cardBackUrl": card_back,
     }
 
 
 def send_datas_on_game_created(data):
     player_ids = list((data.get("players") or {}).keys())
     users_by_user_id = get_users_by_player_ids(player_ids)
-    default_card_back = "uwu" if data.get("theme") else "basic"
+    default_card_back = "uwu" if data.get("theme") else "basic" #change here
 
     payload = {
         "roomName": data.get("code"),
