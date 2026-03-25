@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { Card, Page } from "../ui";
 import { AuthContext } from "../context/AuthContext";
 import { GameContext } from "../context/GameContext";
@@ -10,7 +10,11 @@ import Sidebar from "../components/profile/Sidebar";
 
 function Me() {
 	const { user, logout } = useContext(AuthContext);
-	const { profile } = useContext(GameContext);
+	const { profile, fetchPublicProfile } = useContext(GameContext);
+
+	useEffect(() => {
+		fetchPublicProfile(user?.id);
+	}, [user?.id, fetchPublicProfile]);
 
 	return (
 		<Page center>
