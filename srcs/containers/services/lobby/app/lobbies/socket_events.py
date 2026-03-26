@@ -387,10 +387,6 @@ def join_lobby_socket(data):
 
     emit_lobby_state(code)
 
-
-
-
-
 """
 SocketIO event: "disconnect"
 
