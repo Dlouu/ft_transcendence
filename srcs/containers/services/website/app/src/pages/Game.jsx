@@ -1,49 +1,61 @@
 import { useEffect, useContext, useRef, useState } from "react";
-import { GameContext } from "../context/GameContext";
 import { Page, Button } from "../ui";
 import { gameService } from "../services/gameService";
 import { AuthContext } from "../context/AuthContext";
 
 function Game() {
-    const { playerName } = useContext(GameContext);
     const { user } = useContext(AuthContext);
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
 
     const [portrait, setPortrait] = useState(false);
-	const userId = user?.user_id;
+    const userId = user?.user_id;
 
-    useEffect(() =>
-    {
-        if (!canvasRef.current) return;
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !userId) return;
 
-        gameService.init({ canvas: canvasRef.current, playerId: userId });
-        console.log("Game mounted for", playerName);
+        let isCancelled = false;
 
-        return () => gameService.destroy();
-    });
+        const mountGame = async () => {
+            try {
+                await gameService.init({ canvas, playerId: userId });
 
-    const enterFullscreen = () =>
-    {
-        console.log("Game unmounted");
+                if (isCancelled) {
+                    gameService.destroy();
+                }
+            } catch (error) {
+                console.error("Failed to initialize game", error);
+            }
+        };
+
+        mountGame();
+
+        return () => {
+            isCancelled = true;
+            gameService.destroy();
+        };
+    }, [userId]);
+
+    const enterFullscreen = () => {
         const el = canvasRef.current;
         if (!el) return;
 
-        if (el.requestFullscreen)
-        {
+        if (el.requestFullscreen) {
             el.requestFullscreen();
         }
     };
 
-    useEffect(() =>
-    {
-        const check = () =>
-        {
+    useEffect(() => {
+        const check = () => {
             const portrait = window.matchMedia("(orientation: portrait)").matches;
             const mobile = window.matchMedia("(pointer: coarse)").matches;
 
-            setPortrait(portrait && mobile);
+            setPortrait((prev) => {
+                const next = portrait && mobile;
+                return prev === next ? prev : next;
+            });
         };
 
         check();
@@ -51,22 +63,44 @@ function Game() {
         return () => window.removeEventListener("resize", check);
     }, []);
 
-    useEffect(() =>
-    {
+    useEffect(() => {
         const canvas = canvasRef.current;
         const container = containerRef.current;
         if (!canvas || !container) return;
 
-        const resize = () =>
-        {
-            const { width, height } = container.getBoundingClientRect();
+        let frameId;
+        let observer;
 
-            gameService.onResize?.(width, height);
+        const resize = () => {
+            if (frameId) {
+                cancelAnimationFrame(frameId);
+            }
+
+            frameId = requestAnimationFrame(() => {
+                const { width, height } = container.getBoundingClientRect();
+                gameService.onResize?.(width, height);
+            });
         };
 
         resize();
         window.addEventListener("resize", resize);
-        return () => window.removeEventListener("resize", resize);
+
+        if (typeof ResizeObserver !== "undefined") {
+            observer = new ResizeObserver(resize);
+            observer.observe(container);
+        }
+
+        return () => {
+            window.removeEventListener("resize", resize);
+
+            if (observer) {
+                observer.disconnect();
+            }
+
+            if (frameId) {
+                cancelAnimationFrame(frameId);
+            }
+        };
     }, []);
 
     return (
