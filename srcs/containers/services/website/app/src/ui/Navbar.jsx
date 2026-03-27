@@ -4,7 +4,6 @@ import { AuthContext } from "../context/AuthContext";
 import Button from "./Button";
 
 function Navbar() {
-	//mettre le playerName quand on est co je sais pas, a revoir
 	const [open, setOpen] = useState(false);
 	const location = useLocation();
 	const { user, logout } = useContext(AuthContext);
@@ -21,8 +20,9 @@ function Navbar() {
 
 	const navLinks = [
 		{ to: "/", icon: "󰘸", label: "PLAY"},
-		{ to: "/gallery", icon: "󰏘",label: "CUSTOMIZE" },
-		{ to: "/me", icon: "󰀄",label: "PROFILE" }
+		{ to: "/gallery", icon: "󰏘",label: "PAINT" },
+		{ to: "/friends", icon: "󰀄",label: "FRIENDS" },
+		{ to: "/me", icon: "󰀄",label: "ME" }
 	];
 
 	const linkClass = (path) =>
