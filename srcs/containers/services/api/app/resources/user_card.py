@@ -24,6 +24,8 @@ select_card_model = ns.model("UpdatePasswordModel", {
 @ns.route("/select_card_image")
 class SelectCardImage(Resource):
 	@ns.jwt_required()
+	@ns.s3_bucket_health_check()
+	@ns.db_health_check()
 	@ns.expect(select_card_model)
 	def post(self):
 		try:
@@ -86,8 +88,9 @@ class UploadCardImage(Resource):
 	"""
 	# check if image size is 136*88, if not resize it
 	@ns.jwt_required()
-	@ns.expect(upload_model)
 	@ns.s3_bucket_health_check()
+	@ns.db_health_check()
+	@ns.expect(upload_model)
 	def post(self):
 		try:
 			args = upload_model.parse_args()
@@ -222,8 +225,9 @@ class RemoveCardImage(Resource):
 		404: The image can't be found in the s3 bucket.
 	"""
 	@ns.jwt_required()
-	@ns.expect(remove_card_image_model)
 	@ns.s3_bucket_health_check()
+	@ns.db_health_check()
+	@ns.expect(remove_card_image_model)
 	def post(self):
 		try:
 			data = sc.delete_card_image_schema.load(request.json)
@@ -278,6 +282,7 @@ class GetCardImage(Resource):
 			simply because he don't have any image.
 	"""
 	@ns.jwt_required()
+	@ns.db_health_check()
 	@ns.expect(get_card_img_model)
 	def get(self, user_id):
 		page = request.args.get("page", 1, type=int)

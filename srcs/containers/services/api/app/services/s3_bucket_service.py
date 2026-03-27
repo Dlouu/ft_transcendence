@@ -54,7 +54,9 @@ def get_resource_url(key, expire=3600):
 	return:
 		a string containing the url or None if the key don't exist.
 	"""
-	print(key, flush=True)
+	if not extensions.s3:
+		return ""
+
 	if not does_resource_exist(key):
 		return None
 
