@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
 	user_id BIGINT UNSIGNED NOT NULL UNIQUE,
 	username VARCHAR(255) NOT NULL,
 	profile_picture_url VARCHAR(255) NOT NULL,
-	card_back_id VARCHAR(255) NOT NULL,
+	card_back_id BIGINT NOT NULL,
 
 	is_active BOOLEAN NOT NULL DEFAULT TRUE,
 

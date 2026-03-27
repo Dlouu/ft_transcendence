@@ -232,12 +232,23 @@ class RemoveCardImage(Resource):
 			return {"message": "The body is not valid."}, 400
 
 		user_id = g.token_payload["user_id"]
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
+
+		user = User.query.filter_by(user_id=user_id).first()
+
+		if not user:
+			logger.warning("A non-existent user attempted to delete an image.", extra=extra_logger)
+			return {"message": "A problem occured while trying to delete this image, please contact an admin if the problem persist."}, 401
+
 		card = CardGallery.query.filter_by(user_id=user_id, id=data["card_id"]).first()
 		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
 		if not card:
 			logger.warning("A non-existent card was attempted to be deleted.", extra=extra_logger)
 			return {"message": f"No card found with the id {data["card_id"]} for the user id {user_id}."}, 404
+
+		if user.card_back_id == data["card_id"]:
+			user.card_back_id = -1
 
 		s3s.delete_resource(card.img_url)
 		db.session.delete(card)

@@ -58,7 +58,7 @@ class UserRegistration(Resource):
 				"username": auth_data["username"],
 				"user_id": json_response["id"],
 				"profile_picture_url": os.getenv("DEFAULT_PROFILE_PICTURE", ""),
-				"card_back_id": os.getenv("DEFAULT_BACK_CARD", "")}
+				"card_back_id": -1}
 			user = user_schema.load(user_payload)
 			db.session.add(user)
 			db.session.commit()

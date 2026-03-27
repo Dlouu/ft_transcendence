@@ -32,11 +32,14 @@ def me(user_id, email=None):
 	except Exception as e:
 		profile_picture_url = None
 
-	card_back_url = CardGallery.query.filter_by(id=user.card_back_id).first()
-	if not card_back_url:
-		card_back_url = "default/url"
+	if user.card_back_id == -1:
+		card_back_url = s3s.get_resource_url(os.getenv("DEFAULT_BACK_CARD", ""), -1)
 	else:
-		card_back_url = s3s.get_resource_url(card_back_url.img_url, -1)
+		card_back_url = CardGallery.query.filter_by(id=user.card_back_id).first()
+		if not card_back_url:
+			card_back_url = "default/url"
+		else:
+			card_back_url = s3s.get_resource_url(card_back_url.img_url, -1)
 
 	return {
 		"message": "success",
