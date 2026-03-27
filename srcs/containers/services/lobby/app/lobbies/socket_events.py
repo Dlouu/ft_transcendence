@@ -11,6 +11,7 @@ from app.lobbies.lobby_generator import create_lobby_or_error
 from app.lobbies.services import emit_lobby_state, remove_lobby
 from app.models.user import User
 from app.tokens.check_token import check_token
+from app.friends.socket_events import notify_friends_status, notify_players_ingame_status
 
 GAME_CREATE_URL = os.getenv("GAME_SERVICE_URL") or os.getenv("GAME_CREATE_URL", "http://game:3000/game/create")
 GAME_JOIN_URL = os.getenv("GAME_JOIN_URL", "http://game:3000/game/rejoin")
@@ -26,7 +27,7 @@ Verify if user can be associated with the socket connection.
 """
 @socketio.on("connect")
 @check_token()
-def on_connect():
+def on_connect(*args, **kwargs):
     '''
     theo stocke un truc dans les cookies, je dois recuperer le token de session de lutilisateur est stocke dans les cooke.
     requete redis pour recuperer le cookie
@@ -47,6 +48,40 @@ def on_connect():
         session["username"] = user.username
         session["db_user_id"] = user.id
         join_room(user.username)
+        notify_friends_status(user.id, user.username, "online")
+
+    for code, lobby_data in lobbies.items():
+        if (
+            lobby_data.get("game_started")
+            and not lobby_data.get("game_ended")
+            and user_id in lobby_data.get("players", {})
+            and not lobby_data["players"][user_id].get("connected")
+        ):
+            emit("ongoing_game", {"code": code}, to=request.sid)
+            break
+
+def broadcast_public_lobbies():
+    public = [
+        {
+            "code": lcode,
+            "humans_count": len([p for p in ldata["players"].values() if p.get("connected")]),
+            "total_count": len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0),
+            "max_players": max_players,
+        }
+        for lcode, ldata in lobbies.items()
+        if not ldata.get("privacy", True)
+        and not ldata.get("game_started", False)
+        and not ldata.get("game_ended", False)
+        and (len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0)) < max_players
+    ]
+    socketio.emit("public_lobbies", {"lobbies": public}, room="lobby_browser")
+
+
+@socketio.on("get_public_lobbies")
+def get_public_lobbies():
+    join_room("lobby_browser")
+    broadcast_public_lobbies()
+
 
 '''
 create_lobby
@@ -204,6 +239,7 @@ def master_start():
             return
         data["game_started"] = True
         socketio.emit("game_start", {"code": code}, room=code)
+        notify_players_ingame_status(data, True)
     else:
         emit("error", {"message": "Not everyone is ready"})
 
@@ -432,8 +468,14 @@ def on_disconnect():
     else:
         data["supreme_master_sid"] = None
 
+    user_id_db = session.get("db_user_id")
+    username = session.get("username")
+    if user_id_db and username:
+        notify_friends_status(user_id_db, username, "offline")
+
     if not data["players"] and not data["game_started"]:
         lobbies.pop(code, None)
+        broadcast_public_lobbies()
         return
 
     emit_lobby_state(code)
@@ -482,10 +524,11 @@ def get_users_by_player_ids(player_ids):
     return {str(user.user_id): user for user in users}
 
 
-def build_player_entry(player_id, users_by_user_id, default_card_back):
+def build_player_entry(player_id, users_by_user_id, default_card_back, profile_picture):
     player_key = str(player_id)
     user = users_by_user_id.get(player_key)
     card_back_url = default_card_back
+    profile_picture = user.profile_picture_url
 
     if user and user.card_back_id:
         card_back_url = f"https://{os.getenv("S3_BUCKET_NAME")}.s3.amazonaws.com/{user.card_back_id}"
@@ -494,6 +537,7 @@ def build_player_entry(player_id, users_by_user_id, default_card_back):
         "id": player_key,
         "name": user.username if user else player_key,
         "cardBackUrl": card_back_url,
+        "profilePicture": profile_picture,
     }
 
 
@@ -501,11 +545,12 @@ def send_datas_on_game_created(data):
     player_ids = list((data.get("players") or {}).keys())
     users_by_user_id = get_users_by_player_ids(player_ids)
     default_card_back = "uwu" if data.get("theme") else "basic" #change here
+    profile_picture = "default"
 
     payload = {
         "roomName": data.get("code"),
         "players": [
-            build_player_entry(player_id, users_by_user_id, default_card_back)
+            build_player_entry(player_id, users_by_user_id, default_card_back, profile_picture)
             for player_id in player_ids
         ],
         "botNbr": data.get("bots", 0),
@@ -526,9 +571,10 @@ def send_datas_on_game_joined(data):
 
     default_card_back = "uwu" if data.get("theme") else "basic"
     users_by_user_id = get_users_by_player_ids([player_id])
+    profile_picture = "default"
     payload = {
         "player": [
-            build_player_entry(player_id, users_by_user_id, default_card_back)
+            build_player_entry(player_id, users_by_user_id, default_card_back, profile_picture)
         ]
     }
     try:
