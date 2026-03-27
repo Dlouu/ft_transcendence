@@ -531,7 +531,9 @@ def build_player_entry(player_id, users_by_user_id, default_card_back, profile_p
     profile_picture = user.profile_picture_url
 
     if user and user.card_back_id:
-        card_back_url = f"https://{os.getenv("S3_BUCKET_NAME")}.s3.amazonaws.com/{user.card_back_id}"
+        card_back_url = f"https://{os.getenv("s3_bucket_name")}.s3.amazonaws.com/%7Buser.card_back_id%7D"
+        profile_picture = f"https://{os.getenv("s3_bucket_name")}.s3.amazonaws.com/%7Buser.profile_picture_url%7D"
+
 
     return {
         "id": player_key,
