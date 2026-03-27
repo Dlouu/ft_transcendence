@@ -106,6 +106,7 @@ class UploadCardImage(Resource):
 
 		if args["image_id"] is not None:
 			card = CardGallery.query.filter_by(id=args["image_id"], user_id=user_id).first()
+
 		s3_url = f"card_gallery/{user_id}/{uuid4()}.{file_ext}"
 		if card:
 			s3_url = card.img_url
@@ -179,8 +180,10 @@ class UploadCardImage(Resource):
 
 		db.session.commit()
 
+		card_id = image_db_obj.id if card == None else card.id
+
 		logger.info("User's card picture uploaded.", extra=extra_logger)
-		return {"message": "success"}, 201
+		return {"message": "success", "image_id": card_id}, 201
 
 remove_card_image_model = ns.model("RemoveCardImageModel", {
 	"card_id": fields.Integer(required=True)

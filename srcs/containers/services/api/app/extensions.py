@@ -27,14 +27,23 @@ def s3_init_app():
 		AWS_REGION = os.getenv("AWS_REGION", "")
 		s3 = boto3.client("s3", region_name=AWS_REGION)
 
-		image_name = os.getenv("DEFAULT_PROFILE_PICTURE", "")
 		bucket_name = os.getenv("S3_BUCKET_NAME", "")
-		s3_key = os.getenv("DEFAULT_IMG_PATH") + "/" + image_name
 
+		image_name = os.getenv("DEFAULT_PROFILE_PICTURE", "")
+		s3_key = image_name
 		try:
 			s3.head_object(Bucket=bucket_name, Key=s3_key)
 		except ClientError as e:
-			s3.upload_file(f"app/{image_name}", bucket_name, s3_key, ExtraArgs={'ContentType': 'image/jpeg'})
+			print(f"app/{image_name}", flush=True)
+			s3.upload_file(f"app/{image_name}", bucket_name, s3_key, ExtraArgs={'ContentType': 'image/png'})
+			return None
+
+		image_name = os.getenv("DEFAULT_BACK_CARD", "")
+		s3_key = image_name
+		try:
+			s3.head_object(Bucket=bucket_name, Key=s3_key)
+		except ClientError as e:
+			s3.upload_file(f"app/{image_name}", bucket_name, s3_key, ExtraArgs={'ContentType': 'image/png'})
 			return None
 
 	except Exception as e:
