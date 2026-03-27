@@ -1,7 +1,7 @@
 Yohann:
   - url du dos des cartes (toujours dans le json)
   - voir le rejoin (qqn quitte la partie et revient ensuite) est-ce que l'id est toujours stocké dans lobby_state? A TESTER
-  - route pour delete la game (il m'envoie une requete post) http://lobby:3000/game/delete A TESTER
+  - route pour delete la game (il m'envoie une requete post) http://lobby:3000/game/delete A TESTER ?
 
 Marie:
   - Finir endpoint/friendlist (websocket) (add, remove, rejected, pending, status: online, in-game) A TESTER
