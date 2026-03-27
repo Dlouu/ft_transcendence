@@ -9,6 +9,7 @@ import { HandRotation } from "../domain/GameEnums";
 import { RejoinOpponentHandSizeDto } from "../dto/rejoin-game.dto";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
 import { OpponentNameDisplay } from "./OpponentNameDisplay";
+import { TableViewport } from "../layout/TableViewport";
 
 export class OpponentsManager extends Container {
 	private _opponents: Map<number, Opponent> = new Map();
@@ -102,17 +103,21 @@ export class OpponentsManager extends Container {
 		(nameDisplay as any)._layoutPosition = positionKey;
 	}
 
-	public resize(width: number, height: number): void {
-		const centerX = width / 2;
-		const centerY = height / 2;
+	public resize(width: number, height: number, viewport?: TableViewport): void {
+		const tableWidth = viewport?.tableWidth ?? width;
+		const tableHeight = viewport?.tableHeight ?? height;
+		const offsetX = viewport?.offsetX ?? 0;
+		const offsetY = viewport?.offsetY ?? 0;
+		const centerX = offsetX + tableWidth / 2;
+		const centerY = offsetY + tableHeight / 2;
 
 		// Calculate centerArea bounds
-		const centerAreaWidth = width * GAME_CUSTOMIZATION.centerArea.mainWidthRatio;
+		const centerAreaWidth =
+			tableWidth * GAME_CUSTOMIZATION.centerArea.mainWidthRatio;
 		const centerAreaHeight = centerAreaWidth * GAME_CUSTOMIZATION.centerArea.mainAspectRatio;
 		const centerAreaLeft = centerX - centerAreaWidth / 2;
 		const centerAreaRight = centerX + centerAreaWidth / 2;
 		const centerAreaTop = centerY - centerAreaHeight / 2;
-		const centerAreaBottom = centerY + centerAreaHeight / 2;
 
 		this._opponents.forEach((opp) => {
 			const hand = opp.hand;
@@ -120,42 +125,48 @@ export class OpponentsManager extends Container {
 
 			if (posKey === "top") {
 				hand.position.set(
-					width / 2,
-					height * GAME_CUSTOMIZATION.opponents.positions.topYRatio,
+					centerX,
+					offsetY + tableHeight * GAME_CUSTOMIZATION.opponents.positions.topYRatio,
 				);
 			} else if (posKey === "left") {
 				hand.position.set(
-					width * GAME_CUSTOMIZATION.opponents.positions.leftXRatio,
-					height / 2,
+					offsetX + tableWidth * GAME_CUSTOMIZATION.opponents.positions.leftXRatio,
+					centerY,
 				);
 			} else if (posKey === "right") {
 				hand.position.set(
-					width * GAME_CUSTOMIZATION.opponents.positions.rightXRatio,
-					height / 2,
+					offsetX + tableWidth * GAME_CUSTOMIZATION.opponents.positions.rightXRatio,
+					centerY,
 				);
 			}
 
-			hand.resize(width, height);
+			hand.resize(width, height, viewport);
 			hand.setVisible(true);
 		});
 
 		// Resize and position name displays (centered between center area and opponent hand)
 		this._nameDisplays.forEach((nameDisplay) => {
 			const posKey = (nameDisplay as any)._layoutPosition;
-			nameDisplay.resize(width, height);
+			nameDisplay.resize(width, height, viewport);
 
 			if (posKey === "top") {
-				const handY = height * GAME_CUSTOMIZATION.opponents.positions.topYRatio;
+				const handY =
+					offsetY +
+					tableHeight * GAME_CUSTOMIZATION.opponents.positions.topYRatio;
 				const bias = GAME_CUSTOMIZATION.opponents.names.topCenterBias;
 				const nameY = centerAreaTop + (handY - centerAreaTop) * bias;
 				nameDisplay.position.set(centerX, nameY);
 			} else if (posKey === "left") {
-				const handX = width * GAME_CUSTOMIZATION.opponents.positions.leftXRatio;
+				const handX =
+					offsetX +
+					tableWidth * GAME_CUSTOMIZATION.opponents.positions.leftXRatio;
 				const bias = GAME_CUSTOMIZATION.opponents.names.sideCenterBias;
 				const nameX = centerAreaLeft + (handX - centerAreaLeft) * bias;
 				nameDisplay.position.set(nameX, centerY);
 			} else if (posKey === "right") {
-				const handX = width * GAME_CUSTOMIZATION.opponents.positions.rightXRatio;
+				const handX =
+					offsetX +
+					tableWidth * GAME_CUSTOMIZATION.opponents.positions.rightXRatio;
 				const bias = GAME_CUSTOMIZATION.opponents.names.sideCenterBias;
 				const nameX = centerAreaRight + (handX - centerAreaRight) * bias;
 				nameDisplay.position.set(nameX, centerY);

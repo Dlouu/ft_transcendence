@@ -1,5 +1,6 @@
 import { Container, Graphics, Ticker } from "pixi.js";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
+import { TableViewport } from "../layout/TableViewport";
 
 export class TurnTimerBar extends Container {
 	private _background: Graphics;
@@ -21,20 +22,31 @@ export class TurnTimerBar extends Container {
 		this.visible = false;
 	}
 
-	public resize(tableWidth: number, tableHeight: number): void {
-		this._barWidth = tableWidth * GAME_CUSTOMIZATION.centerArea.mainWidthRatio;
+	public resize(
+		tableWidth: number,
+		tableHeight: number,
+		viewport?: TableViewport,
+	): void {
+		const safeTableWidth = viewport?.tableWidth ?? tableWidth;
+		const safeTableHeight = viewport?.tableHeight ?? tableHeight;
+		const centerX = viewport?.centerX ?? tableWidth / 2;
+		const centerY = viewport?.centerY ?? tableHeight / 2;
+
+		this._barWidth =
+			safeTableWidth * GAME_CUSTOMIZATION.centerArea.mainWidthRatio;
 		this._barHeight = Math.max(
 			GAME_CUSTOMIZATION.table.turnTimer.minHeightPx,
-			tableHeight * GAME_CUSTOMIZATION.table.turnTimer.heightRatio,
+			safeTableHeight * GAME_CUSTOMIZATION.table.turnTimer.heightRatio,
 		);
 
 		const mainHeight =
 			this._barWidth * GAME_CUSTOMIZATION.centerArea.mainAspectRatio;
-		const yOffset = tableHeight * GAME_CUSTOMIZATION.table.turnTimer.offsetYRatio;
+		const yOffset =
+			safeTableHeight * GAME_CUSTOMIZATION.table.turnTimer.offsetYRatio;
 
 		this.position.set(
-			tableWidth / 2,
-			tableHeight / 2 + mainHeight / 2 + yOffset + this._barHeight / 2,
+			centerX,
+			centerY + mainHeight / 2 + yOffset + this._barHeight / 2,
 		);
 
 		this.drawBackground();

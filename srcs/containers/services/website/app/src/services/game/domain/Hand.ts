@@ -2,6 +2,7 @@ import { UnoCard } from "./UnoCard";
 import { Container, Rectangle, Graphics } from "pixi.js";
 import { CardCode, CardFamily, HandRotation } from "./GameEnums";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
+import { TableViewport } from "../layout/TableViewport";
 
 const CARD_FAMILY_SORT_ORDER: Record<CardFamily, number> = {
 	[CardFamily.ONE]: 0,
@@ -51,6 +52,8 @@ export class Hand extends Container {
 	// Dimensions
 	private _canvasWidth: number = 0;
 	private _canvasHeight: number = 0;
+	private _tableWidth: number = 0;
+	private _tableHeight: number = 0;
 
 	constructor(
 		areaPercent: number = GAME_CUSTOMIZATION.hand.defaults.areaPercent,
@@ -189,9 +192,11 @@ export class Hand extends Container {
 		this._onCardClick?.(card);
 	}
 
-	public resize(width: number, height: number): void {
+	public resize(width: number, height: number, viewport?: TableViewport): void {
 		this._canvasWidth = width;
 		this._canvasHeight = height;
+		this._tableWidth = viewport?.tableWidth ?? width;
+		this._tableHeight = viewport?.tableHeight ?? height;
 		this.updateLayout();
 	}
 
@@ -222,14 +227,14 @@ export class Hand extends Container {
 
 		// --- 1. Calculate Card Size ---
 		const maxCardThickness =
-			this._canvasHeight * GAME_CUSTOMIZATION.hand.layout.cardHeightRatio;
+			this._tableHeight * GAME_CUSTOMIZATION.hand.layout.cardHeightRatio;
 		const cardHeight = maxCardThickness;
 		const cardWidth = cardHeight * this._cardRatio;
 
 		// --- 2. Calculate Available Spread Space ---
 		const screenLengthAvailable = isVertical
-			? this._canvasHeight
-			: this._canvasWidth;
+			? this._tableHeight
+			: this._tableWidth;
 		const handLengthAvailable = screenLengthAvailable * this._areaPercent;
 
 		// --- Update Underlay ---

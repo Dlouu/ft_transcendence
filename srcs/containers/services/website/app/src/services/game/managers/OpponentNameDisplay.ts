@@ -1,5 +1,6 @@
-import { Container, Text, Sprite, Graphics, Texture, Assets } from "pixi.js";
+import { Container, Text, Sprite, Assets } from "pixi.js";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
+import { TableViewport } from "../layout/TableViewport";
 
 export class OpponentNameDisplay extends Container {
 	private _nameText: Text;
@@ -71,16 +72,25 @@ export class OpponentNameDisplay extends Container {
 		this._nameText.text = name;
 	}
 
-	public resize(tableWidth: number, tableHeight: number): void {
+	public resize(
+		tableWidth: number,
+		tableHeight: number,
+		viewport?: TableViewport,
+	): void {
+		const safeTableWidth = viewport?.tableWidth ?? tableWidth;
+		const safeTableHeight = viewport?.tableHeight ?? tableHeight;
 		const nameConfig = GAME_CUSTOMIZATION.opponents.names;
-		const baseFontSize = Math.min(tableWidth, tableHeight) * nameConfig.fontSizeRatio;
+		const baseFontSize =
+			Math.min(safeTableWidth, safeTableHeight) * nameConfig.fontSizeRatio;
 		const fontSize = Math.max(
 			nameConfig.minFontSizePx,
 			Math.min(nameConfig.maxFontSizePx, baseFontSize),
 		);
 
 		this._nameText.style.fontSize = fontSize;
-		const basePictureSize = Math.min(tableWidth, tableHeight) * nameConfig.picture.sizeRatio;
+		const basePictureSize =
+			Math.min(safeTableWidth, safeTableHeight) *
+			nameConfig.picture.sizeRatio;
 		this._pictureSizePx = Math.max(
 			nameConfig.picture.minSizePx,
 			Math.min(nameConfig.picture.maxSizePx, basePictureSize),

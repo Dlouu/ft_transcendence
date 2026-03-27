@@ -1,6 +1,7 @@
 import { Graphics, Container } from "pixi.js";
 import { CardFamily } from "../domain/GameEnums";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
+import { TableViewport } from "../layout/TableViewport";
 
 export class TableCenterArea extends Container {
 	public static readonly MAIN_WIDTH_RATIO: number =
@@ -61,11 +62,18 @@ export class TableCenterArea extends Container {
 		);
 	}
 
-	public update(width: number, height: number) {
+	public update(width: number, height: number, viewport?: TableViewport) {
 		this._width = width;
 		this._height = height;
 
-		const mainW = width * TableCenterArea.MAIN_WIDTH_RATIO;
+		const tableWidth = viewport?.tableWidth ?? width;
+		const tableHeight = viewport?.tableHeight ?? height;
+		const offsetX = viewport?.offsetX ?? 0;
+		const offsetY = viewport?.offsetY ?? 0;
+		const centerX = viewport?.centerX ?? width / 2;
+		const centerY = viewport?.centerY ?? height / 2;
+
+		const mainW = tableWidth * TableCenterArea.MAIN_WIDTH_RATIO;
 		const mainH = mainW * TableCenterArea.MAIN_ASPECT_RATIO;
 		const mainFill = this.parseHexColor(this._mainColor);
 		const mainBorder = this.darkenColor(
@@ -100,9 +108,9 @@ export class TableCenterArea extends Container {
 				color: mainBorder,
 				alpha: 1,
 			});
-		this._mainBackdrop.position.set(width / 2, height / 2);
+		this._mainBackdrop.position.set(centerX, centerY);
 
-		const bdW = width * TableCenterArea.BACKDROP_WIDTH_RATIO;
+		const bdW = tableWidth * TableCenterArea.BACKDROP_WIDTH_RATIO;
 		const bdH = bdW * TableCenterArea.BACKDROP_ASPECT_RATIO;
 		const verticalW = bdH;
 		const verticalH = bdW;
@@ -111,7 +119,7 @@ export class TableCenterArea extends Container {
 			GAME_CUSTOMIZATION.centerArea.backdropCornerRadiusRatio;
 		const bdFill = this.parseHexColor(this._backdropColor);
 		const offset =
-			width / GAME_CUSTOMIZATION.centerArea.deckDiscardOffsetDivisor;
+			tableWidth / GAME_CUSTOMIZATION.centerArea.deckDiscardOffsetDivisor;
 
 		this._deckBackdrop.clear();
 		this._deckBackdrop
@@ -125,7 +133,7 @@ export class TableCenterArea extends Container {
 				color: bdFill,
 				alpha: 1,
 			});
-		this._deckBackdrop.position.set(width / 2 - offset, height / 2);
+		this._deckBackdrop.position.set(offsetX + tableWidth / 2 - offset, offsetY + tableHeight / 2);
 
 		this._discardBackdrop.clear();
 		this._discardBackdrop
@@ -139,7 +147,7 @@ export class TableCenterArea extends Container {
 				color: bdFill,
 				alpha: 1,
 			});
-		this._discardBackdrop.position.set(width / 2 + offset, height / 2);
+		this._discardBackdrop.position.set(offsetX + tableWidth / 2 + offset, offsetY + tableHeight / 2);
 	}
 
 	private darkenColor(color: number, amount: number): number {

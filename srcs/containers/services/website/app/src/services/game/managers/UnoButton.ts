@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from "pixi.js";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
+import { TableViewport } from "../layout/TableViewport";
 
 export class UnoButton extends Container {
 	private static readonly BASE_WIDTH =
@@ -67,12 +68,18 @@ export class UnoButton extends Container {
 		height: number,
 		yRatio: number,
 		widthRatio: number,
+		viewport?: TableViewport,
 	): void {
-		const targetWidth = width * widthRatio;
+		const tableWidth = viewport?.tableWidth ?? width;
+		const tableHeight = viewport?.tableHeight ?? height;
+		const offsetY = viewport?.offsetY ?? 0;
+		const centerX = viewport?.centerX ?? width / 2;
+
+		const targetWidth = tableWidth * widthRatio;
 		const scale =
 			UnoButton.BASE_WIDTH > 0 ? targetWidth / UnoButton.BASE_WIDTH : 1;
 
-		this.position.set(width / 2, height * yRatio);
+		this.position.set(centerX, offsetY + tableHeight * yRatio);
 		this.scale.set(scale);
 	}
 

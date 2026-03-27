@@ -19,7 +19,7 @@ export const GAME_CUSTOMIZATION = {
 	},
 	table: {
 		middleArrowYRatio: 0.43,
-		middleArrowSizeRatio: 0.08,
+		middleArrowSizeFromCenterAreaRatio: 0.12,
 		unoButtonYRatio: 0.57,
 		unoButtonWidthRatio: 0.08,
 		turnTimer: {
