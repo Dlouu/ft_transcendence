@@ -15,6 +15,7 @@ import { VictoryScreen } from "./VictoryScreen";
 import { RejoinGameDto } from "../dto/rejoin-game.dto";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
 import { UnoButton } from "./UnoButton";
+import { TurnTimerBar } from "./TurnTimerBar";
 
 export class TableManager extends Container {
 	private static readonly MIDDLE_ARROW_Y_RATIO =
@@ -25,10 +26,13 @@ export class TableManager extends Container {
 		GAME_CUSTOMIZATION.table.unoButtonYRatio;
 	private static readonly UNO_BUTTON_WIDTH_RATIO =
 		GAME_CUSTOMIZATION.table.unoButtonWidthRatio;
+	private static readonly TURN_TIMER_DURATION_MS =
+		GAME_CUSTOMIZATION.table.turnTimer.durationMs;
 
 	private _playerIndex: number = -1;
 	private _middleArrow: Sprite;
 	private _unoButton: UnoButton;
+	private _turnTimerBar: TurnTimerBar;
 	private _tableWidth: number = 0;
 	private _tableHeight: number = 0;
 	private _isMiddleArrowMirrored: boolean = false;
@@ -65,6 +69,7 @@ export class TableManager extends Container {
 		this._middleArrow = new Sprite(this._assetsManager.arrowTexture);
 		this._middleArrow.anchor.set(0.5);
 		this._unoButton = new UnoButton(onUnoButtonClick);
+		this._turnTimerBar = new TurnTimerBar();
 
 		this._playerHand = new Hand(
 			GAME_CUSTOMIZATION.table.playerHand.areaPercent,
@@ -81,6 +86,7 @@ export class TableManager extends Container {
 
 		this.addChild(this._opponentsManager);
 		this.addChild(this._tableCenterArea);
+		this.addChild(this._turnTimerBar);
 		this.addChild(this._middleArrow);
 		this.addChild(this._unoButton);
 		this.addChild(this._deck);
@@ -110,6 +116,7 @@ export class TableManager extends Container {
 		this._tableCenterArea.visible = true;
 		this.hideCardFamilySelector();
 		this.setUnoButtonVisible(false);
+		this._turnTimerBar.stop();
 		this._victoryScreen.hide();
 
 		this.setActivePlayer(initGameDto.firstPlayerIndex);
@@ -123,6 +130,7 @@ export class TableManager extends Container {
 
 		this.hideCardFamilySelector();
 		this.setUnoButtonVisible(false);
+		this._turnTimerBar.stop();
 		this._playerHand.setTurnActive(false);
 		this._opponentsManager.setActivePlayer(-1);
 
@@ -178,6 +186,12 @@ export class TableManager extends Container {
 		const isLocalPlayerTurn = playerIndex === this._playerIndex;
 		this._playerHand.setTurnActive(isLocalPlayerTurn);
 		this._opponentsManager.setActivePlayer(playerIndex);
+
+		if (playerIndex >= 0) {
+			this._turnTimerBar.start(TableManager.TURN_TIMER_DURATION_MS);
+		} else {
+			this._turnTimerBar.stop();
+		}
 	}
 
 	public removePlayerCard(cardIndex: number, cardDto?: CardDto): void {
@@ -292,6 +306,8 @@ export class TableManager extends Container {
 			TableManager.UNO_BUTTON_WIDTH_RATIO,
 		);
 
+		this._turnTimerBar.resize(width, height);
+
 		if (this._cardFamilySelector) {
 			this._cardFamilySelector.position.set(width / 2, height / 2);
 		}
@@ -343,7 +359,6 @@ export class TableManager extends Container {
 		this._opponentsManager.syncOpponentHandSizes(dto.opponents);
 		this.updateDiscardCard(dto.currentDiscardCard);
 		this.setTurnDirection(dto.turnDirection);
-		this.setActivePlayer(dto.currentPlayerIndex);
 
 		if (this._tableWidth > 0 && this._tableHeight > 0) {
 			this._opponentsManager.resize(this._tableWidth, this._tableHeight);
@@ -354,7 +369,10 @@ export class TableManager extends Container {
 		this._discard.setVisible(true);
 		this.hideCardFamilySelector();
 		this.setUnoButtonVisible(false);
+		this._turnTimerBar.stop();
 		this._victoryScreen.hide();
+
+		this.setActivePlayer(dto.currentPlayerIndex);
 	}
 
 	private resolveRejoinPlayerIndex(dto: RejoinGameDto): number {
@@ -493,6 +511,7 @@ export class TableManager extends Container {
 
 	public destroy(): void {
 		this.hideCardFamilySelector();
+		this._turnTimerBar.stop();
 		this.cleanupHand(this._playerHand);
 		this.cleanupPile(this._deck);
 		this.cleanupPile(this._discard);

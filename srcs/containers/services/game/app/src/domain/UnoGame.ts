@@ -6,6 +6,7 @@ export interface ExpectedPlayer {
   id: string;
   name: string;
   cardBackUrl: string;
+  profilePicture: string;
 }
 
 export class Game {
@@ -117,8 +118,27 @@ export class Game {
     };
   }
 
+  getRdmBotProfilePict(usedPictures: string[] = []): string {
+    const botPictures = [
+      "srcs/containers/services/website/app/public/game/bot1.png",
+      "srcs/containers/services/website/app/public/game/bot2.png",
+      "srcs/containers/services/website/app/public/game/bot3.png",
+    ];
+
+    const availablePictures = botPictures.filter((pic) => !usedPictures.includes(pic));
+
+    if (availablePictures.length === 0) {
+      return botPictures[Math.floor(Math.random() * botPictures.length)];
+    }
+
+    return availablePictures[Math.floor(Math.random() * availablePictures.length)];
+  }
+
   addBots(): void {
     const usedNames = new Set(this.players.map((player) => player._name));
+    const usedPictures: string[] = this.players
+      .filter((player) => player._isBot)
+      .map((player) => player._profilePicture);
 
     for (let i = 0; i < this.botNbr; i++) {
       let botName = generateNickname();
@@ -128,7 +148,10 @@ export class Game {
       }
 
       usedNames.add(botName);
-      this.players.push(new UnoPlayer(botName + "_id", botName, null, true));
+      const newBot = new UnoPlayer(botName + "_id", botName, null, true);
+      newBot._profilePicture = this.getRdmBotProfilePict(usedPictures);
+      usedPictures.push(newBot._profilePicture);
+      this.players.push(newBot);
     }
   }
 

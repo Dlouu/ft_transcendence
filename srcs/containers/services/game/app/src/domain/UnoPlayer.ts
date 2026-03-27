@@ -66,6 +66,7 @@ export class UnoPlayer {
 		public _socket: Socket | null = null,
 		public _isBot: boolean = false,
 		public _cardBack: string = "uwu",
+		public _profilePicture: string = "default",
 	) {}
 
 	_hand: Card[] = [];

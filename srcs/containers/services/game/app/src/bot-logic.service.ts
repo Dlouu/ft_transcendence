@@ -8,6 +8,7 @@ import { GameLogicService } from "./game-logic.service";
 import { CardDto } from './dto/card.dto';
 import { Card } from './domain/UnoCard';
 import { BotScoringService, PlayableBotCard as RawPlayableBotCard } from './bot-scoring.service';
+import { GAME_CONFIG } from "./game.config";
 
 type PlayableBotCard = {
 	card: Card;
@@ -18,13 +19,18 @@ type PlayableBotCard = {
 // Handles bot decision making and automated turn progression.
 @Injectable()
 export class BotLogicService {
-	private static readonly BOT_TURN_DELAY_MS = 100; // TODO: Change to random
-	private static readonly BOT_SELF_UNO_REACTION_MIN_DELAY_MS = 400;
-	private static readonly BOT_SELF_UNO_REACTION_MAX_DELAY_MS = 2750;
-	private static readonly BOT_COUNTER_UNO_REACTION_MIN_DELAY_MS = 600;
-	private static readonly BOT_COUNTER_UNO_REACTION_MAX_DELAY_MS = 2900;
-	private static readonly BOT_SELF_UNO_SHOUT_CHANCE = 0.9;
-	private static readonly BOT_CATCH_PLAYER_UNO_CHANCE = 1;
+	private static readonly BOT_TURN_MIN_DELAY_MS = GAME_CONFIG.bot.turnDelayMs.min;
+	private static readonly BOT_TURN_MAX_DELAY_MS = GAME_CONFIG.bot.turnDelayMs.max;
+	private static readonly BOT_SELF_UNO_REACTION_MIN_DELAY_MS =
+		GAME_CONFIG.bot.selfUnoReactionDelayMs.min;
+	private static readonly BOT_SELF_UNO_REACTION_MAX_DELAY_MS =
+		GAME_CONFIG.bot.selfUnoReactionDelayMs.max;
+	private static readonly BOT_COUNTER_UNO_REACTION_MIN_DELAY_MS =
+		GAME_CONFIG.bot.counterUnoReactionDelayMs.min;
+	private static readonly BOT_COUNTER_UNO_REACTION_MAX_DELAY_MS =
+		GAME_CONFIG.bot.counterUnoReactionDelayMs.max;
+	private static readonly BOT_SELF_UNO_SHOUT_CHANCE = GAME_CONFIG.bot.selfUnoShoutChance;
+	private static readonly BOT_CATCH_PLAYER_UNO_CHANCE = GAME_CONFIG.bot.catchPlayerUnoChance;
 
 	constructor(
 		@Inject(forwardRef(() => GamePlayService))
@@ -67,7 +73,7 @@ export class BotLogicService {
 
 	private delayBotTurn(): Promise<void> {
 		return new Promise((resolve) => {
-			setTimeout(resolve, BotLogicService.BOT_TURN_DELAY_MS);
+			setTimeout(resolve, this.getRandomDelay(BotLogicService.BOT_TURN_MIN_DELAY_MS, BotLogicService.BOT_TURN_MAX_DELAY_MS));
 		});
 	}
 

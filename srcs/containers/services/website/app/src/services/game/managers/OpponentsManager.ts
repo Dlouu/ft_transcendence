@@ -8,9 +8,11 @@ import { InitGameDto } from "../dto/init-game.dto";
 import { HandRotation } from "../domain/GameEnums";
 import { RejoinOpponentHandSizeDto } from "../dto/rejoin-game.dto";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
+import { OpponentNameDisplay } from "./OpponentNameDisplay";
 
 export class OpponentsManager extends Container {
 	private _opponents: Map<number, Opponent> = new Map();
+	private _nameDisplays: Map<number, OpponentNameDisplay> = new Map();
 	private _cardPool: CardPool;
 	private _assetsManager: AssetsManager;
 
@@ -54,6 +56,7 @@ export class OpponentsManager extends Container {
 				positionKey,
 				initGameDto.startCardNbr,
 				player.cardBack,
+				player.profilePicture,
 			);
 		}
 	}
@@ -64,6 +67,7 @@ export class OpponentsManager extends Container {
 		positionKey: string,
 		cardCount: number,
 		cardBackVariant: string,
+		pictureUrl: string,
 	): void {
 		const config = this._positions.get(positionKey);
 		if (!config) return;
@@ -86,9 +90,30 @@ export class OpponentsManager extends Container {
 
 		this._opponents.set(index, opponent);
 		(hand as any)._layoutPosition = positionKey;
+
+		// Create and add opponent name display
+		const nameDisplay = new OpponentNameDisplay(
+			name,
+			pictureUrl,
+			positionKey as "top" | "left" | "right",
+		);
+		this.addChild(nameDisplay);
+		this._nameDisplays.set(index, nameDisplay);
+		(nameDisplay as any)._layoutPosition = positionKey;
 	}
 
 	public resize(width: number, height: number): void {
+		const centerX = width / 2;
+		const centerY = height / 2;
+
+		// Calculate centerArea bounds
+		const centerAreaWidth = width * GAME_CUSTOMIZATION.centerArea.mainWidthRatio;
+		const centerAreaHeight = centerAreaWidth * GAME_CUSTOMIZATION.centerArea.mainAspectRatio;
+		const centerAreaLeft = centerX - centerAreaWidth / 2;
+		const centerAreaRight = centerX + centerAreaWidth / 2;
+		const centerAreaTop = centerY - centerAreaHeight / 2;
+		const centerAreaBottom = centerY + centerAreaHeight / 2;
+
 		this._opponents.forEach((opp) => {
 			const hand = opp.hand;
 			const posKey = (hand as any)._layoutPosition;
@@ -112,6 +137,29 @@ export class OpponentsManager extends Container {
 
 			hand.resize(width, height);
 			hand.setVisible(true);
+		});
+
+		// Resize and position name displays (centered between center area and opponent hand)
+		this._nameDisplays.forEach((nameDisplay) => {
+			const posKey = (nameDisplay as any)._layoutPosition;
+			nameDisplay.resize(width, height);
+
+			if (posKey === "top") {
+				const handY = height * GAME_CUSTOMIZATION.opponents.positions.topYRatio;
+				const bias = GAME_CUSTOMIZATION.opponents.names.topCenterBias;
+				const nameY = centerAreaTop + (handY - centerAreaTop) * bias;
+				nameDisplay.position.set(centerX, nameY);
+			} else if (posKey === "left") {
+				const handX = width * GAME_CUSTOMIZATION.opponents.positions.leftXRatio;
+				const bias = GAME_CUSTOMIZATION.opponents.names.sideCenterBias;
+				const nameX = centerAreaLeft + (handX - centerAreaLeft) * bias;
+				nameDisplay.position.set(nameX, centerY);
+			} else if (posKey === "right") {
+				const handX = width * GAME_CUSTOMIZATION.opponents.positions.rightXRatio;
+				const bias = GAME_CUSTOMIZATION.opponents.names.sideCenterBias;
+				const nameX = centerAreaRight + (handX - centerAreaRight) * bias;
+				nameDisplay.position.set(nameX, centerY);
+			}
 		});
 	}
 
@@ -168,6 +216,7 @@ export class OpponentsManager extends Container {
 				this.getPositionKeyByOrder(index, totalOpponents),
 				0,
 				GAME_CUSTOMIZATION.opponents.defaultRejoinCardBackVariant,
+				(opponentState as any).picture,
 			);
 		});
 	}
@@ -233,6 +282,12 @@ export class OpponentsManager extends Container {
 		opponent.name = name;
 		const cardBack = this._assetsManager.getCardBack(cardBackVariant);
 		opponent.setCardBack(cardBack);
+
+		// Update name display
+		const nameDisplay = this._nameDisplays.get(playerIndex);
+		if (nameDisplay) {
+			nameDisplay.updateName(name);
+		}
 	}
 
 	public destroy(): void {
@@ -252,5 +307,11 @@ export class OpponentsManager extends Container {
 			opp.destroy();
 		});
 		this._opponents.clear();
+
+		// Destroy name displays
+		this._nameDisplays.forEach((nameDisplay) => {
+			nameDisplay.destroy();
+		});
+		this._nameDisplays.clear();
 	}
 }

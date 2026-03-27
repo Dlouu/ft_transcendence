@@ -14,6 +14,7 @@ export interface ICreateGamePlayer {
   id: string;
   name: string;
   cardBackUrl: string;
+  profilePicture: string;
 }
 
 export class CreateGamePlayerDto implements ICreateGamePlayer {
@@ -25,6 +26,9 @@ export class CreateGamePlayerDto implements ICreateGamePlayer {
 
   @IsString()
   cardBackUrl: string;
+
+  @IsString()
+  profilePicture: string;
 }
 
 export interface ICreateGame

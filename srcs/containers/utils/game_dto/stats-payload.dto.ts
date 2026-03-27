@@ -12,7 +12,6 @@ import { Game } from "../domain/UnoGame";
 
 export interface IPlayerStatsPayload {
 	user_id: string;
-	is_bot: boolean;
 	win_game: boolean;
 	nbr_uno: number;
 	nbr_uwu: number;
@@ -24,9 +23,6 @@ export interface IPlayerStatsPayload {
 export class PlayerStatsPayloadDto implements IPlayerStatsPayload {
 	@IsString()
 	user_id: string;
-
-	@IsBoolean()
-	is_bot: boolean;
 
 	@IsBoolean()
 	win_game: boolean;
@@ -54,7 +50,6 @@ export class PlayerStatsPayloadDto implements IPlayerStatsPayload {
 	toJson(): IPlayerStatsPayload {
 		return {
 			user_id: this.user_id,
-			is_bot: this.is_bot,
 			win_game: this.win_game,
 			nbr_uno: this.nbr_uno,
 			nbr_uwu: this.nbr_uwu,
@@ -113,7 +108,6 @@ export const toStatsPayloadDto = (game: Game): StatsPayloadDto => {
 		const playerStats = new PlayerStatsPayloadDto();
 
 		playerStats.user_id = expectedPlayer.id;
-		playerStats.is_bot = false;
 		playerStats.win_game = winner?._id === expectedPlayer.id;
 		playerStats.nbr_uno = getPlayerIntStat(player, ["nbr_uno"]);
 		playerStats.nbr_uwu = getPlayerIntStat(player, ["nbr_uwu"]);

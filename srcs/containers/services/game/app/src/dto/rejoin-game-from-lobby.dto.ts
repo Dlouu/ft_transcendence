@@ -7,6 +7,7 @@ export interface IRejoinGameFromLobby
   id: string;
   name: string;
   backCardURL: string;
+  profilePicture: string;
 }
 
 export class RejoinGameFromLobbyDto implements IRejoinGameFromLobby {
@@ -18,4 +19,7 @@ export class RejoinGameFromLobbyDto implements IRejoinGameFromLobby {
 
   @IsString()
   backCardURL: string;
+
+  @IsString()
+  profilePicture: string;
 }
