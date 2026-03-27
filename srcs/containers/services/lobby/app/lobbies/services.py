@@ -92,6 +92,21 @@ def emit_lobby_state(code):
     }
     socketio.emit("lobby_state", payload, room=code)
 
+    public = [
+        {
+            "code": lcode,
+            "humans_count": len([p for p in ldata["players"].values() if p.get("connected")]),
+            "total_count": len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0),
+            "max_players": max_players,
+        }
+        for lcode, ldata in lobbies.items()
+        if not ldata.get("privacy", True)
+        and not ldata.get("game_started", False)
+        and not ldata.get("game_ended", False)
+        and (len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0)) < max_players
+    ]
+    socketio.emit("public_lobbies", {"lobbies": public}, room="lobby_browser")
+
 """
 Internal function
 
@@ -111,8 +126,21 @@ def remove_lobby(code):
 
     if lobby_data["game_started"] == False:
         socketio.emit("room_expired", {"message": "Lobby closed due to inactivity"}, room=code)
-    
+
     lobbies.pop(code, None)
+    socketio.emit("public_lobbies", {"lobbies": [
+        {
+            "code": lcode,
+            "humans_count": len([p for p in ldata["players"].values() if p.get("connected")]),
+            "total_count": len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0),
+            "max_players": max_players,
+        }
+        for lcode, ldata in lobbies.items()
+        if not ldata.get("privacy", True)
+        and not ldata.get("game_started", False)
+        and not ldata.get("game_ended", False)
+        and (len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0)) < max_players
+    ]}, room="lobby_browser")
 
     for sid, lobby_code in list(socketid_lobby.items()):
         if lobby_code == code:
