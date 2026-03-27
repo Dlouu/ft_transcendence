@@ -10,6 +10,7 @@ from app.core.state import lobbies, socketid_lobby, max_players
 from app.lobbies.lobby_generator import create_lobby_or_error
 from app.lobbies.services import emit_lobby_state, remove_lobby
 from app.models.user import User
+from app.models.card_gallery import CardGallery
 from app.tokens.check_token import check_token
 from app.friends.socket_events import notify_friends_status, notify_players_ingame_status
 
@@ -528,12 +529,14 @@ def build_player_entry(player_id, users_by_user_id, default_card_back, profile_p
     player_key = str(player_id)
     user = users_by_user_id.get(player_key)
     card_back_url = default_card_back
-    profile_picture = user.profile_picture_url
+    s3_bucket = os.getenv("S3_BUCKET_NAME")
 
-    if user and user.card_back_id:
-        card_back_url = f"https://{os.getenv("s3_bucket_name")}.s3.amazonaws.com/%7Buser.card_back_id%7D"
-        profile_picture = f"https://{os.getenv("s3_bucket_name")}.s3.amazonaws.com/%7Buser.profile_picture_url%7D"
-
+    if user:
+        profile_picture = f"https://{s3_bucket}.s3.amazonaws.com/{user.profile_picture_url}"
+        if user.card_back_id:
+            card_gallery_entry = CardGallery.query.filter_by(id=user.card_back_id).first()
+            if card_gallery_entry:
+                card_back_url = f"https://{s3_bucket}.s3.amazonaws.com/{card_gallery_entry.img_url}"
 
     return {
         "id": player_key,
