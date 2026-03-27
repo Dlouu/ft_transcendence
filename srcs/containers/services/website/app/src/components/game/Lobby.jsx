@@ -23,7 +23,7 @@ function Lobby({ onCreate, onJoin }) {
 					</Button>
 				</div>
 
-				<div className="flex flex-col sm:flex-row justify-center gap-5">
+				<div className="flex flex-row justify-center gap-5">
 					<div>
 						<Input
 						placeholder="ROOM CODE"

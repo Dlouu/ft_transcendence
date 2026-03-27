@@ -6,7 +6,7 @@ import AvatarSection from "../components/profile/AvatarSection";
 import InfoSection from "../components/profile/InfoSection";
 import PasswordSection from "../components/profile/PasswordSection";
 import DeleteAccount from "../components/profile/DeleteAccount";
-import Sidebar from "../components/profile/Sidebar";
+import GameStats from "../components/profile/GameStats";
 
 function Me() {
 	const { user, logout } = useContext(AuthContext);
@@ -25,13 +25,19 @@ function Me() {
 						<AvatarSection user={user}/>
 						<InfoSection user={user}/>
 
+						<div className="sm:hidden">
+						<GameStats stats={profile.stats}/>
+						</div>
+
 						<div className="flex flex-col sm:w-1/2 w-full">
 							<PasswordSection />
 							<DeleteAccount logout={logout}/>
 						</div>
 					</div>
 
-					<Sidebar profile={profile}/>
+					<div className="hidden sm:block">
+						<GameStats stats={profile.stats}/>
+					</div>
 
 				</div>
 			</Card>

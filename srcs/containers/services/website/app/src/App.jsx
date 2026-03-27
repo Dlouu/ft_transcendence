@@ -33,7 +33,6 @@ function App() {
 				<Route path="/lobby/:id" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>} />
 				<Route path="/register" element={<Register />}/>
 				<Route path="/me" element={<ProtectedRoute><Me /></ProtectedRoute>} />
-				<Route path="/friends" element={<ProtectedRoute><Friendlist /></ProtectedRoute>} />
 				<Route path="/profile/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
 				<Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
 				<Route path="/gallery/all" element={<ProtectedRoute><GalleryAll /></ProtectedRoute>} />

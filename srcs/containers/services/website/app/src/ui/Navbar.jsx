@@ -2,11 +2,13 @@ import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import Button from "./Button";
+import Friendlist from "../pages/Friendlist";
 
 function Navbar() {
 	const [open, setOpen] = useState(false);
 	const location = useLocation();
 	const { user, logout } = useContext(AuthContext);
+	const [showFriends, setShowFriends] = useState(false);
 
 	useEffect(() => {
 		setOpen(false);
@@ -21,7 +23,6 @@ function Navbar() {
 	const navLinks = [
 		{ to: "/", icon: "󰘸", label: "PLAY"},
 		{ to: "/gallery", icon: "󰏘",label: "PAINT" },
-		{ to: "/friends", icon: "󰀄",label: "FRIENDS" },
 		{ to: "/me", icon: "󰀄",label: "ME" }
 	];
 
@@ -58,13 +59,21 @@ function Navbar() {
 
 		{/* Desktop */}
 			{user && (
-				<div className="hidden sm:flex font-pixelhb ml-auto items-center gap-4 font-bold">
+				<div className="hidden sm:flex font-pixelhb ml-auto items-center gap-2 font-bold">
 					{navLinks.map((link) => (
 						<Link key={link.to} to={link.to} className={linkClass(link.to)}>
 							<span className="font-icon text-purple-300">{link.icon}</span>
 							<span className="px-2">{link.label}</span>
 						</Link>
 					))}
+
+					<Link onClick={() => setShowFriends(true) } className="py-2 px-3 rounded hover:bg-gray-700">
+						<span className="font-icon text-purple-300">󰀎</span><span className="px-2">FRIENDS</span>
+					</Link>
+
+					{showFriends && (
+						<Friendlist onClose={() => setShowFriends(false)} />
+					)}
 
 					<Button variant="login" onClick={handleLogout}>
 						LOG OUT
@@ -99,6 +108,14 @@ function Navbar() {
 								<span className="px-2">{link.label}</span>
 							</Link>
 						))}
+
+						<Link onClick={() => setShowFriends(true) } className="py-2 px-5 rounded bg-gray-700">
+							<span className="font-icon text-purple-300">󰀎</span><span className="px-2">FRIENDS</span>
+						</Link>
+
+						{showFriends && (
+							<Friendlist onClose={() => setShowFriends(false)} />
+						)}
 
 						<Button variant="login" onClick={handleLogout}>
 							LOG OUT
