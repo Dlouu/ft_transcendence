@@ -5,6 +5,7 @@ export class OpponentNameDisplay extends Container {
 	private _nameText: Text;
 	private _picture: Sprite | null = null;
 	private _isVerticalLayout: boolean = true; // true for left/right, false for top
+	private _pictureSizePx: number = GAME_CUSTOMIZATION.opponents.names.picture.minSizePx;
 
 	constructor(name: string, pictureUrl?: string, positionType: "top" | "left" | "right" = "top") {
 		super();
@@ -37,29 +38,33 @@ export class OpponentNameDisplay extends Container {
 	}
 
 	private async loadPicture(pictureUrl: string): Promise<void> {
-        try {
-            // Normalize the path to be web-accessible
-            // Extract the part after "public/" to get the URL path
-            let webPath = pictureUrl;
-            const publicIndex = pictureUrl.indexOf("/public/");
-            if (publicIndex !== -1) {
-                webPath = pictureUrl.substring(publicIndex + 7); // "/public/".length = 8, but we skip the 'p'
-            }
+		try {
+			let webPath = pictureUrl.trim();
+			const isAbsoluteUrl = /^(https?:)?\/\//i.test(webPath);
+			const isInlineOrBlobUrl = /^(data|blob):/i.test(webPath);
 
-            // Ensure it starts with /
-            if (!webPath.startsWith("/")) {
-                webPath = "/" + webPath;
-            }
+			if (!isAbsoluteUrl && !isInlineOrBlobUrl) {
+				const publicIndex = webPath.indexOf("/public/");
+				if (publicIndex !== -1) {
+					// Keep the trailing slash path from "/public/" onward (e.g. "/avatars/a.jpg").
+					webPath = webPath.substring(publicIndex + 7);
+				}
 
-            const texture = await Assets.load(webPath);
-            this._picture = new Sprite(texture);
-            this._picture.anchor.set(0.5);
+				if (!webPath.startsWith("/")) {
+					webPath = `/${webPath}`;
+				}
+			}
+
+			const texture = await Assets.load(webPath);
+			this._picture = new Sprite(texture);
+			this._picture.anchor.set(0.5);
+			this._picture.width = this._pictureSizePx;
+			this._picture.height = this._pictureSizePx;
 			this.addChild(this._picture);
 			this.updateLayout();
-			console.log("LOAD PICTURE YEAH !");
-        } catch (error) {
-            console.warn(`Failed to load opponent picture: ${pictureUrl}`, error);
-        }
+		} catch (error) {
+			console.warn(`Failed to load opponent picture: ${pictureUrl}`, error);
+		}
 	}
 
 	public updateName(name: string): void {
@@ -75,16 +80,15 @@ export class OpponentNameDisplay extends Container {
 		);
 
 		this._nameText.style.fontSize = fontSize;
+		const basePictureSize = Math.min(tableWidth, tableHeight) * nameConfig.picture.sizeRatio;
+		this._pictureSizePx = Math.max(
+			nameConfig.picture.minSizePx,
+			Math.min(nameConfig.picture.maxSizePx, basePictureSize),
+		);
 
 		if (this._picture) {
-			const basePictureSize = Math.min(tableWidth, tableHeight) * nameConfig.picture.sizeRatio;
-			const pictureSize = Math.max(
-				nameConfig.picture.minSizePx,
-				Math.min(nameConfig.picture.maxSizePx, basePictureSize),
-			);
-
-			this._picture.width = pictureSize;
-			this._picture.height = pictureSize;
+			this._picture.width = this._pictureSizePx;
+			this._picture.height = this._pictureSizePx;
 
 			this.updateLayout();
 		}
@@ -100,10 +104,10 @@ export class OpponentNameDisplay extends Container {
 		const nameHeight = this._nameText.height;
 
 		if (this._isVerticalLayout) {
-			// For left/right: picture below name
+			// For left/right: name below picture
 			// Position elements centered around (0,0)
-			this._nameText.position.set(0, -(pictureSize + spacing) / 2);
-			this._picture.position.set(0, (nameHeight + spacing) / 2);
+			this._picture.position.set(0, -(nameHeight + spacing) / 2);
+			this._nameText.position.set(0, (pictureSize + spacing) / 2);
 			this._nameText.position.x = 0;
 			this._picture.position.x = 0;
 		} else {
