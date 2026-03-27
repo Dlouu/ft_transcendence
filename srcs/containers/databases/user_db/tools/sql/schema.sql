@@ -46,12 +46,12 @@ CREATE TABLE IF NOT EXISTS friends (
 
 	CONSTRAINT fk_requester
 		FOREIGN KEY (requester_id)
-		REFERENCES users(id)
+		REFERENCES users(user_id)
 		ON DELETE CASCADE,
 
 	CONSTRAINT fk_accepter
 		FOREIGN KEY (accepter_id)
-		REFERENCES users(id)
+		REFERENCES users(user_id)
 		ON DELETE CASCADE,
 
 	CONSTRAINT unique_friendship
@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS gamestats (
 	winrate DECIMAL(5 , 2),
 	games_played BIGINT UNSIGNED DEFAULT 0 NOT NULL,
 	games_won BIGINT UNSIGNED DEFAULT 0,
+	games_lose BIGINT UNSIGNED DEFAULT 0,
 	nbr_uno BIGINT UNSIGNED DEFAULT 0,
 	nbr_uwu BIGINT UNSIGNED DEFAULT 0,
 	nbr_4cards BIGINT UNSIGNED DEFAULT 0,
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS gamestats (
 
 	CONSTRAINT fk_user_stats
 		FOREIGN KEY (user_id)
-		REFERENCES users(id)
+		REFERENCES users(user_id)
 		ON DELETE CASCADE,
 
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

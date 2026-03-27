@@ -1,7 +1,7 @@
 from marshmallow import Schema, fields
 
 class PlayerSchema(Schema):
-	user_id = fields.String(required=True)
+	user_id = fields.Integer(required=True)
 	win_game = fields.Boolean(required=True)
 	nbr_uno = fields.Integer(required=True)
 	nbr_uwu = fields.Integer(required=True)
@@ -16,4 +16,3 @@ class GameSchema(Schema):
 	)
 
 game_schema = GameSchema()
-
