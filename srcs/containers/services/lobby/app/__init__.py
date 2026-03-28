@@ -1,12 +1,10 @@
 from flask import Flask
-
 from app.core.extensions import socketio, db
 from app.routes.lobby import lobby
-from app.lobbies.debug import lobby as lobby_debug
+from app.routes.game import game
 import app.lobbies.socket_events
 import app.friends.socket_events
 import os
-
 
 def create_app():
     app = Flask(__name__)
@@ -21,7 +19,7 @@ def create_app():
         print("Lobby: USER_DATABASE_URI is not set; DB features are disabled.", flush=True)
 
     app.register_blueprint(lobby)
-    app.register_blueprint(lobby_debug)
+    app.register_blueprint(game)
 
     socketio.init_app(app)
 

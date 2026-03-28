@@ -32,11 +32,10 @@ def emit_lobby_state(code):
     if code not in lobbies:
         return
     data = lobbies[code]
-
     players = data["players"]
     connected_players = [(user_id, p) for user_id, p in players.items() if p.get("connected")]
     humans_usernames = {
-        user_id: User.query.get(user_id).username 
+        user_id: User.query.get(user_id).username
         for user_id, _ in connected_players
     }
     humans_ids = [user_id for user_id, _ in connected_players]
@@ -49,17 +48,16 @@ def emit_lobby_state(code):
         host_player = players[supreme_master_user_id]
         if host_player.get("connected"):
             supreme_master_sid = host_player.get("sid")
-
     payload = {
-        "code": code, # what Yohann needs
-        "bots_count": data.get("bots", 0), # what Yohann needs
-        "humans_id": humans_ids, # user_id # what Yohann needs
+        "code": code,
+        "bots_count": data.get("bots", 0),
+        "humans_id": humans_ids,
         "humans_usernames": humans_usernames,
-        "theme": data.get("theme", False), # what Yohann needs
+        "theme": data.get("theme", False),
         "game_ended": data.get("game_ended", False),
-        "humans_sid": humans_sids, # socketid (debug/compat)
-        "ready_humans": ready_sids, # socketid (compat)
-        "ready_humans_id": ready_ids, # user_id
+        "humans_sid": humans_sids,
+        "ready_humans": ready_sids,
+        "ready_humans_id": ready_ids,
         "bots": [f"BOT#{i+1}" for i in range(data.get("bots", 0))],
         "privacy": data.get("privacy", True),
         "humans_count": len(humans_ids),
@@ -68,10 +66,46 @@ def emit_lobby_state(code):
         "supreme_master_user_id": supreme_master_user_id,
         "supreme_master_sid": supreme_master_sid,
         "game_started": data.get("game_started", False),
-        "supreme_master_starts": data.get("supreme_master_starts", False)
+        "supreme_master_starts": data.get("supreme_master_starts", False),
+        "all_lobbies": [
+            {
+                "code": lcode,
+                "humans_count": len([p for p in ldata["players"].values() if p.get("connected")]),
+                "bots_count": ldata.get("bots", 0),
+                "total_count": len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0),
+                "privacy": ldata.get("privacy", True),
+                "game_started": ldata.get("game_started", False),
+            }
+            for lcode, ldata in lobbies.items()
+        ],
+        "available_lobbies": [
+            {
+                "code": lcode,
+                "total_count": len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0),
+            }
+            for lcode, ldata in lobbies.items()
+            if not ldata.get("privacy", True)
+            and not ldata.get("game_started", False)
+            and not ldata.get("game_ended", False)
+            and (len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0)) < max_players
+        ]
     }
-
     socketio.emit("lobby_state", payload, room=code)
+
+    public = [
+        {
+            "code": lcode,
+            "humans_count": len([p for p in ldata["players"].values() if p.get("connected")]),
+            "total_count": len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0),
+            "max_players": max_players,
+        }
+        for lcode, ldata in lobbies.items()
+        if not ldata.get("privacy", True)
+        and not ldata.get("game_started", False)
+        and not ldata.get("game_ended", False)
+        and (len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0)) < max_players
+    ]
+    socketio.emit("public_lobbies", {"lobbies": public}, room="lobby_browser")
 
 """
 Internal function
@@ -92,8 +126,21 @@ def remove_lobby(code):
 
     if lobby_data["game_started"] == False:
         socketio.emit("room_expired", {"message": "Lobby closed due to inactivity"}, room=code)
-    
+
     lobbies.pop(code, None)
+    socketio.emit("public_lobbies", {"lobbies": [
+        {
+            "code": lcode,
+            "humans_count": len([p for p in ldata["players"].values() if p.get("connected")]),
+            "total_count": len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0),
+            "max_players": max_players,
+        }
+        for lcode, ldata in lobbies.items()
+        if not ldata.get("privacy", True)
+        and not ldata.get("game_started", False)
+        and not ldata.get("game_ended", False)
+        and (len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0)) < max_players
+    ]}, room="lobby_browser")
 
     for sid, lobby_code in list(socketid_lobby.items()):
         if lobby_code == code:

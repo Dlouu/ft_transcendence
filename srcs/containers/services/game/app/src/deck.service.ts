@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Card, isNumberCard } from "./domain/UnoCard";
 import { CardCode, CardFamily, GameState } from "./domain/GameEnums";
 import { Game } from "./domain/UnoGame";
+import { GAME_CONFIG } from "./game.config";
 
 // Handles card generation, shuffling, dealing, and deck management
 @Injectable()
@@ -24,40 +25,29 @@ export class DeckService {
 			deck.push(c);
 		};
 
-		const colors: CardFamily[] = [
-			CardFamily.ONE,
-			CardFamily.TWO,
-			CardFamily.THREE,
-			CardFamily.FOUR,
-		];
-
-		const numberCards: CardCode[] = [
-			CardCode.One,
-			CardCode.Two,
-			CardCode.Three,
-			CardCode.Four,
-			CardCode.Five,
-			CardCode.Six,
-			CardCode.Seven,
-			CardCode.Eight,
-			CardCode.Nine,
-		];
+		const colors: CardFamily[] = [...GAME_CONFIG.deck.playableFamilies];
+		const numberCards: CardCode[] = [...GAME_CONFIG.deck.numberCards];
 
 		for (const color of colors) {
 			pushCard(CardCode.Zero, color);
 			for (const numberCard of numberCards) {
-				pushCard(numberCard, color);
-				pushCard(numberCard, color);
+				for (
+					let i = 0;
+					i < GAME_CONFIG.deck.duplicatePerColor.numberCards;
+					i++
+				) {
+					pushCard(numberCard, color);
+				}
 			}
 
-			for (let i = 0; i < 2; i++) {
+			for (let i = 0; i < GAME_CONFIG.deck.duplicatePerColor.actionCards; i++) {
 				pushCard(CardCode.Skip, color);
 				pushCard(CardCode.Reverse, color);
 				pushCard(CardCode.DrawTwo, color);
 			}
 		}
 
-		for (let i = 0; i < 4; i++) {
+		for (let i = 0; i < GAME_CONFIG.deck.wildCopies; i++) {
 			pushCard(CardCode.Wild, CardFamily.WILD);
 			pushCard(CardCode.WildDrawFour, CardFamily.WILD);
 		}
@@ -128,7 +118,7 @@ export class DeckService {
 	 * @returns Nothing.
 	 */
 	startDeal(game: Game): void {
-		const cardsPerPlayer = 7;
+		const cardsPerPlayer = GAME_CONFIG.dealing.startCardsPerPlayer;
 
 		game.state = GameState.DEALING;
 

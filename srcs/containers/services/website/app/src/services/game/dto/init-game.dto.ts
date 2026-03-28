@@ -11,15 +11,24 @@ import { Type } from "class-transformer";
 import { Card } from "../domain/UnoCard";
 import { CardDto } from "./card.dto";
 
+export interface IInitPlayer {
+	name: string;
+	cardBack: string;
+	profilePicture: string;
+}
+
 export class InitPlayerDto {
 	@IsString()
 	name: string;
 
 	@IsString()
 	cardBack: string;
+
+	@IsString()
+	profilePicture: string;
 }
 
-export interface IInitHand {
+export interface IInitGame {
 	playerHand: CardDto[];
 	players: InitPlayerDto[];
 	discardTopCard: CardDto;
@@ -30,7 +39,7 @@ export interface IInitHand {
 	cardTheme: "basic" | "uwu";
 }
 
-export class InitGameDto implements IInitHand {
+export class InitGameDto implements IInitGame {
 	@IsArray()
 	@ArrayMinSize(1)
 	@ValidateNested({ each: true })

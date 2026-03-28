@@ -1,43 +1,12 @@
-Finir endpoint/friendlist (websocket)
-Donner le dos des cartes a yohann: (json)
-	- roomname
-    - players
-        - id
-        - name
-        - cardbackurl
-    - botnbr
-    - theme
+Yohann:
+  - url du dos des cartes (toujours dans le json)
+  - voir le rejoin (qqn quitte la partie et revient ensuite) est-ce que l'id est toujours stocké dans lobby_state? A TESTER
+  - route pour delete la game (il m'envoie une requete post) http://lobby:3000/game/delete A TESTER ?
 
-Donner a yohann un moyen d'acceder aux stats (yohann envoie dans bdd, marie recupere)
+Marie:
+  - Finir endpoint/friendlist (websocket) (add, remove, rejected, pending, status: online, in-game) A TESTER
+  - Acceder aux stats
+  - liste de lobbies ouverts, afficher le nombre de personnes dedans A TESTER
 
-Si y'a assez de place dans un lobby public, afficher sur le site
-
-problemes lobbies:
-    #TEST: liste de tous les lobbies (prive + public)
-    #tous les lobbies rejoignables + public + pas en game
-
-envoyer une simple requete a yohann
-
-http://localhost:3000/game/create
-
-{
-    "roomName": "Dragon-Room-1",
-    "players": [
-        {
-            "id": "1",
-            "name": "test",
-            "cardBackUrl": "uwu"
-        }
-    ],
-    "botNbr": 3,
-    "theme": "UWU"
-}
-
-http://localhost:3000/game/rejoin
-"player": [
-        {
-            "id": "1",
-            "name": "test",
-            "cardBackUrl": "uwu"
-        }
-    ],
+En vrac:
+  - faire des tests avec les lobbies

@@ -11,13 +11,15 @@ import { GameWinDto, GameWinPlayerDto } from "./dto/game-win.dto";
 import { toDrewCardDto } from "./dto/drawn-card.dto";
 import { GameService } from "./game.service";
 import { GameLoggerService } from "./logger.service";
+import { toStatsPayloadDto } from './dto/stats-payload.dto';
+import { GAME_CONFIG } from "./game.config";
 
 // Handles the rules of the game (turns, UNO shouts, card validation).
 @Injectable()
 export class GameLogicService {
 	private colorPickCallbacks = new Map<string, (color: CardFamily) => void>();
-	private readonly unoRevealDelayMs = 750;
-	private readonly unoCallWindowMs = 100000;
+	private readonly unoRevealDelayMs = GAME_CONFIG.uno.revealDelayMs;
+	private readonly unoCallWindowMs = GAME_CONFIG.uno.callWindowMs;
 	private readonly unoPendingTimeouts = new Map<string, NodeJS.Timeout>();
 
 	constructor(
@@ -89,6 +91,18 @@ export class GameLogicService {
 		);
 
 		this.deckService.startDeal(game);
+
+		for (const player of game.players) {
+			player.win_game = false;
+			player.nbr_uno = 0;
+			player.nbr_uwu = 0;
+			player.nbr_4cards = 0;
+			player.nbr_drew = 0;
+			player.biggest_hand = 0;
+			player.updateBiggestHand(player._hand.length);
+		}
+
+		
 
 		game.state = GameState.PLAYING;
 		return true;
@@ -205,12 +219,7 @@ export class GameLogicService {
 	}
 
 	private randomCardFamily(): CardFamily {
-		const playableFamilies: CardFamily[] = [
-			CardFamily.ONE,
-			CardFamily.TWO,
-			CardFamily.THREE,
-			CardFamily.FOUR,
-		];
+		const playableFamilies: CardFamily[] = [...GAME_CONFIG.deck.playableFamilies];
 
 		const randomIndex = Math.floor(Math.random() * playableFamilies.length);
 		return playableFamilies[randomIndex];
@@ -243,7 +252,7 @@ export class GameLogicService {
 			const timeout = setTimeout(() => {
 				this.colorPickCallbacks.delete(player._id);
 				resolve(this.randomCardFamily());
-			}, 10000);
+			}, GAME_CONFIG.turn.wildColorPickTimeoutMs);
 
 			this.colorPickCallbacks.set(player._id, (color: CardFamily) => {
 				clearTimeout(timeout);
@@ -317,6 +326,9 @@ export class GameLogicService {
 
 			player._hand.push(card);
 			player.hasDrawThisTurn = true;
+
+			player.incrementNbrDrew(1);
+			player.updateBiggestHand(player._hand.length);
 
 			if (!player._isBot && player._socket) {
 				player._socket.emit(
@@ -428,6 +440,13 @@ export class GameLogicService {
 			gameDuration: durationDdHhMmSs,
 			turnNbr: Math.floor(game.turnCount / game.players.length),
 		};
+
+		game.winner_player_id = winner._id;
+		winner.win_game = true;
+
+		const gameEndDto = toStatsPayloadDto(game);
+
+		console.log("\n\n\nStats end game:", gameEndDto.toJson());
 
 		this.getIoServer()?.to(game.roomName).emit("game:win", dto);
 		this.logger.gameEnd(game.roomName, winner._name, duration, Math.floor(game.turnCount / game.players.length));

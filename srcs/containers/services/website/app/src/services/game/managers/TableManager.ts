@@ -15,22 +15,28 @@ import { VictoryScreen } from "./VictoryScreen";
 import { RejoinGameDto } from "../dto/rejoin-game.dto";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
 import { UnoButton } from "./UnoButton";
+import { TurnTimerBar } from "./TurnTimerBar";
+import { createTableViewport, TableViewport } from "../layout/TableViewport";
 
 export class TableManager extends Container {
 	private static readonly MIDDLE_ARROW_Y_RATIO =
 		GAME_CUSTOMIZATION.table.middleArrowYRatio;
-	private static readonly MIDDLE_ARROW_SIZE_RATIO =
-		GAME_CUSTOMIZATION.table.middleArrowSizeRatio;
+	private static readonly MIDDLE_ARROW_SIZE_FROM_CENTER_AREA_RATIO =
+		GAME_CUSTOMIZATION.table.middleArrowSizeFromCenterAreaRatio;
 	private static readonly UNO_BUTTON_Y_RATIO =
 		GAME_CUSTOMIZATION.table.unoButtonYRatio;
 	private static readonly UNO_BUTTON_WIDTH_RATIO =
 		GAME_CUSTOMIZATION.table.unoButtonWidthRatio;
+	private static readonly TURN_TIMER_DURATION_MS =
+		GAME_CUSTOMIZATION.table.turnTimer.durationMs;
 
 	private _playerIndex: number = -1;
 	private _middleArrow: Sprite;
 	private _unoButton: UnoButton;
+	private _turnTimerBar: TurnTimerBar;
 	private _tableWidth: number = 0;
 	private _tableHeight: number = 0;
+	private _viewport: TableViewport = createTableViewport(1, 1);
 	private _isMiddleArrowMirrored: boolean = false;
 
 	private _tableCenterArea: TableCenterArea;
@@ -65,6 +71,7 @@ export class TableManager extends Container {
 		this._middleArrow = new Sprite(this._assetsManager.arrowTexture);
 		this._middleArrow.anchor.set(0.5);
 		this._unoButton = new UnoButton(onUnoButtonClick);
+		this._turnTimerBar = new TurnTimerBar();
 
 		this._playerHand = new Hand(
 			GAME_CUSTOMIZATION.table.playerHand.areaPercent,
@@ -81,6 +88,7 @@ export class TableManager extends Container {
 
 		this.addChild(this._opponentsManager);
 		this.addChild(this._tableCenterArea);
+		this.addChild(this._turnTimerBar);
 		this.addChild(this._middleArrow);
 		this.addChild(this._unoButton);
 		this.addChild(this._deck);
@@ -110,6 +118,7 @@ export class TableManager extends Container {
 		this._tableCenterArea.visible = true;
 		this.hideCardFamilySelector();
 		this.setUnoButtonVisible(false);
+		this._turnTimerBar.stop();
 		this._victoryScreen.hide();
 
 		this.setActivePlayer(initGameDto.firstPlayerIndex);
@@ -123,11 +132,16 @@ export class TableManager extends Container {
 
 		this.hideCardFamilySelector();
 		this.setUnoButtonVisible(false);
+		this._turnTimerBar.stop();
 		this._playerHand.setTurnActive(false);
 		this._opponentsManager.setActivePlayer(-1);
 
 		this._victoryScreen.show(dto, isVictory);
-		this._victoryScreen.resize(this._tableWidth, this._tableHeight);
+		this._victoryScreen.resize(
+			this._viewport.canvasWidth,
+			this._viewport.canvasHeight,
+			this._viewport,
+		);
 	}
 
 	public showCardFamilySelector(
@@ -159,8 +173,8 @@ export class TableManager extends Container {
 		);
 
 		this._cardFamilySelector.position.set(
-			this._tableWidth / 2,
-			this._tableHeight / 2,
+			this._viewport.centerX,
+			this._viewport.centerY,
 		);
 		this.addChild(this._cardFamilySelector);
 	}
@@ -178,6 +192,12 @@ export class TableManager extends Container {
 		const isLocalPlayerTurn = playerIndex === this._playerIndex;
 		this._playerHand.setTurnActive(isLocalPlayerTurn);
 		this._opponentsManager.setActivePlayer(playerIndex);
+
+		if (playerIndex >= 0) {
+			this._turnTimerBar.start(TableManager.TURN_TIMER_DURATION_MS);
+		} else {
+			this._turnTimerBar.stop();
+		}
 	}
 
 	public removePlayerCard(cardIndex: number, cardDto?: CardDto): void {
@@ -262,53 +282,85 @@ export class TableManager extends Container {
 	}
 
 	public resize(width: number, height: number): void {
-		this._tableWidth = width;
-		this._tableHeight = height;
+		this._viewport = createTableViewport(width, height);
+		this._tableWidth = this._viewport.tableWidth;
+		this._tableHeight = this._viewport.tableHeight;
 
-		this.updateMiddleArrow(width, height);
+		this.updateMiddleArrow(this._viewport);
 
 		this._playerHand.position.set(
-			width / 2,
-			height * GAME_CUSTOMIZATION.table.playerHandYRatio,
+			this._viewport.centerX,
+			this._viewport.offsetY +
+				this._viewport.tableHeight * GAME_CUSTOMIZATION.table.playerHandYRatio,
 		);
-		this._playerHand.resize(width, height);
+		this._playerHand.resize(width, height, this._viewport);
 
-		this._opponentsManager.resize(width, height);
+		this._opponentsManager.resize(width, height, this._viewport);
 
-		this._tableCenterArea.update(width, height);
+		this._tableCenterArea.update(width, height, this._viewport);
 
-		const pilesOffset = width / GAME_CUSTOMIZATION.table.pilesOffsetDivisor;
+		const pilesOffset =
+			this._viewport.tableWidth / GAME_CUSTOMIZATION.table.pilesOffsetDivisor;
 
-		this._deck.position.set(width / 2 - pilesOffset, height / 2);
-		this._deck.resize(width, height);
+		this._deck.position.set(this._viewport.centerX - pilesOffset, this._viewport.centerY);
+		this._deck.resize(width, height, this._viewport);
 
-		this._discard.position.set(width / 2 + pilesOffset, height / 2);
-		this._discard.resize(width, height);
+		this._discard.position.set(this._viewport.centerX + pilesOffset, this._viewport.centerY);
+		this._discard.resize(width, height, this._viewport);
 
 		this._unoButton.resize(
 			width,
 			height,
 			TableManager.UNO_BUTTON_Y_RATIO,
 			TableManager.UNO_BUTTON_WIDTH_RATIO,
+			this._viewport,
 		);
 
+		this._turnTimerBar.resize(width, height, this._viewport);
+
 		if (this._cardFamilySelector) {
-			this._cardFamilySelector.position.set(width / 2, height / 2);
+			this._cardFamilySelector.position.set(
+				this._viewport.centerX,
+				this._viewport.centerY,
+			);
 		}
 
-		this._victoryScreen.resize(width, height);
+		this._victoryScreen.resize(width, height, this._viewport);
 	}
 
-	private updateMiddleArrow(width: number, height: number): void {
+	private updateMiddleArrow(viewport: TableViewport): void {
 		if (this._middleArrow.texture === Texture.EMPTY) {
 			this._middleArrow.texture = this._assetsManager.arrowTexture;
 		}
 
-		const size = Math.min(width, height) * TableManager.MIDDLE_ARROW_SIZE_RATIO;
+		const mainAreaWidth = viewport.tableWidth * TableCenterArea.MAIN_WIDTH_RATIO;
+		const mainAreaHeight = mainAreaWidth * TableCenterArea.MAIN_ASPECT_RATIO;
+		const targetMajorSize =
+			mainAreaWidth *
+			TableManager.MIDDLE_ARROW_SIZE_FROM_CENTER_AREA_RATIO;
 
-		this._middleArrow.position.set(width / 2, height * TableManager.MIDDLE_ARROW_Y_RATIO);
-		this._middleArrow.width = size;
-		this._middleArrow.height = size;
+		const textureWidth = this._middleArrow.texture.width || 1;
+		const textureHeight = this._middleArrow.texture.height || 1;
+		const textureAspect = textureWidth / textureHeight;
+
+		let arrowWidth = targetMajorSize;
+		let arrowHeight = targetMajorSize;
+		if (textureAspect >= 1) {
+			arrowHeight = targetMajorSize / textureAspect;
+		} else {
+			arrowWidth = targetMajorSize * textureAspect;
+		}
+
+		const preferredY = viewport.centerY - mainAreaHeight * 0.2;
+		const fallbackY =
+			viewport.offsetY + viewport.tableHeight * TableManager.MIDDLE_ARROW_Y_RATIO;
+		const minY = viewport.offsetY + viewport.tableHeight * 0.2;
+		const maxY = viewport.offsetY + viewport.tableHeight * 0.48;
+		const arrowY = Math.max(minY, Math.min(maxY, (preferredY + fallbackY) / 2));
+
+		this._middleArrow.position.set(viewport.centerX, arrowY);
+		this._middleArrow.width = arrowWidth;
+		this._middleArrow.height = arrowHeight;
 		this._middleArrow.scale.x =
 			Math.abs(this._middleArrow.scale.x) *
 			(this._isMiddleArrowMirrored ? -1 : 1);
@@ -343,7 +395,6 @@ export class TableManager extends Container {
 		this._opponentsManager.syncOpponentHandSizes(dto.opponents);
 		this.updateDiscardCard(dto.currentDiscardCard);
 		this.setTurnDirection(dto.turnDirection);
-		this.setActivePlayer(dto.currentPlayerIndex);
 
 		if (this._tableWidth > 0 && this._tableHeight > 0) {
 			this._opponentsManager.resize(this._tableWidth, this._tableHeight);
@@ -354,7 +405,10 @@ export class TableManager extends Container {
 		this._discard.setVisible(true);
 		this.hideCardFamilySelector();
 		this.setUnoButtonVisible(false);
+		this._turnTimerBar.stop();
 		this._victoryScreen.hide();
+
+		this.setActivePlayer(dto.currentPlayerIndex);
 	}
 
 	private resolveRejoinPlayerIndex(dto: RejoinGameDto): number {
@@ -493,6 +547,7 @@ export class TableManager extends Container {
 
 	public destroy(): void {
 		this.hideCardFamilySelector();
+		this._turnTimerBar.stop();
 		this.cleanupHand(this._playerHand);
 		this.cleanupPile(this._deck);
 		this.cleanupPile(this._discard);
