@@ -30,7 +30,7 @@ export function LobbyProvider({ children }) {
 			return;
 		}
 
-		socketRef.current = io("https://localhost:4443", {
+		socketRef.current = io(`https://${window.location.hostname}:4443`, {
 			path: "/ws",
 			withCredentials: true,
 		});
