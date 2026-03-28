@@ -19,6 +19,7 @@ class GameStats(db.Model):
 	winrate = db.Column(db.Float, default=0)
 	games_played = db.Column(db.BigInteger, default=0)
 	games_won = db.Column(db.BigInteger, default=0)
+	games_lose = db.Column(db.BigInteger, default=0)
 	nbr_uno = db.Column(db.BigInteger, default=0)
 	nbr_uwu = db.Column(db.BigInteger, default=0)
 	nbr_4cards = db.Column(db.BigInteger, default=0)

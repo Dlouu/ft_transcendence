@@ -37,6 +37,7 @@ class Me(Resource):
 		200: Data can be send to the user.
 	"""
 	@ns.jwt_required()
+	@ns.db_health_check()
 	def get(self, user_id):
 		payload = g.token_payload
 
@@ -65,6 +66,7 @@ class UpdateInformation(Resource):
 		401: The user dont exist in the user database, the credential database or the token is not valid.
 	"""
 	@ns.jwt_required()
+	@ns.db_health_check()
 	@ns.expect(update_information_model)
 	def post(self):
 		try:
@@ -159,6 +161,7 @@ class DeleteAccount(Resource):
 
 	"""
 	@ns.jwt_required()
+	@ns.db_health_check()
 	@ns.expect(delete_account_model)
 	def post(self):
 		try:
@@ -222,8 +225,9 @@ class UpdateProfilePicture(Resource):
 		401: A problem occured while trying to delete the old profile picture or to add the new one to the s3 bucket.
 	"""
 	@ns.jwt_required()
-	@ns.expect(updade_profile_picture_model)
 	@ns.s3_bucket_health_check()
+	@ns.db_health_check()
+	@ns.expect(updade_profile_picture_model)
 	def post(self):
 		try:
 			args = updade_profile_picture_model.parse_args()

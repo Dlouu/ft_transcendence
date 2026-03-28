@@ -57,8 +57,8 @@ class UserRegistration(Resource):
 			user_payload = {
 				"username": auth_data["username"],
 				"user_id": json_response["id"],
-				"profile_picture_url": os.getenv("DEFAULT_IMG_PATH")+"/"+os.getenv("DEFAULT_PROFILE_PICTURE", ""),
-				"card_back_id": os.getenv("DEFAULT_IMG_PATH")+"/"+os.getenv("DEFAULT_PROFILE_PICTURE", "")}
+				"profile_picture_url": os.getenv("DEFAULT_PROFILE_PICTURE", ""),
+				"card_back_id": -1}
 			user = user_schema.load(user_payload)
 			db.session.add(user)
 			db.session.commit()
@@ -113,14 +113,8 @@ class UserLogin(Resource):
 		user = User.query.filter_by(user_id=json_response["id"]).first()
 
 		if not user:
-			try:
-				user_payload = {"username": auth_data["username"], "user_id": json_response["id"]}
-				user = user_schema.load(user_payload)
-				db.session.add(user)
-				db.session.commit()
-			except Exception as e:
-				logger.critical(f"Unhandled error happened: {e}", extra=logger.extra(request=request, exception=e))
-				return {"message": "The user exist but something went wrong while initializing his metadata. If the problem persist contact an admin."}, 401
+			logger.critical("A user log on a existing account but no data have been found in the user database.", extra=logger.extra(request=request))
+			return {"message": "Unable to log the user, some important informations are missing, contact an admin if the problem persist."}, 400
 
 		user.is_active = True
 		user.updated_at = datetime.now(timezone.utc)

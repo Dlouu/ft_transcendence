@@ -24,6 +24,8 @@ select_card_model = ns.model("UpdatePasswordModel", {
 @ns.route("/select_card_image")
 class SelectCardImage(Resource):
 	@ns.jwt_required()
+	@ns.s3_bucket_health_check()
+	@ns.db_health_check()
 	@ns.expect(select_card_model)
 	def post(self):
 		try:
@@ -86,8 +88,9 @@ class UploadCardImage(Resource):
 	"""
 	# check if image size is 136*88, if not resize it
 	@ns.jwt_required()
-	@ns.expect(upload_model)
 	@ns.s3_bucket_health_check()
+	@ns.db_health_check()
+	@ns.expect(upload_model)
 	def post(self):
 		try:
 			args = upload_model.parse_args()
@@ -106,6 +109,7 @@ class UploadCardImage(Resource):
 
 		if args["image_id"] is not None:
 			card = CardGallery.query.filter_by(id=args["image_id"], user_id=user_id).first()
+
 		s3_url = f"card_gallery/{user_id}/{uuid4()}.{file_ext}"
 		if card:
 			s3_url = card.img_url
@@ -179,8 +183,10 @@ class UploadCardImage(Resource):
 
 		db.session.commit()
 
+		card_id = image_db_obj.id if card == None else card.id
+
 		logger.info("User's card picture uploaded.", extra=extra_logger)
-		return {"message": "success"}, 201
+		return {"message": "success", "image_id": card_id}, 201
 
 remove_card_image_model = ns.model("RemoveCardImageModel", {
 	"card_id": fields.Integer(required=True)
@@ -219,8 +225,9 @@ class RemoveCardImage(Resource):
 		404: The image can't be found in the s3 bucket.
 	"""
 	@ns.jwt_required()
-	@ns.expect(remove_card_image_model)
 	@ns.s3_bucket_health_check()
+	@ns.db_health_check()
+	@ns.expect(remove_card_image_model)
 	def post(self):
 		try:
 			data = sc.delete_card_image_schema.load(request.json)
@@ -229,12 +236,23 @@ class RemoveCardImage(Resource):
 			return {"message": "The body is not valid."}, 400
 
 		user_id = g.token_payload["user_id"]
+		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
+
+		user = User.query.filter_by(user_id=user_id).first()
+
+		if not user:
+			logger.warning("A non-existent user attempted to delete an image.", extra=extra_logger)
+			return {"message": "A problem occured while trying to delete this image, please contact an admin if the problem persist."}, 401
+
 		card = CardGallery.query.filter_by(user_id=user_id, id=data["card_id"]).first()
 		extra_logger = logger.extra(request=request, user_id=user_id, target="aws")
 
 		if not card:
 			logger.warning("A non-existent card was attempted to be deleted.", extra=extra_logger)
 			return {"message": f"No card found with the id {data["card_id"]} for the user id {user_id}."}, 404
+
+		if user.card_back_id == data["card_id"]:
+			user.card_back_id = -1
 
 		s3s.delete_resource(card.img_url)
 		db.session.delete(card)
@@ -264,6 +282,7 @@ class GetCardImage(Resource):
 			simply because he don't have any image.
 	"""
 	@ns.jwt_required()
+	@ns.db_health_check()
 	@ns.expect(get_card_img_model)
 	def get(self, user_id):
 		page = request.args.get("page", 1, type=int)
