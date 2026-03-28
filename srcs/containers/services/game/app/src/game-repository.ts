@@ -69,6 +69,7 @@ export class GameRepositoryService {
 	 */
 	deleteGame(game: Game): void {
 		this.games = this.games.filter((existingGame) => existingGame !== game);
+		// TODO: Add route to delete in lobby http://lobby:5002/lobby/delete
 	}
 
 	// ==============================
