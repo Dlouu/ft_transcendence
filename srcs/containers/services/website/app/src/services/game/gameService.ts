@@ -92,6 +92,7 @@ export class GameService {
 
 	public initSocket(playerId: string): void {
 		const socketOptions = {
+			path: GAME_CUSTOMIZATION.app.socketPath,
 			query: {
 				playerId: playerId,
 			},
