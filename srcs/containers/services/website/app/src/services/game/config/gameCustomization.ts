@@ -3,7 +3,7 @@ import { CardFamily, CardsTheme } from "../domain/GameEnums";
 export const GAME_CUSTOMIZATION = {
 	app: {
 		backgroundColor: "#291c3d",
-		socketUrl: "http://localhost:3000",
+		socketUrl: `http://${window.location.hostname}:3000`,
 		socketTransports: ["websocket"],
 		defaultTheme: CardsTheme.Basic,
 		defaultCardBackVariants: ["uwu"],
