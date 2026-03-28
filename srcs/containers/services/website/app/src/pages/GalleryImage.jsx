@@ -52,6 +52,31 @@ function GalleryImage() {
 		}
 	}
 
+	const handleSetBackFromDefault = async () => {
+		if (isOwnerImage) {
+			return;
+		}
+
+		try {
+			const response = await fetch(image.src);
+			const blob = await response.blob();
+			const file = new File([blob], `card-back-${id}.png`, { type: blob.type });
+
+			const uploadResponse = await uploadCardBack(file);
+			const newCardId = uploadResponse?.image_id ?? uploadResponse?.data?.image_id;
+
+			if (!newCardId) {
+				throw new Error("Missing image_id in upload response");
+			}
+
+			await setCardBack(newCardId);
+			await refreshUser();
+			navigate("/gallery");
+		} catch (error) {
+			console.error("Failed to duplicate and set as back card:", error);
+		}
+	}
+
 	const handleDuplicate = async () => {
 		try {
 			const response = await fetch(image.src);
@@ -98,6 +123,12 @@ function GalleryImage() {
 
 						{isOwnerImage && (
 							<Button onClick={handleSetBack} disabled={loading}>
+								SELECT AS BACK
+							</Button>
+						)}
+
+						{!isOwnerImage && (
+							<Button onClick={handleSetBackFromDefault} disabled={loading}>
 								SELECT AS BACK
 							</Button>
 						)}
