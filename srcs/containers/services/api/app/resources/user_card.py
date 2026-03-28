@@ -297,11 +297,6 @@ class GetCardImage(Resource):
 
 		pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
-		# if not pagination.items:
-		# 	logger.info(f"No card image found.",
-		# 		extra=logger.extra(request=request, user_id=user_id, target="aws"))
-		# 	return {"message": "No card image found."}, 200
-
 		images_url = []
 		for row in pagination.items:
 			url = s3s.get_resource_url(row.img_url, -1)
