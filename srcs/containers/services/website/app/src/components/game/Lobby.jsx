@@ -53,7 +53,7 @@ return (
 			{publicLobbies?.length > 0 && (
 				<button
 					onClick={() => setShowLobbies(!showLobbies)}
-					className="text-xs opacity-50 hover:opacity-100 text-right pr-2 pb-1 sm:hidden"
+					className="text opacity-50 hover:opacity-100 text-right pr-2 pb-1 sm:hidden"
 				>
 					{showLobbies ? "HIDE ROOMS ▲" : "SHOW ROOMS ▼"}
 				</button>
