@@ -19,6 +19,7 @@ function UserGallery({ userId, browseAll = false, title }) {
 				const perPage = 50;
 				let page = 1;
 				let allCards = [];
+				const cacheBuster = Date.now();
 
 				while (true) {
 					const endpoint = browseAll
@@ -51,7 +52,12 @@ function UserGallery({ userId, browseAll = false, title }) {
 					page += 1;
 				}
 
-				setCards(allCards);
+				setCards(
+					allCards.map((card) => ({
+						...card,
+						cache_url: `${card.url}${card.url.includes("?") ? "&" : "?"}v=${cacheBuster}`,
+					}))
+				);
 			} catch (err) {
 				console.error(err);
 				setCards([]);
@@ -85,13 +91,13 @@ function UserGallery({ userId, browseAll = false, title }) {
 							to={`/gallery/${card.image_id}`}
 							state={{
 								id: card.image_id,
-								src: card.url,
+								src: card.cache_url,
 								type: isOwner ? "user" : "shared",
 								ownerId,
 							}}
 						>
 							<img
-								src={card.url}
+								src={card.cache_url}
 								className="w-full rounded-lg shadow-md hover:scale-105 transition"
 								alt={`card-${card.image_id}`}
 							/>
