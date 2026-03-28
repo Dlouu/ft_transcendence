@@ -5,6 +5,7 @@ export const GAME_CUSTOMIZATION = {
 		backgroundColor: "#291c3d",
 		socketUrl: `http://${window.location.hostname}:3000`,
 		socketTransports: ["websocket"],
+		canvasAspectRatio: 16 / 9,
 		defaultTheme: CardsTheme.Basic,
 		defaultCardBackVariants: ["uwu"],
 	},
@@ -125,6 +126,8 @@ export const GAME_CUSTOMIZATION = {
 			defaultButton: "HOME",
 			victory: "VICTORY",
 			defeat: "DEFEAT",
+			tablePlayerHeader: "PLAYER",
+			tableCardsHeader: "CARDS LEFT",
 			homePath: "/",
 		},
 		ratios: {
@@ -133,6 +136,13 @@ export const GAME_CUSTOMIZATION = {
 			panelCornerRadius: 0.03,
 			titleTop: 0.06,
 			statsTop: 0.24,
+			tableTop: 0.38,
+			tableHeight: 0.36,
+			tableSidePadding: 0.12,
+			tableHeaderFont: 0.032,
+			tableRowFont: 0.03,
+			tableHeaderToRowsGap: 0.2,
+			tableRowExtraGap: 0.15,
 			buttonBottom: 0.1,
 			titleFont: 0.07,
 			statsFont: 0.032,
@@ -201,5 +211,11 @@ export const GAME_CUSTOMIZATION = {
 	},
 	cardPool: {
 		initialSize: 120,
+	},
+	effectCard: {
+		renderDurationMs: 2000,
+		betweenHandAndCenterRatio: 0.35,
+		heightRatio: 0.17,
+		cardRatio: 0.66,
 	},
 } as const;

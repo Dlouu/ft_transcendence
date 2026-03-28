@@ -8,7 +8,7 @@ import { DeckService } from "./deck.service";
 import { GameLogicService } from "./game-logic.service";
 import { GameRepositoryService } from "./game-repository";
 import { GamePlayService } from "./game-play.service";
-import { toCardDtoArray } from "./dto/init-game.dto";
+import { InitGameDto, toCardDtoArray } from "./dto/init-game.dto";
 import { CardDto } from "./dto/card.dto";
 import { NextTurnDto } from "./dto/next-turn.dto";
 import { BotLogicService } from "./bot-logic.service";
@@ -20,7 +20,7 @@ export class GameService {
 	private io?: Server;
 	private readonly gameInitReadyByRoom = new Map<string, Set<string>>();
 	private readonly turnTimeoutByRoom = new Map<string, NodeJS.Timeout>();
-	private readonly turnTimeoutMs = GAME_CONFIG.turn.turnTimeoutMs;
+	private readonly turnTimeoutMs = 10000;
 
 	constructor(
 		private readonly gameRepository: GameRepositoryService,
@@ -109,17 +109,20 @@ export class GameService {
 		const game = this.gameRepository.getGameByExpectedPlayer(playerId);
 		if (!game) return null;
 
-		const updatedPlayer = this.gameRepository.updatePlayerById(game, playerId, dto);
-		
+		const updatedPlayer = this.gameRepository.updatePlayerById(
+			game,
+			playerId,
+			dto,
+		);
+
 		if (updatedPlayer && this.io) {
 			// Find the player's index in the game
-			const playerIndex = game.players.findIndex(p => p._id === playerId);
-			
+			const playerIndex = game.players.findIndex((p) => p._id === playerId);
+
 			this.io.to(game.roomName).emit("game:playerUpdated", {
 				playerIndex: playerIndex,
 				name: updatedPlayer._name,
 				cardBack: updatedPlayer._cardBack,
-				profilePicture: updatedPlayer._profilePicture,
 			});
 		}
 
@@ -187,7 +190,7 @@ export class GameService {
 		console.log("Players = ", players);
 
 		game.players.forEach((player, index) => {
-			const initGameDto = {
+			const initGameDto: InitGameDto = {
 				players,
 				discardTopCard: {
 					cardCode: topDiscard.value,
@@ -226,7 +229,10 @@ export class GameService {
 			this.clearTurnTimeout(game.roomName);
 
 			this.gameRepository.deleteGame(game);
-			this.logger.gameDelete(game.roomName, "No more real player left in game.");
+			this.logger.gameDelete(
+				game.roomName,
+				"No more real player left in game.",
+			);
 			return;
 		}
 
@@ -271,11 +277,9 @@ export class GameService {
 			return;
 		}
 
-		if (!(await this.gamePlay.playCard(game, dto, player))) {
-			return;
-		}
-
 		this.clearTurnTimeout(game.roomName);
+
+		if (!(await this.gamePlay.playCard(game, dto, player))) return;
 
 		game.turnCount += 1;
 
@@ -362,7 +366,13 @@ export class GameService {
 			return;
 		}
 
-		this.logger.drawCard(player._id, player._name, game.roomName, 1, "Player drew.");
+		this.logger.drawCard(
+			player._id,
+			player._name,
+			game.roomName,
+			1,
+			"Player drew.",
+		);
 
 		game.turnCount += 1;
 

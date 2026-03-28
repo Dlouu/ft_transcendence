@@ -1,4 +1,3 @@
-import { GameDebugService } from './game-debug.service';
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Game } from "./domain/UnoGame";
 import { GameState, CardCode, CardFamily } from "./domain/GameEnums";
@@ -225,6 +224,42 @@ export class GameLogicService {
 		return playableFamilies[randomIndex];
 	}
 
+	private pickBotCardFamily(player: UnoPlayer): CardFamily {
+		const familyCounts = new Map<CardFamily, number>();
+
+		for (const card of player._hand) {
+			if (card.family === CardFamily.WILD) {
+				continue;
+			}
+
+			const currentCount = familyCounts.get(card.family) ?? 0;
+			familyCounts.set(card.family, currentCount + 1);
+		}
+
+		if (familyCounts.size === 0) {
+			return this.randomCardFamily();
+		}
+
+		let bestCount = 0;
+		const bestFamilies: CardFamily[] = [];
+
+		for (const [family, count] of familyCounts.entries()) {
+			if (count > bestCount) {
+				bestCount = count;
+				bestFamilies.length = 0;
+				bestFamilies.push(family);
+				continue;
+			}
+
+			if (count === bestCount) {
+				bestFamilies.push(family);
+			}
+		}
+
+		const randomIndex = Math.floor(Math.random() * bestFamilies.length);
+		return bestFamilies[randomIndex];
+	}
+
 	private formatDurationToDdHhMmSs(durationMs: number): number {
 		const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
 		const days = Math.min(99, Math.floor(totalSeconds / 86400));
@@ -242,7 +277,11 @@ export class GameLogicService {
 	}
 
 	async askPlayerColor(game: Game, player: UnoPlayer): Promise<CardFamily> {
-		if (!player._socket || player._isBot) {
+		if (player._isBot) {
+			return this.pickBotCardFamily(player);
+		}
+
+		if (!player._socket) {
 			return this.randomCardFamily();
 		}
 

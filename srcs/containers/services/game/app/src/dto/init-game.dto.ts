@@ -17,7 +17,7 @@ export interface IInitPlayer {
 	profilePicture: string;
 }
 
-export class InitPlayerDto {
+export class InitPlayerDto implements IInitPlayer {
 	@IsString()
 	name: string;
 
