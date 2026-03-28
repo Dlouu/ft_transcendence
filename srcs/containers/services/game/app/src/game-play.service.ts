@@ -11,6 +11,11 @@ import { GameService } from './game.service';
 import { GameRepositoryService } from './game-repository';
 import { NextTurnDto } from './dto/next-turn.dto';
 import { GameLoggerService } from './logger.service';
+import {
+	CardEffectType,
+	resolveCardEffectType,
+	toCardEffectDto,
+} from "./dto/card-effect.dto";
 
 // Handles the inputs of the players of the game (play card, draw, uno).
 @Injectable()
@@ -37,6 +42,67 @@ export class GamePlayService {
 		game.currentFamily = playedCard.family;
 
 		return true;
+	}
+
+	private getPlayerIndex(game: Game, player: UnoPlayer): number {
+		return game.players.findIndex((p) => p._id === player._id);
+	}
+
+	private getNextPlayerIndex(game: Game, fromIndex: number): number {
+		if (game.currentDirection === "CLOCKWISE") {
+			return (fromIndex + 1) % game.players.length;
+		}
+
+		return (fromIndex - 1 + game.players.length) % game.players.length;
+	}
+
+	private resolveAffectedPlayerIndex(
+		game: Game,
+		cardCode: CardCode,
+		sourcePlayerIndex: number,
+	): number {
+		switch (cardCode) {
+			case CardCode.Skip:
+			case CardCode.DrawTwo:
+			case CardCode.WildDrawFour:
+				return this.getNextPlayerIndex(game, sourcePlayerIndex);
+			case CardCode.Reverse:
+				return game.players.length === 2
+					? this.getNextPlayerIndex(game, sourcePlayerIndex)
+					: sourcePlayerIndex;
+			case CardCode.Wild:
+				return sourcePlayerIndex;
+			default:
+				return sourcePlayerIndex;
+		}
+	}
+
+	private emitCardEffect(
+		game: Game,
+		playedCard: Card,
+		cardCode: CardCode,
+		sourcePlayerIndex: number,
+	): void {
+		const effectType = resolveCardEffectType(cardCode);
+		if (!effectType) {
+			return;
+		}
+
+		const affectedPlayerIndex = this.resolveAffectedPlayerIndex(
+			game,
+			cardCode,
+			sourcePlayerIndex,
+		);
+
+		this.getIoServer()?.to(game.roomName).emit(
+			"game:card:effect",
+			toCardEffectDto(
+				playedCard,
+				effectType as CardEffectType,
+				sourcePlayerIndex,
+				affectedPlayerIndex,
+			),
+		);
 	}
 
 	playSkipCard(game: Game, playedCard: Card): boolean {
@@ -133,6 +199,15 @@ export class GamePlayService {
 		if (!playedCard) {
 			return false;
 		}
+		const effectCardSnapshot = new Card();
+		effectCardSnapshot.family = playedCard.family;
+		effectCardSnapshot.value = playedCard.value;
+
+		const sourcePlayerIndex = this.getPlayerIndex(game, player);
+		if (sourcePlayerIndex < 0) {
+			player._hand.splice(cardIndex, 0, playedCard);
+			return false;
+		}
 
 		const topCard = game.discard.peek();
 		if (!this.gameLogicService.isPlayable(topCard, dto))
@@ -188,6 +263,8 @@ export class GamePlayService {
 			player._hand.splice(cardIndex, 0, playedCard);
 			return false;
 		}
+
+		this.emitCardEffect(game, effectCardSnapshot, dto.cardCode, sourcePlayerIndex);
 
 		this.logger.cardPlayed(player._id, player._name, game.roomName, dto.cardCode, dto.cardFamily);
 

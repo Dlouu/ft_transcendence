@@ -1,18 +1,18 @@
 import { Application } from "pixi.js";
 import { io, Socket } from "socket.io-client";
-import { CardPool } from "./game/domain/CardPool";
-import { AssetsManager } from "./game/managers/AssetsManager";
-import { CardsTheme } from "./game/domain/GameEnums";
-import { TableManager } from "./game/managers/TableManager";
-import { InitGameDto } from "./game/dto/init-game.dto";
-import { UnoCard } from "./game/domain/UnoCard";
+import { CardPool } from "./domain/CardPool";
+import { AssetsManager } from "./managers/AssetsManager";
+import { CardsTheme } from "./domain/GameEnums";
+import { TableManager } from "./managers/TableManager";
+import { InitGameDto } from "./dto/init-game.dto";
+import { UnoCard } from "./domain/UnoCard";
 import {
 	handleDeckClicked,
 	handlePlayerCardClicked,
 	handleUnoClicked,
 } from "./gameInputCallbacks";
 import { registerServerEventCallbacks } from "./gameServerEventCallbacks";
-import { GAME_CUSTOMIZATION } from "./game/config/gameCustomization";
+import { GAME_CUSTOMIZATION } from "./config/gameCustomization";
 
 interface IGameInitOptions {
 	canvas: HTMLCanvasElement;
@@ -56,13 +56,16 @@ export class GameService {
 		}
 
 		this._playerId = playerId;
+		const aspectRatio = GAME_CUSTOMIZATION.app.canvasAspectRatio;
+		const canvasWidth = Math.max(1, Math.floor(canvas.clientWidth));
+		const canvasHeight = Math.max(1, Math.floor(canvasWidth / aspectRatio));
 
 		this._app = new Application();
 
 		await this._app.init({
 			canvas: canvas,
-			width: canvas.clientWidth,
-			height: canvas.clientHeight,
+			width: canvasWidth,
+			height: canvasHeight,
 			backgroundColor: GAME_CUSTOMIZATION.app.backgroundColor,
 			// backgroundAlpha: 0.3,
 			resolution: window.devicePixelRatio || 1,
@@ -179,13 +182,15 @@ export class GameService {
 		handleUnoClicked(this._socket);
 	}
 
-	public onResize(width: number, height: number): void {
+	public onResize(width: number): void {
 		if (!this._app || !this._tableManager) {
 			return;
 		}
 
+		// Keep the game viewport at a fixed aspect ratio by deriving height from width.
+		const aspectRatio = GAME_CUSTOMIZATION.app.canvasAspectRatio;
 		const safeWidth = Math.max(1, Math.floor(width));
-		const safeHeight = Math.max(1, Math.floor(height));
+		const safeHeight = Math.max(1, Math.floor(safeWidth / aspectRatio));
 
 		this._app.renderer.resize(safeWidth, safeHeight);
 		this._tableManager.resize(safeWidth, safeHeight);

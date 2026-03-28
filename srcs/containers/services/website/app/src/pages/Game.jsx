@@ -1,30 +1,11 @@
 import { useEffect, useContext, useRef, useState } from "react";
 import { GameContext } from "../context/GameContext";
 import { Page, Button } from "../ui";
-import { gameService } from "../services/gameService";
+import { gameService } from "../services/game/gameService";
 import { AuthContext } from "../context/AuthContext";
 
-const TABLE_ASPECT_RATIO = 16 / 9;
-
-function getFitted16By9Size(availableWidth, availableHeight)
-{
-    const safeWidth = Math.max(1, Math.floor(availableWidth));
-    const safeHeight = Math.max(1, Math.floor(availableHeight));
-
-    let width = safeWidth;
-    let height = Math.floor(width / TABLE_ASPECT_RATIO);
-
-    if (height > safeHeight)
-    {
-        height = safeHeight;
-        width = Math.floor(height * TABLE_ASPECT_RATIO);
-    }
-
-    return {
-        width: Math.max(1, width),
-        height: Math.max(1, height),
-    };
-}
+const CANVAS_ASPECT_RATIO = 16 / 9;
+const MAX_CANVAS_WIDTH = 1280;
 
 function Game() {
     const { playerName } = useContext(GameContext);
@@ -32,10 +13,9 @@ function Game() {
 
     const canvasRef = useRef(null);
     const stageRef = useRef(null);
-    const containerRef = useRef(null);
 
     const [portrait, setPortrait] = useState(false);
-	const [tableSize, setTableSize] = useState({ width: 1280, height: 720 });
+	const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
 	const userId = user?.user_id;
 
     useEffect(() =>
@@ -50,7 +30,8 @@ function Game() {
 
     const enterFullscreen = () =>
     {
-        const el = stageRef.current;
+        console.log("Game unmounted");
+        const el = canvasRef.current;
         if (!el) return;
 
         if (el.requestFullscreen)
@@ -79,70 +60,44 @@ function Game() {
         const stage = stageRef.current;
         if (!stage) return;
 
-        const updateTableSize = () =>
-        {
-            const bounds = stage.getBoundingClientRect();
-            const fitted = getFitted16By9Size(bounds.width, bounds.height);
-            setTableSize((prev) =>
-            {
-                if (prev.width === fitted.width && prev.height === fitted.height)
-                {
-                    return prev;
-                }
-
-                return fitted;
-            });
-        };
-
-        const observer = new ResizeObserver(() => updateTableSize());
-        observer.observe(stage);
-
-        updateTableSize();
-        window.addEventListener("resize", updateTableSize);
-        document.addEventListener("fullscreenchange", updateTableSize);
-
-        return () =>
-        {
-            observer.disconnect();
-            window.removeEventListener("resize", updateTableSize);
-            document.removeEventListener("fullscreenchange", updateTableSize);
-        };
-    }, []);
-
-    useEffect(() =>
-    {
-        const canvas = canvasRef.current;
-        const container = containerRef.current;
-        if (!canvas || !container) return;
-
         const resize = () =>
         {
-            const { width, height } = container.getBoundingClientRect();
-            gameService.onResize?.(width, height);
-        };
+            const { width: availableWidth, height: availableHeight } = stage.getBoundingClientRect();
+            const maxWidthFromHeight = availableHeight * CANVAS_ASPECT_RATIO;
+            const nextWidth = Math.max(
+                1,
+                Math.floor(
+                    Math.min(availableWidth, maxWidthFromHeight, MAX_CANVAS_WIDTH),
+                ),
+            );
+            const nextHeight = Math.max(1, Math.floor(nextWidth / CANVAS_ASPECT_RATIO));
 
-        const observer = new ResizeObserver(() => resize());
-        observer.observe(container);
+            setFrameSize((current) =>
+                current.width === nextWidth && current.height === nextHeight
+                    ? current
+                    : { width: nextWidth, height: nextHeight },
+            );
+
+            gameService.onResize?.(nextWidth);
+        };
 
         resize();
         window.addEventListener("resize", resize);
-        return () =>
-        {
-            observer.disconnect();
-            window.removeEventListener("resize", resize);
-        };
+        return () => window.removeEventListener("resize", resize);
     }, []);
 
     return (
-        <Page className="h-screen overflow-hidden flex flex-col">
+        <Page className="h-full min-h-0 overflow-hidden flex flex-col">
             <div
                 ref={stageRef}
-                className="flex-1 w-full flex items-center justify-center p-4"
+                className="flex-1 min-h-0 w-full overflow-hidden flex items-center justify-center p-4"
             >
                 <div
-                    ref={containerRef}
-                    className="relative shadow-2xl rounded-4xl"
-                    style={{ width: `${tableSize.width}px`, height: `${tableSize.height}px` }}
+                    className="relative w-full max-w-7xl aspect-video shadow-2xl rounded-4xl"
+                    style={{
+                        width: frameSize.width ? `${frameSize.width}px` : undefined,
+                        height: frameSize.height ? `${frameSize.height}px` : undefined,
+                    }}
                 >
                     <canvas
                         ref={canvasRef}

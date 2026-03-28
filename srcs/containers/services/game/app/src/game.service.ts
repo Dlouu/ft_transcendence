@@ -13,6 +13,7 @@ import { CardDto } from "./dto/card.dto";
 import { NextTurnDto } from "./dto/next-turn.dto";
 import { BotLogicService } from "./bot-logic.service";
 import { GameLoggerService } from "./logger.service";
+import { GAME_CONFIG } from "./game.config";
 
 @Injectable()
 export class GameService {
@@ -108,12 +109,16 @@ export class GameService {
 		const game = this.gameRepository.getGameByExpectedPlayer(playerId);
 		if (!game) return null;
 
-		const updatedPlayer = this.gameRepository.updatePlayerById(game, playerId, dto);
-		
+		const updatedPlayer = this.gameRepository.updatePlayerById(
+			game,
+			playerId,
+			dto,
+		);
+
 		if (updatedPlayer && this.io) {
 			// Find the player's index in the game
-			const playerIndex = game.players.findIndex(p => p._id === playerId);
-			
+			const playerIndex = game.players.findIndex((p) => p._id === playerId);
+
 			this.io.to(game.roomName).emit("game:playerUpdated", {
 				playerIndex: playerIndex,
 				name: updatedPlayer._name,
@@ -193,7 +198,7 @@ export class GameService {
 				},
 				firstPlayerIndex: game.currentPlayerIndex,
 				turnDirection: game.currentDirection,
-				startCardNbr: 7, // TODO: Replace by a const variable
+				startCardNbr: GAME_CONFIG.dealing.startCardsPerPlayer,
 				playerIndex: index,
 				playerHand: toCardDtoArray(player._hand),
 				cardTheme: game.cardTheme,
@@ -224,7 +229,10 @@ export class GameService {
 			this.clearTurnTimeout(game.roomName);
 
 			this.gameRepository.deleteGame(game);
-			this.logger.gameDelete(game.roomName, "No more real player left in game.");
+			this.logger.gameDelete(
+				game.roomName,
+				"No more real player left in game.",
+			);
 			return;
 		}
 
@@ -358,7 +366,13 @@ export class GameService {
 			return;
 		}
 
-		this.logger.drawCard(player._id, player._name, game.roomName, 1, "Player drew.");
+		this.logger.drawCard(
+			player._id,
+			player._name,
+			game.roomName,
+			1,
+			"Player drew.",
+		);
 
 		game.turnCount += 1;
 

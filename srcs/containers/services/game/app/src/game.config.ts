@@ -10,12 +10,12 @@ export const GAME_CONFIG = {
 		callWindowMs: 100000,
 	},
 	dealing: {
-		startCardsPerPlayer: 3,
+		startCardsPerPlayer: 7,
 	},
 	bot: {
 		turnDelayMs: {
-			min: 350,
-			max: 1250,
+			min: 750,
+			max: 2750,
 		},
 		selfUnoReactionDelayMs: {
 			min: 400,

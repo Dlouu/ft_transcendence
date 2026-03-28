@@ -5,6 +5,7 @@ export const GAME_CUSTOMIZATION = {
 		backgroundColor: "#291c3d",
 		socketUrl: "http://localhost:3000",
 		socketTransports: ["websocket"],
+		canvasAspectRatio: 16 / 9,
 		defaultTheme: CardsTheme.Basic,
 		defaultCardBackVariants: ["uwu"],
 	},
@@ -210,5 +211,11 @@ export const GAME_CUSTOMIZATION = {
 	},
 	cardPool: {
 		initialSize: 120,
+	},
+	effectCard: {
+		renderDurationMs: 2000,
+		betweenHandAndCenterRatio: 0.35,
+		heightRatio: 0.17,
+		cardRatio: 0.66,
 	},
 } as const;

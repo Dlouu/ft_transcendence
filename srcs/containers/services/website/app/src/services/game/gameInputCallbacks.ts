@@ -1,6 +1,6 @@
 import { Socket } from "socket.io-client";
-import { UnoCard } from "./game/domain/UnoCard";
-import { CardDto } from "./game/dto/card.dto";
+import { UnoCard } from "./domain/UnoCard";
+import { CardDto } from "./dto/card.dto";
 
 export function handlePlayerCardClicked(
 	card: UnoCard,
