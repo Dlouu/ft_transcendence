@@ -164,6 +164,7 @@ export function LobbyProvider({ children }) {
 				return;
 			}
 			notify(response?.message || "Unable to join this lobby.", "error");
+			socketRef.current.emit("get_public_lobbies");
 			navigate("/");
 		});
 	}

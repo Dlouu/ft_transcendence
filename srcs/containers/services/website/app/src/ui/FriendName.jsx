@@ -5,7 +5,7 @@ function FriendName({ id, username, online, inGame, onDelete, onClose }) {
 	const statusIcon = inGame
 	? <span className="font-icon text-green-500">󰊗</span>
 	: online
-	? <span className="font-icon text-pink-500">󰝥</span>
+	? <span className="font-icon text-green-500">󰝥</span>
 	: <span className="font-icon text-gray-500">󰝥</span>
 
 	return (

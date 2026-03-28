@@ -2,7 +2,7 @@ import os
 import secrets
 import requests
 from flask import request, session, g
-from flask_socketio import join_room, emit
+from flask_socketio import join_room, leave_room, emit
 from sqlalchemy.exc import IntegrityError
 
 from app.core.extensions import socketio, db
@@ -501,6 +501,7 @@ def leave_lobby():
 	if user_id is None:
 		return
 
+	leave_room(code)
 	del data["players"][user_id]
 
 	if data["supreme_master_user_id"] == user_id:
@@ -515,6 +516,7 @@ def leave_lobby():
 
 	if not data["players"] and not data["game_started"]:
 		lobbies.pop(code, None)
+		broadcast_public_lobbies()
 		return
 
 	emit_lobby_state(code)
