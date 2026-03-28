@@ -13,6 +13,7 @@ export function LobbyProvider({ children }) {
 	const [bots, setBots] = useState([]);
 	const [privacy, setPrivacy] = useState(true);
 	const [UwUtheme, setUwUTheme] = useState(false);
+	const [publicLobbies, setPublicLobbies] = useState([]);
 	const { notify } = useNotifications();
 	const navigate = useNavigate();
 	const { user, loading } = useContext(AuthContext);
@@ -51,6 +52,13 @@ export function LobbyProvider({ children }) {
 			setUwUTheme(data.theme);
 		});
 
+		socketRef.current.on("all_lobbies", (data) => {
+			setAllLobbies(data);
+		});
+		socketRef.current.on("available_lobbies", (data) => {
+			setAvailableLobbies(data);
+		});
+
 		socketRef.current.on("error", (data) => {
 			notify(data.message, "error");
 		});
@@ -63,7 +71,15 @@ export function LobbyProvider({ children }) {
 			notify("Game is full", "error");
 		});
 
-		socketRef.current.on("connect", () => setConnected(true));
+		socketRef.current.on("public_lobbies", (data) => {
+			setPublicLobbies(data.lobbies);
+		});
+
+		socketRef.current.on("connect", () => {
+			setConnected(true);
+			socketRef.current.emit("get_public_lobbies");
+		});
+
 		socketRef.current.on("disconnect", () => setConnected(false));
 
 		return () => {
@@ -142,6 +158,7 @@ export function LobbyProvider({ children }) {
 			code,
 			isHost,
 			theme: UwUtheme,
+			publicLobbies,
 			createLobby,
 			joinLobby,
 			leaveLobby,

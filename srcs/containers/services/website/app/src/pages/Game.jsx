@@ -27,6 +27,7 @@ function getFitted16By9Size(availableWidth, availableHeight)
 }
 
 function Game() {
+    const { playerName } = useContext(GameContext);
     const { user } = useContext(AuthContext);
 
     const canvasRef = useRef(null);
@@ -42,6 +43,7 @@ function Game() {
         if (!canvasRef.current || !userId) return;
 
         gameService.init({ canvas: canvasRef.current, playerId: userId });
+        console.log("Game mounted for", playerName);
 
         return () => gameService.destroy();
     }, [playerName, userId]);
