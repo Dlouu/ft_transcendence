@@ -158,7 +158,7 @@ class UploadCardImage(Resource):
 						pixels[x, y] = (0, 0, 0, 0)
 					elif m == 2:
 						pixels[x, y] = (255, 255, 255, 255)
-					elif m == 1 and pixels[x, y][3] == 0:
+					elif m == 1 and len(pixels[x, y]) == 4 and pixels[x, y][3] == 0:
 						pixels[x, y] = (43, 42, 51, 255)
 
 			output = BytesIO()
