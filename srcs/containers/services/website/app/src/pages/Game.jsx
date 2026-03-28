@@ -1,4 +1,5 @@
 import { useEffect, useContext, useRef, useState } from "react";
+import { GameContext } from "../context/GameContext";
 import { Page, Button } from "../ui";
 import { gameService } from "../services/gameService";
 import { AuthContext } from "../context/AuthContext";
@@ -40,7 +41,7 @@ function Game() {
     {
         if (!canvasRef.current || !userId) return;
 
-        let isCancelled = false;
+        gameService.init({ canvas: canvasRef.current, playerId: userId });
 
         return () => gameService.destroy();
     }, [playerName, userId]);
@@ -50,20 +51,20 @@ function Game() {
         const el = stageRef.current;
         if (!el) return;
 
-        if (el.requestFullscreen) {
+        if (el.requestFullscreen)
+        {
             el.requestFullscreen();
         }
     };
 
-    useEffect(() => {
-        const check = () => {
+    useEffect(() =>
+    {
+        const check = () =>
+        {
             const portrait = window.matchMedia("(orientation: portrait)").matches;
             const mobile = window.matchMedia("(pointer: coarse)").matches;
 
-            setPortrait((prev) => {
-                const next = portrait && mobile;
-                return prev === next ? prev : next;
-            });
+            setPortrait(portrait && mobile);
         };
 
         check();
