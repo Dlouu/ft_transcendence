@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { Card, Page } from "../ui";
 import { AuthContext } from "../context/AuthContext";
 import { GameContext } from "../context/GameContext";
@@ -6,11 +6,15 @@ import AvatarSection from "../components/profile/AvatarSection";
 import InfoSection from "../components/profile/InfoSection";
 import PasswordSection from "../components/profile/PasswordSection";
 import DeleteAccount from "../components/profile/DeleteAccount";
-import Sidebar from "../components/profile/Sidebar";
+import GameStats from "../components/profile/GameStats";
 
 function Me() {
 	const { user, logout } = useContext(AuthContext);
-	const { profile } = useContext(GameContext);
+	const { profile, fetchPublicProfile } = useContext(GameContext);
+
+	useEffect(() => {
+		fetchPublicProfile(user?.id);
+	}, [user?.id, fetchPublicProfile]);
 
 	return (
 		<Page center>
@@ -21,13 +25,19 @@ function Me() {
 						<AvatarSection user={user}/>
 						<InfoSection user={user}/>
 
+						<div className="sm:hidden">
+						<GameStats stats={profile.stats}/>
+						</div>
+
 						<div className="flex flex-col sm:w-1/2 w-full">
 							<PasswordSection />
 							<DeleteAccount logout={logout}/>
 						</div>
 					</div>
 
-					<Sidebar profile={profile}/>
+					<div className="hidden sm:block">
+						<GameStats stats={profile.stats}/>
+					</div>
 
 				</div>
 			</Card>

@@ -8,8 +8,8 @@ function GameSetup() {
 	const { id } = useParams();
 	const [mode, setMode] = useState(id ? "room" : "lobby");
 	const { createLobby, joinLobby } = useContext(LobbyContext);
-    const { code } = useContext(LobbyContext);
-    const navigate = useNavigate();
+	const { code } = useContext(LobbyContext);
+	const navigate = useNavigate();
 
 	const createRoom = () => {
 		createLobby();

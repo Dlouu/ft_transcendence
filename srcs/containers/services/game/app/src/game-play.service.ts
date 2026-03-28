@@ -98,6 +98,9 @@ export class GamePlayService {
 		game.currentFamily = chosenFamily;
 		playedCard.family = chosenFamily;
 		this.getIoServer()?.to(game.roomName).emit("game:wild:new-color", { chosenFamily });
+
+		player.incrementNbr4cards(1);
+
 		console.log(`Wild current family : ${game.currentFamily}`);
 
 		return true;
@@ -215,6 +218,8 @@ export class GamePlayService {
 			pendingPlayer.hasShoutedUno = true;
 			this.gameLogicService.clearPendingUno(game);
 
+			pendingPlayer.incrementNbrUno(1);
+
 			this.getIoServer()?.to(game.roomName).emit("game:uno:catched");
 
 			return true;
@@ -227,6 +232,8 @@ export class GamePlayService {
 		}
 
 		this.getIoServer()?.to(game.roomName).emit("game:uno:catched");
+
+		player.incrementNbrUwu(1);
 
 		const isPendingUnoPlayer = pendingPlayer._id === player._id;
 

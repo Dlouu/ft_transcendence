@@ -27,3 +27,5 @@ node_modules
 
 ***/secrets/
 ***/env/
+
+***/*.prompt.md

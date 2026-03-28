@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 import { GameWinDto } from "../dto/game-win.dto";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
+import { TableViewport } from "../layout/TableViewport";
 
 export class VictoryScreen extends Container {
 	private static readonly UI_FONT_CSS_VARIABLE =
@@ -136,12 +137,18 @@ export class VictoryScreen extends Container {
 		this.eventMode = "none";
 	}
 
-	public resize(width: number, height: number): void {
-		const panelWidth = width * VictoryScreen.PANEL_WIDTH_RATIO;
+	public resize(width: number, height: number, viewport?: TableViewport): void {
+		const tableWidth = viewport?.tableWidth ?? width;
+		const tableHeight = viewport?.tableHeight ?? height;
+		const offsetX = viewport?.offsetX ?? 0;
+		const offsetY = viewport?.offsetY ?? 0;
+		const centerX = viewport?.centerX ?? width / 2;
+
+		const panelWidth = tableWidth * VictoryScreen.PANEL_WIDTH_RATIO;
 		const panelHeight = panelWidth / VictoryScreen.PANEL_ASPECT_RATIO;
 		const panelMinDimension = Math.min(panelWidth, panelHeight);
-		const panelLeft = (width - panelWidth) / 2;
-		const panelTop = (height - panelHeight) / 2;
+		const panelLeft = offsetX + (tableWidth - panelWidth) / 2;
+		const panelTop = offsetY + (tableHeight - panelHeight) / 2;
 
 		this._overlay.clear();
 		this._overlay.rect(0, 0, width, height).fill({
@@ -170,14 +177,14 @@ export class VictoryScreen extends Container {
 
 		this._title.style.fontSize = panelWidth * VictoryScreen.TITLE_FONT_RATIO;
 		this._title.position.set(
-			width / 2,
+			centerX,
 			panelTop + panelHeight * VictoryScreen.TITLE_TOP_RATIO,
 		);
 
 		this._gameStatsLabel.style.fontSize =
 			panelWidth * VictoryScreen.STATS_FONT_RATIO;
 		this._gameStatsLabel.position.set(
-			width / 2,
+			centerX,
 			panelTop + panelHeight * VictoryScreen.STATS_TOP_RATIO,
 		);
 
@@ -185,7 +192,7 @@ export class VictoryScreen extends Container {
 		const buttonHeight = panelHeight * VictoryScreen.BUTTON_HEIGHT_RATIO;
 		this.drawButton(buttonWidth, buttonHeight);
 		this._button.position.set(
-			width / 2,
+			centerX,
 			panelTop + panelHeight - panelHeight * VictoryScreen.BUTTON_BOTTOM_RATIO,
 		);
 	}

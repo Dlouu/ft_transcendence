@@ -108,6 +108,7 @@ export class GameRepositoryService {
 				socket,
 				false,
 				expectedPlayer?.cardBackUrl ?? "uwu",
+				expectedPlayer?.profilePicture ?? "default",
 			);
 			const hasJoined = game.addPlayer(newPlayer);
 			if (!hasJoined) {
@@ -205,6 +206,7 @@ export class GameRepositoryService {
 
 		player._name = playerData.name;
 		player._cardBack = playerData.backCardURL;
+		player._profilePicture = playerData.profilePicture;
 
 		return player;
 	}

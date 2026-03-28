@@ -3,11 +3,12 @@ import { GameContext } from "../context/GameContext";
 import { AuthContext } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, Page, Input, Button, Tooltip } from "../ui";
-import { useNotifications } from "../hooks/useNotifications";
+import { useApi } from "../hooks/useApi";
 
 function Register() {
 		const { login } = useContext(AuthContext);
 		const { playerName, setPlayerName } = useContext(GameContext);
+		const { post, loading } = useApi();
 		const [userEmail, setUserEmail] = useState("");
 		const [password, setPassword] = useState("");
 		const [passwordCheck, setPasswordCheck] = useState("");
@@ -17,34 +18,22 @@ function Register() {
 			password &&
 			passwordCheck &&
 			password === passwordCheck;
-		const { notify } = useNotifications();
 		const navigate = useNavigate();
 
 		const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
-			const request = await fetch("/api/auth/registration", {
-				headers: {
-					'Accept': 'application/json',
-					'Content-Type': 'application/json'
-				},
-				method: "POST",
-				body: JSON.stringify({
-					"email": userEmail,
-					"password": password,
-					"username": playerName
-				}),
-			})
-			const answer = await request.json();
-			if (request.ok) {
-				await login();
-				navigate("/");
-			}
-			else {
-				notify(answer.message, "error");
-			}
-		} catch (error) {
-			console.log(error);
+			await post("/api/auth/registration", {
+				"email": userEmail,
+				password,
+				"username": playerName
+			}),
+
+			await login();
+			navigate("/");
+
+			} catch {
+			return;
 		}
 	};
 
@@ -119,7 +108,7 @@ function Register() {
 				</form>
 
 				<div className="flex flex-col items-center">
-					<Button onClick={handleSubmit} disabled={!isFormValid}>
+					<Button onClick={handleSubmit} disabled={!isFormValid || loading}>
 						REGISTER
 					</Button>
 				</div>

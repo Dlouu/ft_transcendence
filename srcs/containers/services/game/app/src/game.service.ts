@@ -13,13 +13,14 @@ import { CardDto } from "./dto/card.dto";
 import { NextTurnDto } from "./dto/next-turn.dto";
 import { BotLogicService } from "./bot-logic.service";
 import { GameLoggerService } from "./logger.service";
+import { GAME_CONFIG } from "./game.config";
 
 @Injectable()
 export class GameService {
 	private io?: Server;
 	private readonly gameInitReadyByRoom = new Map<string, Set<string>>();
 	private readonly turnTimeoutByRoom = new Map<string, NodeJS.Timeout>();
-	private readonly turnTimeoutMs = 10000;
+	private readonly turnTimeoutMs = GAME_CONFIG.turn.turnTimeoutMs;
 
 	constructor(
 		private readonly gameRepository: GameRepositoryService,
@@ -118,6 +119,7 @@ export class GameService {
 				playerIndex: playerIndex,
 				name: updatedPlayer._name,
 				cardBack: updatedPlayer._cardBack,
+				profilePicture: updatedPlayer._profilePicture,
 			});
 		}
 
@@ -179,6 +181,7 @@ export class GameService {
 		const players = game.players.map((player) => ({
 			name: player._name,
 			cardBack: player._cardBack,
+			profilePicture: player._profilePicture,
 		}));
 
 		console.log("Players = ", players);
@@ -192,7 +195,7 @@ export class GameService {
 				},
 				firstPlayerIndex: game.currentPlayerIndex,
 				turnDirection: game.currentDirection,
-				startCardNbr: 7, // TODO: Replace by a const variable
+				startCardNbr: GAME_CONFIG.dealing.startCardsPerPlayer,
 				playerIndex: index,
 				playerHand: toCardDtoArray(player._hand),
 				cardTheme: game.cardTheme,
@@ -268,9 +271,11 @@ export class GameService {
 			return;
 		}
 
-		this.clearTurnTimeout(game.roomName);
+		if (!(await this.gamePlay.playCard(game, dto, player))) {
+			return;
+		}
 
-		if (!(await this.gamePlay.playCard(game, dto, player))) return;
+		this.clearTurnTimeout(game.roomName);
 
 		game.turnCount += 1;
 

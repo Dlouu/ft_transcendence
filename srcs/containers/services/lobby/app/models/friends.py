@@ -4,7 +4,6 @@ from datetime import datetime
 #database model (how I create it)
 
 class Friends(db.Model):
-	__bind_key__ = "user"
 	__tablename__ = "friends"
 
 	id = db.Column(db.BigInteger, primary_key=True)

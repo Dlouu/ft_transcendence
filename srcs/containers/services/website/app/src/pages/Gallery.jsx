@@ -6,7 +6,7 @@ import { getDefaultGallery } from "../services/gallery/galleryService";
 import { AuthContext } from "../context/AuthContext";
 import UserGallery from "../components/profile/UserGallery";
 
-function Gallery( onUpload ) {
+function Gallery() {
 	const { user } = useContext(AuthContext);
 	const userId = user?.user_id;
 	const navigate = useNavigate();
@@ -23,17 +23,22 @@ function Gallery( onUpload ) {
 		fileInputRef.current.click();
 	};
 
-const handleFileChange = async (event) => {
-	const file = event.target.files?.[0];
-	if (!file) return;
+	const handleAllImages = () => {
+		navigate("/gallery/all");
+	};
 
-	try {
-		await uploadCardBack(file);
-		onUpload();
-	} catch (err) {
-		console.error("Import failed", err);
-	}
-};
+
+	const handleFileChange = async (event) => {
+		const file = event.target.files?.[0];
+		if (!file) return;
+
+		try {
+			await uploadCardBack(file);
+			refreshGallery();
+		} catch (err) {
+			console.error("Import failed", err);
+		}
+	};
 
 	return (
 		<Page center>
@@ -54,7 +59,7 @@ const handleFileChange = async (event) => {
 					))}
 				</div>
 
-				<UserGallery userId={userId} onUpload={refreshGallery} key={refreshKey} />
+				<UserGallery userId={userId} key={refreshKey} />
 
 				<div className="flex flex-col sm:flex-row sm:gap-4 justify-center">
 					<Button variant="success" onClick={() => navigate("/paint")}>
@@ -65,7 +70,7 @@ const handleFileChange = async (event) => {
 						IMPORT
 					</Button>
 
-					<Button variant="success">
+					<Button variant="success" onClick={handleAllImages}>
 						BROWSE ALL IMAGES
 					</Button>
 

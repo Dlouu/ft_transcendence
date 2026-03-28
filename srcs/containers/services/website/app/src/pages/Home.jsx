@@ -2,10 +2,6 @@ import { Card, Page } from "../ui";
 import GameSetup from "../components/game/GameSetup";
 
 function Home() {
-	const handleStart = (setup) => {
-		console.log("START GAME", setup);
-	};
-
 	return (
 		<Page center>
 			<Card>
@@ -13,7 +9,7 @@ function Home() {
 					LOBBY
 				</h2>
 
-				<GameSetup onStart={handleStart} />
+				<GameSetup />
 
 			</Card>
 		</Page>

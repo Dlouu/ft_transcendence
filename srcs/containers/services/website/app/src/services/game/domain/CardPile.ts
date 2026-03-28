@@ -1,6 +1,7 @@
 import { Container } from "pixi.js";
 import { UnoCard } from "./UnoCard";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
+import { TableViewport } from "../layout/TableViewport";
 
 export class CardPile extends Container {
 	private _card: UnoCard | null = null;
@@ -11,6 +12,8 @@ export class CardPile extends Container {
 	// Dimensions
 	private _canvasWidth: number = 0;
 	private _canvasHeight: number = 0;
+	private _tableWidth: number = 0;
+	private _tableHeight: number = 0;
 
 	constructor(
 		card: UnoCard | null = null,
@@ -48,9 +51,11 @@ export class CardPile extends Container {
 		this.visible = isVisible;
 	}
 
-	public resize(width: number, height: number): void {
+	public resize(width: number, height: number, viewport?: TableViewport): void {
 		this._canvasWidth = width;
 		this._canvasHeight = height;
+		this._tableWidth = viewport?.tableWidth ?? width;
+		this._tableHeight = viewport?.tableHeight ?? height;
 		this.updateLayout();
 	}
 
@@ -88,9 +93,9 @@ export class CardPile extends Container {
 
 	private updateLayout() {
 		if (this._card) {
-			if (this._canvasWidth > 0 && this._canvasHeight > 0) {
+			if (this._tableWidth > 0 && this._tableHeight > 0) {
 				const cardHeight =
-					this._canvasHeight * GAME_CUSTOMIZATION.pile.cardHeightRatio;
+					this._tableHeight * GAME_CUSTOMIZATION.pile.cardHeightRatio;
 				const cardRatio = GAME_CUSTOMIZATION.pile.cardRatio;
 				const cardWidth = cardHeight * cardRatio;
 

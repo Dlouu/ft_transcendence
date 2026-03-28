@@ -1,50 +1,30 @@
 import { useContext, useState, useRef } from "react";
-import { GameContext } from "../context/GameContext";
-import { AuthContext } from "../context/AuthContext";
-import { Link } from "react-router-dom";
 import { Button, Page, Input, Card } from "../ui";
-import { useNotifications } from "../hooks/useNotifications";
+import { AuthContext } from "../context/AuthContext";
+import { GameContext } from "../context/GameContext";
+import { useApi } from "../hooks/useApi";
+import { Link } from "react-router-dom";
 
 function Login() {
 	const { login } = useContext(AuthContext);
 	const { playerName, setPlayerName } = useContext(GameContext);
+	const { patch, loading } = useApi();
 	const [password, setPassword] = useState("");
 	const passwordRef = useRef(null);
-	const { notify } = useNotifications();
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
 		try {
-			const request = await fetch("/api/auth/login", {
-				headers: {
-					'Accept': 'application/json',
-					'Content-Type': 'application/json'
-				},
-				method: "PATCH",
-				body: JSON.stringify({
-					"login_email": playerName,
-					"password": password
-				}),
+			await patch("/api/auth/login", {
+				"login_email": playerName,
+				password,
 			});
 
-			const contentType = request.headers.get("content-type") || "";
-			const answer = contentType.includes("application/json")
-				? await request.json()
-				: await request.text();
+			await login();
 
-			if (request.ok) {
-				await login();
-			} else {
-				const message =
-					typeof answer === "string"
-						? answer
-						: answer?.message || "Login failed";
-				notify(message, "error");
-			}
-		} catch (error) {
-			console.log(error);
-			notify("Login failed", "error");
+		} catch {
+			return;
 		}
 	};
 
@@ -75,7 +55,7 @@ function Login() {
 						onChange={(e) => setPassword(e.target.value)}
 					/>
 
-					<Button onClick={handleSubmit} disabled={!playerName && !password}>
+					<Button type="submit" disabled={!playerName || !password || loading}>
 						LET'S PLAY
 					</Button>
 					<div className="flex flex-col justify-center items-center">

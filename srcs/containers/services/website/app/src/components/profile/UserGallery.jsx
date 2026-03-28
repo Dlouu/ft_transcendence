@@ -2,13 +2,13 @@ import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 
-function UserGallery({ userId }) {
+function UserGallery({ userId, browseAll = false, title }) {
 	const [cards, setCards] = useState([]);
 	const [loadingCards, setLoadingCards] = useState(true);
 	const { user } = useContext(AuthContext);
 
 	useEffect(() => {
-		if (!userId) {
+		if (!browseAll && !userId) {
 			setCards([]);
 			setLoadingCards(false);
 			return;
@@ -16,24 +16,42 @@ function UserGallery({ userId }) {
 
 		const fetchCards = async () => {
 			try {
-				const res = await fetch(`/api/user/get_card_images/${userId}`, {
-					method: "GET",
-					credentials: "include",
-				});
+				const perPage = 50;
+				let page = 1;
+				let allCards = [];
 
-				if (res.status === 404) {
-					setCards([]);
-					setLoadingCards(false);
-					return;
+				while (true) {
+					const endpoint = browseAll
+						? `/api/user/get_card_images?page=${page}&per_page=${perPage}`
+						: `/api/user/get_card_images/${userId}?page=${page}&per_page=${perPage}`;
+
+					const res = await fetch(endpoint, {
+						method: "GET",
+						credentials: "include",
+					});
+
+					if (res.status === 404) {
+						allCards = [];
+						break;
+					}
+
+					if (!res.ok) {
+						const text = await res.text();
+						throw new Error(text || "Fetch failed");
+					}
+
+					const data = await res.json();
+					const currentPageCards = data?.images_url || [];
+					allCards = [...allCards, ...currentPageCards];
+
+					if (currentPageCards.length < perPage) {
+						break;
+					}
+
+					page += 1;
 				}
 
-				if (!res.ok) {
-					const text = await res.text();
-					throw new Error(text || "Fetch failed");
-				}
-
-				const data = await res.json();
-				setCards(data?.images_url || []);
+				setCards(allCards);
 			} catch (err) {
 				console.error(err);
 				setCards([]);
@@ -43,25 +61,33 @@ function UserGallery({ userId }) {
 		};
 
 		fetchCards();
-	}, [userId]);
+	}, [userId, browseAll]);
+
+	const galleryTitle = title || (browseAll ? "ALL GALLERY" : `MY GALLERY (${user?.username || ""})`);
+	const emptyLabel = browseAll ? "No images available yet" : "No personal cards yet";
 
 	return (
 		<>
-			<h1 className="font-pixelmono mt-10 mb-2">MY GALLERY ({user.username})</h1>
+			<h1 className="font-pixelmono mt-10 mb-2">{galleryTitle}</h1>
 			
 			{loadingCards && <p className="mt-10 text-center font-pixelm">Loading gallery...</p>}
-			{!loadingCards && !cards.length && <p>No personal cards yet</p>}
+			{!loadingCards && !cards.length && <p>{emptyLabel}</p>}
 
 			{!!cards.length && (
 				<div className="grid sm:grid-cols-6 grid-cols-3 gap-4">
-					{cards.map((card) => (
+					{cards.map((card) => {
+						const ownerId = card.user_id;
+						const isOwner = Number(ownerId) === Number(user?.user_id);
+
+						return (
 						<Link
 							key={card.image_id}
 							to={`/gallery/${card.image_id}`}
 							state={{
 								id: card.image_id,
 								src: card.url,
-								type: "user"
+								type: isOwner ? "user" : "shared",
+								ownerId,
 							}}
 						>
 							<img
@@ -70,7 +96,8 @@ function UserGallery({ userId }) {
 								alt={`card-${card.image_id}`}
 							/>
 						</Link>
-					))}
+						);
+					})}
 				</div>
 			)}
 		</>
