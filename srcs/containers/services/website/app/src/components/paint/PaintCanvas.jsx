@@ -80,10 +80,13 @@ function PaintCanvas({ canvasRef, tool, setTool, color, setColor, brushSize, onU
 			ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 		}
 
+	}, [canvasRef]);
+
+	useEffect(() => {
 		if (onUndoRedoReady) {
 			onUndoRedoReady({ undo, redo });
 		}
-	}, [onUndoRedoReady, canvasRef]);
+	}, [onUndoRedoReady, undo, redo]);
 
 	function clearPreview() {
 		const ctx = previewCtxRef.current;

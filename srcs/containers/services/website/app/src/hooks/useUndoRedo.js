@@ -1,31 +1,23 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { WIDTH, HEIGHT, MAX_HISTORY } from '../components/paint/constants';
 
 export function useUndoRedo(ctxRef) {
 	const undoStack = useRef([]);
 	const redoStack = useRef([]);
 
-	const undo = () => {
+	const undo = useCallback(() => {
 		if (undoStack.current.length === 0 || !ctxRef.current) return;
-		
-		redoStack.current.push(
-			ctxRef.current.getImageData(0, 0, WIDTH, HEIGHT)
-		);
-		
+		redoStack.current.push(ctxRef.current.getImageData(0, 0, WIDTH, HEIGHT));
 		const last = undoStack.current.pop();
 		ctxRef.current.putImageData(last, 0, 0);
-	};
+	}, []);
 
-	const redo = () => {
+	const redo = useCallback(() => {
 		if (redoStack.current.length === 0 || !ctxRef.current) return;
-		
-		undoStack.current.push(
-			ctxRef.current.getImageData(0, 0, WIDTH, HEIGHT)
-		);
-		
+		undoStack.current.push(ctxRef.current.getImageData(0, 0, WIDTH, HEIGHT));
 		const next = redoStack.current.pop();
 		ctxRef.current.putImageData(next, 0, 0);
-	};
+	}, []);
 
 	function handleKey(e) {
 		if (e.key === "z" && e.ctrlKey && e.repeat === false)
