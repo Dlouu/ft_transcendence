@@ -54,7 +54,7 @@ function Gallery() {
 					GALLERY
 				</h2>
 
-				<div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+				<div className="grid grid-cols-3 sm:grid-cols-6 gap-4 mb4">
 					{images.map((img) => (
 						<Link key={img.id} to={`/gallery/${img.id}`}>
 							<img
@@ -65,8 +65,6 @@ function Gallery() {
 						</Link>
 					))}
 				</div>
-
-				<UserGallery userId={userId} key={refreshKey} />
 
 				<div className="flex flex-col sm:flex-row sm:gap-4 justify-center">
 					<Button variant="success" onClick={() => navigate("/paint")}>
@@ -93,6 +91,9 @@ function Gallery() {
 						className="hidden"
 					/>
 				</div>
+
+				<UserGallery userId={userId} key={refreshKey} />
+
 			</Card>
 		</Page>
 	);

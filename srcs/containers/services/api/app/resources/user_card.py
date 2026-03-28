@@ -141,10 +141,7 @@ class UploadCardImage(Resource):
 		try:
 			img = Image.open(image_file.stream)
 
-			if image_file.content_type == "image/png":
-				img = img.convert("RGBA")
-			else:
-				img = img.convert("RGB")
+			img = img.convert("RGBA")
 
 			small_image = img.resize((88, 136), Image.NEAREST)
 
@@ -162,14 +159,13 @@ class UploadCardImage(Resource):
 						pixels[x, y] = (43, 42, 51, 255)
 
 			output = BytesIO()
-			format = "PNG" if image_file.content_type == "image/png" else "JPEG"
-			small_image.save(output, format=format)
+			small_image.save(output, format="PNG")
 			output.seek(0)
 
 			processed_file = FileStorage(
 				stream=output,
-				filename=image_file.filename,
-				content_type=image_file.content_type,
+				filename=f"{uuid4()}.png",
+				content_type="image/png",
 			)
 		except Exception as e:
 			db.session.rollback()
