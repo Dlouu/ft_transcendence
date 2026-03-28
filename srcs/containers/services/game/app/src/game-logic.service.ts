@@ -487,6 +487,8 @@ export class GameLogicService {
 
 		console.log("\n\n\nStats end game:", gameEndDto.toJson());
 
+		// TODO: Send stats
+
 		this.getIoServer()?.to(game.roomName).emit("game:win", dto);
 		this.logger.gameEnd(game.roomName, winner._name, duration, Math.floor(game.turnCount / game.players.length));
 
