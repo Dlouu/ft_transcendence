@@ -1,33 +1,16 @@
+import os
 import threading
+
+import requests
 
 from app.core.state import lobbies, socketid_lobby, max_players
 from app.core.extensions import socketio
 from app.models.user import User
+from app.models.card_gallery import CardGallery
 
-"""
-Emits the current lobby state via SocketIO
+GAME_CREATE_URL = os.getenv("GAME_SERVICE_URL") or os.getenv("GAME_CREATE_URL", "http://game:3000/game/create")
+GAME_JOIN_URL = os.getenv("GAME_JOIN_URL", "http://game:3000/game/rejoin")
 
-📥 Receives:
-- code (str): lobby room code
-
-📤 Emits (SocketIO event: "lobby_state"):
-- code
-- list of human players (user IDs)
-- list of ready players (user IDs)
-- list of bots
-- theme status
-- humans count
-- bots count
-- total count
-- max players allowed
-- host user ID (supreme_master_user_id)
-- host socket ID (supreme_master_sid)
-- game_started flag
-- supreme_master_starts flag
-
-🎯 Purpose:
-Synchronizes all connected clients in the lobby with the latest state.
-"""
 def emit_lobby_state(code):
     if code not in lobbies:
         return
@@ -92,7 +75,17 @@ def emit_lobby_state(code):
     }
     socketio.emit("lobby_state", payload, room=code)
 
-    public = [
+    public = build_public_lobbies_list()
+    socketio.emit("public_lobbies", {"lobbies": public}, room="lobby_browser")
+
+
+def broadcast_public_lobbies():
+    public = build_public_lobbies_list()
+    socketio.emit("public_lobbies", {"lobbies": public}, room="lobby_browser")
+
+
+def build_public_lobbies_list():
+    return [
         {
             "code": lcode,
             "humans_count": len([p for p in ldata["players"].values() if p.get("connected")]),
@@ -105,20 +98,8 @@ def emit_lobby_state(code):
         and not ldata.get("game_ended", False)
         and (len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0)) < max_players
     ]
-    socketio.emit("public_lobbies", {"lobbies": public}, room="lobby_browser")
 
-"""
-Internal function
 
-📥 Receives:
-- code (str): lobby room code
-
-📤 Emits:
-- "room_expired" if the game has not started
-
-🎯 Purpose:
-Permanently deletes a lobby and cleans all related socket mappings.
-"""
 def remove_lobby(code):
     lobby_data = lobbies.get(code)
     if not lobby_data:
@@ -128,39 +109,88 @@ def remove_lobby(code):
         socketio.emit("room_expired", {"message": "Lobby closed due to inactivity"}, room=code)
 
     lobbies.pop(code, None)
-    socketio.emit("public_lobbies", {"lobbies": [
-        {
-            "code": lcode,
-            "humans_count": len([p for p in ldata["players"].values() if p.get("connected")]),
-            "total_count": len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0),
-            "max_players": max_players,
-        }
-        for lcode, ldata in lobbies.items()
-        if not ldata.get("privacy", True)
-        and not ldata.get("game_started", False)
-        and not ldata.get("game_ended", False)
-        and (len([p for p in ldata["players"].values() if p.get("connected")]) + ldata.get("bots", 0)) < max_players
-    ]}, room="lobby_browser")
+    socketio.emit("public_lobbies", {"lobbies": build_public_lobbies_list()}, room="lobby_browser")
 
     for sid, lobby_code in list(socketid_lobby.items()):
         if lobby_code == code:
             socketid_lobby.pop(sid, None)
 
 
-"""
-Internal function (timer)
-
-📥 Receives:
-- code (str)
-- delay (int, seconds)
-
-📤 Returns:
-- None
-
-🎯 Purpose:
-Schedules automatic lobby removal after a period of inactivity.
-"""
 def lobby_removal(code, delay=600):
     timer = threading.Timer(delay, remove_lobby, args=[code])
     timer.daemon = True
     timer.start()
+
+
+def get_users_by_player_ids(player_ids):
+    users = (
+        User.query.filter(User.user_id.in_(player_ids)).all()
+        if player_ids
+        else []
+    )
+    return {str(user.user_id): user for user in users}
+
+
+def build_player_entry(player_id, users_by_user_id, default_card_back, profile_picture):
+    player_key = str(player_id)
+    user = users_by_user_id.get(player_key)
+    card_back_url = default_card_back
+    s3_bucket = os.getenv("S3_BUCKET_NAME")
+
+    if user:
+        profile_picture = f"https://{s3_bucket}.s3.amazonaws.com/{user.profile_picture_url}"
+        if user.card_back_id:
+            card_gallery_entry = CardGallery.query.filter_by(id=user.card_back_id).first()
+            if card_gallery_entry:
+                card_back_url = f"https://{s3_bucket}.s3.amazonaws.com/{card_gallery_entry.img_url}"
+
+    return {
+        "id": player_key,
+        "name": user.username if user else player_key,
+        "cardBackUrl": card_back_url,
+        "profilePicture": profile_picture,
+    }
+
+
+def send_datas_on_game_created(data):
+    player_ids = list((data.get("players") or {}).keys())
+    users_by_user_id = get_users_by_player_ids(player_ids)
+    default_card_back = "uwu" if data.get("theme") else "basic"
+    profile_picture = "default"
+
+    payload = {
+        "roomName": data.get("code"),
+        "players": [
+            build_player_entry(player_id, users_by_user_id, default_card_back, profile_picture)
+            for player_id in player_ids
+        ],
+        "botNbr": data.get("bots", 0),
+        "theme": "UWU" if data.get("theme") else "BASE",
+    }
+    try:
+        response = requests.post(GAME_CREATE_URL, json=payload, timeout=5)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        return False, f"Unable to create game: {exc}"
+    return True, payload
+
+
+def send_datas_on_game_joined(data):
+    player_id = data.get("player_id")
+    if player_id is None:
+        return False, "Missing player id"
+
+    default_card_back = "uwu" if data.get("theme") else "basic"
+    users_by_user_id = get_users_by_player_ids([player_id])
+    profile_picture = "default"
+    payload = {
+        "player": [
+            build_player_entry(player_id, users_by_user_id, default_card_back, profile_picture)
+        ]
+    }
+    try:
+        response = requests.post(GAME_JOIN_URL, json=payload, timeout=5)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        return False, f"Unable to join game: {exc}"
+    return True, payload
