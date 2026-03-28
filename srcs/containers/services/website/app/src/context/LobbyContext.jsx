@@ -10,6 +10,8 @@ export function LobbyProvider({ children }) {
 	const [code, setCode] = useState("");
 	const [master, setMaster] = useState("");
 	const [players, setPlayers] = useState([]);
+	const [friends, setFriends] = useState([]);
+	const [pendingRequests, setPendingRequests] = useState([]);
 	const [bots, setBots] = useState([]);
 	const [privacy, setPrivacy] = useState(true);
 	const [UwUtheme, setUwUTheme] = useState(false);
@@ -75,9 +77,51 @@ export function LobbyProvider({ children }) {
 			setPublicLobbies(data.lobbies);
 		});
 
+		socketRef.current.on("friends_list", (data) => {
+			const uniqueFriends = (data.friends || []).filter(
+				(f, index, self) => self.findIndex(x => x.username === f.username) === index
+			);
+			setFriends(data.friends || []);
+			setPendingRequests(data.pending_requests || []);
+		});
+
+		socketRef.current.on("friend_request_sent", (data) => {
+			if (data.type === "received") {
+				setPendingRequests(prev => [...prev, { username: data.username, user_id: data.user_id }]);
+				console.log("friend_request_sent reçu:", data);
+				notify(`${data.username} sent you a friend request`, "info");
+			} else if (data.status === "pending") {
+				setFriends(prev => {
+					if (prev.find(f => f.username === data.username)) return prev;
+					return [...prev, { username: data.username, status: "pending" }];
+				});
+			} else if (data.status === "not found") {
+				notify("User not found", "error");
+			} else if (data.status === "self") {
+				notify("You can't add yourself", "error");
+			} else if (data.status === "accepted" || data.status === "pending") {
+				notify("Already friends or request pending", "error");
+			}
+		});
+
+		socketRef.current.on("friend_updated", () => {
+			socketRef.current.emit("get_friends");
+		});
+
+		socketRef.current.on("friend_removed", (data) => {
+			setFriends(prev => prev.filter(f => f.username !== data.username));
+		});
+
+		socketRef.current.on("friend_status", (data) => {
+			setFriends(prev => prev.map(f =>
+				f.username === data.username ? { ...f, online: data.online, inGame: data.in_game } : f
+			));
+		});
+
 		socketRef.current.on("connect", () => {
 			setConnected(true);
 			socketRef.current.emit("get_public_lobbies");
+			socketRef.current.emit("get_friends");
 		});
 
 		socketRef.current.on("disconnect", () => setConnected(false));
@@ -148,12 +192,30 @@ export function LobbyProvider({ children }) {
 		socketRef.current.emit("set_privacy", { privacy });
 	}
 
+	function addFriend(username) {
+		socketRef.current.emit("add_friend", { username });
+	}
+
+	function acceptFriend(requester_id) {
+		socketRef.current.emit("accept_friend", { requester_id });
+	}
+
+	function rejectFriend(requester_id) {
+		socketRef.current.emit("reject_friend", { requester_id });
+	}
+
+	function removeFriend(username) {
+		socketRef.current.emit("remove_friend", { username });
+	}
+
 	return (
 		<LobbyContext.Provider value={{
 			connected,
 			players,
 			master,
 			bots,
+			friends,
+			pendingRequests,
 			privacy,
 			code,
 			isHost,
@@ -166,6 +228,10 @@ export function LobbyProvider({ children }) {
 			setRoomPrivacy,
 			addBot,
 			removeBot,
+			addFriend,
+			removeFriend,
+			acceptFriend,
+			rejectFriend,
 			playerReady,
 			masterStart
 		 }}>

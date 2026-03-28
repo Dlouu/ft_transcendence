@@ -150,10 +150,10 @@ def get_friends():
             continue
 
         if row.status == "accepted":
-            friends.append({"username": other.username, "status": "accepted", "online": is_online(other.username), "in_game": is_in_game(other.user_id)})
+            friends.append({"username": other.username, "id": other.id, "status": "accepted", "online": is_online(other.username), "in_game": is_in_game(other.user_id)})
         elif row.status == "pending":
             if is_requester:
-                friends.append({"username": other.username, "status": "pending"})
+                friends.append({"username": other.username, "id": other.id, "status": "pending"})
             else:
                 pending_requests.append({"username": other.username, "user_id": other.id})
 

@@ -445,6 +445,12 @@ Deletes the lobby if no players remain.
 def on_disconnect():
 	sid = request.sid
 	code = socketid_lobby.pop(sid, None)
+
+	user_id_db = session.get("db_user_id")
+	username = session.get("username")
+	if user_id_db and username:
+		notify_friends_status(user_id_db, username, "offline")
+
 	if not code or code not in lobbies:
 		return
 
@@ -470,11 +476,6 @@ def on_disconnect():
 		data["supreme_master_sid"] = host_player.get("sid") if host_player.get("connected") else None
 	else:
 		data["supreme_master_sid"] = None
-
-	user_id_db = session.get("db_user_id")
-	username = session.get("username")
-	if user_id_db and username:
-		notify_friends_status(user_id_db, username, "offline")
 
 	if not data["players"] and not data["game_started"]:
 		lobbies.pop(code, None)

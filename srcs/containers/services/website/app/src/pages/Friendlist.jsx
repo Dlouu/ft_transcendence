@@ -1,37 +1,37 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Button, Input, Card, Page, EditableField } from "../ui";
 import FriendRequestItem from "../ui/FriendRequestItem";
 import FriendName from "../ui/FriendName";
+import { LobbyContext } from "../context/LobbyContext";
 
 function Friendlist({ onClose }) {
 	const [friendName, setFriendName] = useState("");
 	const [isAddingFriend, setIsAddingFriend] = useState(false);
-	const [pendingRequests, setPendingRequests] = useState([
-		{ id: 1, username: "Tartempion" },
-		{ id: 2, username: "Zoltar42" },
-	]);
-	const [FriendList, setFriendList] = useState([
-		{ id: 1, username: "NumeroUno" },
-		{ id: 2, username: "Bwoop" },
-		{ id: 3, username: "NilsLeVrai" },
-		{ id: 4, username: "Yvharos" },
-		{ id: 5, username: "zizian" },
-		{ id: 6, username: "_ploup666" },
-	]);
+	const { friends, pendingRequests, addFriend, removeFriend, acceptFriend, rejectFriend } = useContext(LobbyContext);
 
-	const handleAddFriend = async () => {
-		// TODO: fetch add
+	const handleAddFriend = () => {
+		const trimmed = friendName.trim();
+		if (!trimmed)
+			return;
+		addFriend(trimmed);
+		setFriendName("");
+		setIsAddingFriend(false);
 	};
 
-	const handleAccept = (id) => {
-		setPendingRequests((prev) => prev.filter((r) => r.id !== id));
-		// TODO: fetch accept
+	const handleAccept = (user_id) => {
+		acceptFriend(user_id)
 	};
 
-	const handleDecline = (id) => {
-		setPendingRequests((prev) => prev.filter((r) => r.id !== id));
-		// TODO: fetch decline
+	const handleDecline = (user_id) => {
+		rejectFriend(user_id)
 	};
+
+	const handleDelete = (username) => {
+		removeFriend(username)
+	};
+
+	const acceptedFriends = friends.filter(f => f.status === "accepted");
+	const pendingSent = friends.filter(f => f.status === "pending");
 
 	return (
 		<div
@@ -68,6 +68,7 @@ function Friendlist({ onClose }) {
 								placeholder="your friend's username"
 								value={friendName}
 								onChange={(e) => setFriendName(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleAddFriend()}
 							/>
 							<Button variant="icon" onClick={handleAddFriend}>✔</Button>
 							<Button variant="icon" onClick={() => {
@@ -85,23 +86,40 @@ function Friendlist({ onClose }) {
 							<ul className="space-y-1">
 								{pendingRequests.map((req) => (
 									<FriendRequestItem
-										key={req.id}
+										key={req.user_id}
 										username={req.username}
-										onAccept={() => handleAccept(req.id)}
-										onDecline={() => handleDecline(req.id)}
+										onAccept={() => handleAccept(req.user_id)}
+										onDecline={() => handleDecline(req.user_id)}
 									/>
 								))}
 							</ul>
 						</div>
 					)}
 
+					{pendingSent.length > 0 && (
+						<div className="mb-4 bg-gray-600 p-2 rounded">
+							<p className="font-pixelm font-bold text-shadow-lg text-purple-500 mb-2">
+								SENT REQUESTS:
+							</p>
+							<ul className="space-y-1">
+								{pendingSent.map((f) => (
+									<li key={f.username} className="font-pixel px-2 text-gray-400 text-xl">
+										{f.username}
+									</li>
+								))}
+							</ul>
+						</div>
+					)}
+
 					<ul className="space-y-1">
-						{FriendList.map((frnd) => (
+						{acceptedFriends.map((frnd) => (
 							<FriendName
-								key={frnd.id}
+								key={frnd.username}
 								id={frnd.id}
 								username={frnd.username}
-								onDelete={() => handleDelete(frnd.id)}
+								online={frnd.online}
+								inGame={frnd.in_game}
+								onDelete={() => handleDelete(frnd.username)}
 								onClose={onClose}
 							/>
 						))}
