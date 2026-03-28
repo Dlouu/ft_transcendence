@@ -8,19 +8,18 @@ import { DeckService } from "./deck.service";
 import { GameLogicService } from "./game-logic.service";
 import { GameRepositoryService } from "./game-repository";
 import { GamePlayService } from "./game-play.service";
-import { toCardDtoArray } from "./dto/init-game.dto";
+import { InitGameDto, toCardDtoArray } from "./dto/init-game.dto";
 import { CardDto } from "./dto/card.dto";
 import { NextTurnDto } from "./dto/next-turn.dto";
 import { BotLogicService } from "./bot-logic.service";
 import { GameLoggerService } from "./logger.service";
-import { GAME_CONFIG } from "./game.config";
 
 @Injectable()
 export class GameService {
 	private io?: Server;
 	private readonly gameInitReadyByRoom = new Map<string, Set<string>>();
 	private readonly turnTimeoutByRoom = new Map<string, NodeJS.Timeout>();
-	private readonly turnTimeoutMs = GAME_CONFIG.turn.turnTimeoutMs;
+	private readonly turnTimeoutMs = 10000;
 
 	constructor(
 		private readonly gameRepository: GameRepositoryService,
@@ -119,7 +118,6 @@ export class GameService {
 				playerIndex: playerIndex,
 				name: updatedPlayer._name,
 				cardBack: updatedPlayer._cardBack,
-				profilePicture: updatedPlayer._profilePicture,
 			});
 		}
 
@@ -187,7 +185,7 @@ export class GameService {
 		console.log("Players = ", players);
 
 		game.players.forEach((player, index) => {
-			const initGameDto = {
+			const initGameDto: InitGameDto = {
 				players,
 				discardTopCard: {
 					cardCode: topDiscard.value,
@@ -195,7 +193,7 @@ export class GameService {
 				},
 				firstPlayerIndex: game.currentPlayerIndex,
 				turnDirection: game.currentDirection,
-				startCardNbr: GAME_CONFIG.dealing.startCardsPerPlayer,
+				startCardNbr: 7, // TODO: Replace by a const variable
 				playerIndex: index,
 				playerHand: toCardDtoArray(player._hand),
 				cardTheme: game.cardTheme,
@@ -271,11 +269,9 @@ export class GameService {
 			return;
 		}
 
-		if (!(await this.gamePlay.playCard(game, dto, player))) {
-			return;
-		}
-
 		this.clearTurnTimeout(game.roomName);
+
+		if (!(await this.gamePlay.playCard(game, dto, player))) return;
 
 		game.turnCount += 1;
 

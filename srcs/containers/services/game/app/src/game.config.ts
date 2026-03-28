@@ -10,7 +10,7 @@ export const GAME_CONFIG = {
 		callWindowMs: 100000,
 	},
 	dealing: {
-		startCardsPerPlayer: 7,
+		startCardsPerPlayer: 3,
 	},
 	bot: {
 		turnDelayMs: {
