@@ -47,6 +47,7 @@ def s3_init_app():
 			return None
 
 	except Exception as e:
+		print(e, flush=True)
 		logger.fatal("A problem occured while initializing the s3 client.", extra=logger.extra(target="aws", exception=e))
 		return None
 

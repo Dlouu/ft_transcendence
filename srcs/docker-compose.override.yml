@@ -5,16 +5,22 @@ services:
     command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
 
   api:
+    ports:
+      - 5050:5050
     volumes:
       - ./containers/services/api/app:/app/app
     command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
 
   lobby:
+    ports:
+      - 5002:5002
     volumes:
       - ./containers/services/lobby/app:/app/app
     command: watchmedo auto-restart --recursive --patterns="*.py" -- python -m app.main
 
   game:
+    build:
+      target: builder
     volumes:
       - ./containers/services/game/app:/app
       - /app/node_modules
@@ -24,8 +30,11 @@ services:
     ports:
       - "3000:3000"
 
-
   website:
+    build:
+      target: builder
+    ports:
+      - 5173:5173
     volumes:
       - ./containers/services/website/app:/app
       - /app/node_modules
