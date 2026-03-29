@@ -62,8 +62,9 @@ function Save({ canvasRef, editedImageId }) {
 				"success"
 			);
 			navigate("/gallery");
+
 		} catch (error) {
-			console.error("Error saving to gallery:", error);
+			// console.error("Error saving to gallery:", error);
 			notify(error.message || "Failed to save image", "error");
 		}
 	}
@@ -100,8 +101,6 @@ function Save({ canvasRef, editedImageId }) {
 			<Tooltip message="Save in gallery CTRL+S">
 				<Button variant="icon2" onClick={saveInGallery} title="Save">󰉉</Button>
 			</Tooltip>
-
-
 		</>
 	);
 }

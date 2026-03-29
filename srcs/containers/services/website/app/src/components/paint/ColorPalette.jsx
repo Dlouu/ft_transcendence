@@ -6,6 +6,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 
 	const [palette, setPalette] = useState(COLORS);
 	const colorInputRefs = useRef({});
+	const baseColors = palette.slice(0, COLORS.length);
 
 	const updateColor = (index, newColor) => {
 		setPalette((prev) =>
@@ -24,7 +25,6 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 			const key = Number(e.key);
 			let index = -1;
 
-			
 			if (key >= 1 && key <= 9) {
 				index = key - 1; // Keys 1-3 → colors 0-2
 			}
@@ -32,8 +32,7 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 			if (index >= 0 && index < palette.length) {
 				setColor(palette[index]);
 			}
-		},
-		[palette, setColor, setTool]
+		}, [palette, setColor, setTool]
 	);
 
 	useEffect(() => {
@@ -43,8 +42,6 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 			document.removeEventListener("keydown", handleKey);
 		};
 	}, [handleKey]);
-
-	const baseColors = palette.slice(0, COLORS.length);
 
 	return (
 		<div className="flex sm:flex-col gap-2">
@@ -88,13 +85,13 @@ function ColorPalette({ color, setColor, tool, setTool }) {
 							ref={(el) => colorInputRefs.current[`base-${index}`] = el}
 							type="color"
 							value={c}
+							className="hidden"
+							title="Edit color"
 							onChange={(e) => {
 								const newColor = e.target.value
 								updateColor(index, newColor);
 								setColor(newColor);
 							}}
-							className="hidden"
-							title="Edit color"
 						/>
 					</div>
 				))}

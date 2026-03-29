@@ -21,3 +21,10 @@ class User(db.Model):
 
 	cards = db.relationship("CardGallery", backref="card_gallery", lazy=True)
 
+@event.listens_for(User, "after_insert")
+def create_gamestats(mapper, connection, target):
+    connection.execute(
+        db.metadata.tables["gamestats"].insert().values(user_id=target.user_id)
+    )
+
+

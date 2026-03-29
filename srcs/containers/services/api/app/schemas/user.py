@@ -46,21 +46,7 @@ class DeleteAccountSchema(Schema):
 
 delete_account_schema = DeleteAccountSchema()
 
-class GameStatsSchema(ma.SQLAlchemyAutoSchema):
-	class Meta:
-		model = GameStats
-		load_instance = True
-		sqla_session = db.session
+class FriendEntrySchema(Schema):
+	user_id = fields.Integer(required=True)
 
-	winrate = fields.Float()
-
-	games_played = fields.Integer()
-	games_won = fields.Integer()
-	nbr_uno = fields.Integer()
-	nbr_uwu = fields.Integer()
-	nbr_4cards = fields.Integer()
-	nbr_drew = fields.Integer()
-	biggest_hand = fields.Integer()
-
-	created_at = fields.DateTime(dump_only=True)
-	updated_at = fields.DateTime(dump_only=True)
+friend_entry_schema = FriendEntrySchema()

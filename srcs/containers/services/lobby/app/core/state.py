@@ -1,6 +1,8 @@
 lobbies = {}  # 4-characters room code -> lobby info dict
 socketid_lobby = {}
 max_players = 4
+players_in_game = set()  # user_ids currently in an active game
+players_left_game = {}   # user_id -> game_code, for players who left mid-game
 
 three_letters = [
 "zap", "zip", "bop", "pop", "yum", "yay", "wig", "hug", "jab", "jog",

@@ -13,7 +13,6 @@ function GameSetup() {
 
 	const createRoom = () => {
 		createLobby();
-		setMode("room");
 	};
 
 	useEffect(() => {

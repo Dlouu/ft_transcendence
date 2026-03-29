@@ -4,7 +4,6 @@ from redis.exceptions import ConnectionError
 import redis
 import os
 
-#need to change in prod
 socketio = SocketIO(cors_allowed_origins="*", async_mode="threading")
 db = SQLAlchemy()
 

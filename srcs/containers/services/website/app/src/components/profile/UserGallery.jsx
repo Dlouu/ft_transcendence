@@ -58,8 +58,9 @@ function UserGallery({ userId, browseAll = false, title }) {
 						cache_url: `${card.url}${card.url.includes("?") ? "&" : "?"}v=${cacheBuster}`,
 					}))
 				);
+
 			} catch (err) {
-				console.error(err);
+				// console.error(err);
 				setCards([]);
 			} finally {
 				setLoadingCards(false);
@@ -76,32 +77,32 @@ function UserGallery({ userId, browseAll = false, title }) {
 		<>
 			<h1 className="font-pixelmono mt-10 mb-2">{galleryTitle}</h1>
 			
-			{loadingCards && <p className="mt-10 text-center font-pixelm">Loading gallery...</p>}
-			{!loadingCards && !cards.length && <p>{emptyLabel}</p>}
+			{ loadingCards && <p className="mt-10 text-center font-pixelm">Loading gallery...</p>}
+			{ !loadingCards && !cards.length && <p>{emptyLabel}</p>}
 
-			{!!cards.length && (
+			{ !!cards.length && (
 				<div className="grid sm:grid-cols-6 grid-cols-3 gap-4">
 					{cards.map((card) => {
 						const ownerId = card.user_id;
 						const isOwner = Number(ownerId) === Number(user?.user_id);
 
 						return (
-						<Link
-							key={card.image_id}
-							to={`/gallery/${card.image_id}`}
-							state={{
-								id: card.image_id,
-								src: card.cache_url,
-								type: isOwner ? "user" : "shared",
-								ownerId,
-							}}
-						>
-							<img
-								src={card.cache_url}
-								className="w-full rounded-lg shadow-md hover:scale-105 transition"
-								alt={`card-${card.image_id}`}
-							/>
-						</Link>
+							<Link
+								key={card.image_id}
+								to={`/gallery/${card.image_id}`}
+								state={{
+									id: card.image_id,
+									src: card.cache_url,
+									type: isOwner ? "user" : "shared",
+									ownerId,
+								}}
+							>
+								<img
+									src={card.cache_url}
+									className="w-full rounded-lg shadow-md hover:scale-105 transition"
+									alt={`card-${card.image_id}`}
+								/>
+							</Link>
 						);
 					})}
 				</div>

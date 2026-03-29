@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import { useNotifications } from "../hooks/useNotifications";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 
 export const LobbyContext = createContext();
@@ -18,10 +18,28 @@ export function LobbyProvider({ children }) {
 	const [publicLobbies, setPublicLobbies] = useState([]);
 	const { notify } = useNotifications();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { user, loading } = useContext(AuthContext);
 	const socketRef = useRef(null);
 	const isHost = master === socketRef.current?.id;
 	const [connected, setConnected] = useState(false);
+	const prevPathRef = useRef(location.pathname);
+
+	useEffect(() => {
+		const previousPath = prevPathRef.current;
+		const currentPath = location.pathname;
+
+		if (
+			previousPath !== currentPath
+			&& previousPath.startsWith("/lobby/")
+			&& !currentPath.startsWith("/lobby/")
+			&& !currentPath.startsWith("/game")
+		) {
+			leaveLobby(false);
+		}
+
+		prevPathRef.current = currentPath;
+	}, [location.pathname]);
 
 	useEffect(() => {
 		if (loading || !user) {
@@ -39,7 +57,7 @@ export function LobbyProvider({ children }) {
 
 		socketRef.current.on("lobby_state", (data) => {
 
-			console.log("lobby_state reçu:", data);
+			// console.log("lobby_state reçu:", data);
 			const playersList = data.humans_id.map(id => ({
 				id,
 				username: data.humans_usernames?.[id] ?? id,
@@ -57,6 +75,7 @@ export function LobbyProvider({ children }) {
 		socketRef.current.on("all_lobbies", (data) => {
 			setAllLobbies(data);
 		});
+
 		socketRef.current.on("available_lobbies", (data) => {
 			setAvailableLobbies(data);
 		});
@@ -67,6 +86,16 @@ export function LobbyProvider({ children }) {
 
 		socketRef.current.on("game_start", (data) => {
 			navigate("/game");
+		});
+
+		socketRef.current.on("ongoing_game", (data) => {
+			socketRef.current.emit("join_lobby_socket", { code: data.code });
+			navigate("/game");
+		});
+
+		socketRef.current.on("in_pending_lobby", (data) => {
+			socketRef.current.emit("join_lobby_socket", { code: data.code });
+			navigate(`/lobby/${data.code}`);
 		});
 
 		socketRef.current.on("room_full", () => {
@@ -88,7 +117,7 @@ export function LobbyProvider({ children }) {
 		socketRef.current.on("friend_request_sent", (data) => {
 			if (data.type === "received") {
 				setPendingRequests(prev => [...prev, { username: data.username, user_id: data.user_id }]);
-				console.log("friend_request_sent reçu:", data);
+				// console.log("friend_request_sent reçu:", data);
 				notify(`${data.username} sent you a friend request`, "info");
 			} else if (data.status === "pending") {
 				setFriends(prev => {
@@ -126,7 +155,13 @@ export function LobbyProvider({ children }) {
 
 		socketRef.current.on("disconnect", () => setConnected(false));
 
+		const handleGameEnded = () => {
+			socketRef.current?.emit("game_ended_notify");
+		};
+		window.addEventListener("game:ended", handleGameEnded);
+
 		return () => {
+			window.removeEventListener("game:ended", handleGameEnded);
 			if (socketRef.current) {
 				socketRef.current.disconnect();
 				socketRef.current = null;
@@ -141,17 +176,31 @@ export function LobbyProvider({ children }) {
 				navigate(`/lobby/${response.code}`);
 				return;
 			}
+			if (response?.code && response.game_started) {
+				socketRef.current.emit("join_lobby_socket", { code: response.code });
+				navigate("/game");
+				return;
+			}
+			if (response?.code && !response.game_started) {
+				socketRef.current.emit("join_lobby_socket", { code: response.code });
+				navigate(`/lobby/${response.code}`);
+				return;
+			}
 			notify(response?.message || "Unable to create a lobby.", "error");
 		});
 	}
 
-	function leaveLobby() {
-		socketRef.current.emit("leave_lobby");
+	function leaveLobby(shouldNavigate = true) {
+		if (socketRef.current) {
+			socketRef.current.emit("leave_lobby");
+		}
 		setCode("");
 		setPlayers([]);
 		setBots([]);
 		setMaster("");
-		navigate("/");
+		if (shouldNavigate) {
+			navigate("/");
+		}
 	}
 
 	function joinLobby(code) {
@@ -160,7 +209,7 @@ export function LobbyProvider({ children }) {
 		socketRef.current.emit("join_lobby_request", { code }, (response) => {
 			if (response && response.ok) {
 				socketRef.current.emit("join_lobby_socket", { code: response.code });
-				navigate(`/lobby/${response.code}`);
+				navigate(response.game_started ? "/game" : `/lobby/${response.code}`);
 				return;
 			}
 			notify(response?.message || "Unable to join this lobby.", "error");

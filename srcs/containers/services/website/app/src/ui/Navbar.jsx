@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { LobbyContext } from "../context/LobbyContext";
 import Button from "./Button";
 import Friendlist from "../pages/Friendlist";
 
@@ -8,12 +9,13 @@ function Navbar() {
 	const [open, setOpen] = useState(false);
 	const location = useLocation();
 	const { user, logout } = useContext(AuthContext);
+	const { pendingRequests } = useContext(LobbyContext);
 	const [showFriends, setShowFriends] = useState(false);
+	const hasPendingRequests = (pendingRequests?.length || 0) > 0;
 
 	useEffect(() => {
 		setOpen(false);
 	}, [location.pathname]);
-	//ferme le menu quand on change de page
 
 	const handleLogout = () => {
 		logout();
@@ -31,7 +33,7 @@ function Navbar() {
 			location.pathname === path
 				? "bg-gray-600 text-purple-400"
 				: "hover:bg-gray-700"
-		}`;
+	}`;
 
 	return (
 		<nav
@@ -67,8 +69,12 @@ function Navbar() {
 						</Link>
 					))}
 
-					<Link onClick={() => setShowFriends(true) } className="py-2 px-3 rounded hover:bg-gray-700">
-						<span className="font-icon text-purple-300">󰀎</span><span className="px-2">FRIENDS</span>
+					<Link onClick={() =>  setShowFriends(true)} className="relative py-2 px-3 rounded hover:bg-gray-700">
+						<span className="font-icon text-purple-300">󰀎</span>
+						<span className="px-2">FRIENDS</span>
+						{ hasPendingRequests && (
+							<span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-yellow-500" />
+						)}
 					</Link>
 
 					{showFriends && (
@@ -97,7 +103,7 @@ function Navbar() {
 					</div>
 
 					<div className="flex-1 flex flex-col items-center justify-center gap-8">
-						{navLinks.map((link) => (
+						{ navLinks.map((link) => (
 							<Link
 								key={link.to}
 								className="py-2 px-5 rounded bg-gray-700"
@@ -109,11 +115,15 @@ function Navbar() {
 							</Link>
 						))}
 
-						<Link onClick={() => setShowFriends(true) } className="py-2 px-5 rounded bg-gray-700">
-							<span className="font-icon text-purple-300">󰀎</span><span className="px-2">FRIENDS</span>
+						<Link onClick={() => { setShowFriends(true); setOpen(false); }} className="relative py-2 px-5 rounded bg-gray-700">
+							<span className="font-icon text-purple-300">󰀎</span>
+							<span className="px-2">FRIENDS</span>
+							{hasPendingRequests && (
+								<span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pending friend requests" />
+							)}
 						</Link>
 
-						{showFriends && (
+						{ showFriends && (
 							<Friendlist onClose={() => setShowFriends(false)} />
 						)}
 

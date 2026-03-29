@@ -13,7 +13,6 @@ function BrushSelector({ brushSize, setBrushSize }) {
 
 	useEffect(() => {
 		document.addEventListener("keydown", handleKey);
-
 		return () => {document.removeEventListener("keydown", handleKey)}
 	});
 

@@ -73,7 +73,7 @@ class UpdateInformation(Resource):
 			information = su.user_update_schema.load(request.json)
 		except ValidationError:
 			logger.warning("Request validation error.", extra=logger.extra(request=request))
-			return {"message": "The body is no valid."}, 400
+			return {"message": "The body is not valid."}, 400
 
 		user_id = g.token_payload["user_id"]
 		request.json["user_id"] = user_id

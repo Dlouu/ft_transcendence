@@ -36,8 +36,8 @@
 
 @theme {
   --font-pixelmono: "PixelMono", monospace;
-  --font-pixel: "Pixel", normal;
-  --font-pixelhb: "PixelHB", normal;
+  --font-pixel: "Pixel", sans-serif;
+  --font-pixelhb: "PixelHB", sans-serif;
   --font-materialdesign: "MaterialDesign", mormal;
 }
 

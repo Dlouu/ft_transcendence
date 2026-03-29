@@ -1,23 +1,23 @@
 import { Routes, Route } from "react-router-dom"
+import { useContext } from "react";
+import { AuthContext } from "./context/AuthContext";
 import ProtectedRoute from "./routes/ProtectedRoutes";
 import AppLayout from "./ui/AppLayout";
+import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Home from "./pages/Home";
-import Game from "./pages/Game";
 import Me from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import Friendlist from "./pages/Friendlist";
+import Paint from "./pages/Paint";
 import Gallery from "./pages/Gallery";
 import GalleryImage from "./pages/GalleryImage";
 import GalleryAll from "./pages/GalleryAll";
 import LobbyPage from "./pages/Lobby";
-import Paint from "./pages/Paint";
+import Game from "./pages/Game";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
-import { useContext } from "react";
-import { AuthContext } from "./context/AuthContext";
 
 function App() {
 	const { user, loading } = useContext(AuthContext);
@@ -47,4 +47,3 @@ function App() {
 }
 
 export default App;
-

@@ -9,7 +9,6 @@ function InfoSection({ user }) {
 	const { updateUser } = useUser();
 
 	const updateUserAccount = async (field, value) => {
-
 		if (!value) {
 			notify("Please type something", "error");
 			return;
@@ -18,7 +17,6 @@ function InfoSection({ user }) {
 			notify("No changes detected", "info");
 			return;
 		}
-
 		await updateUser(field, value);
 	};
 

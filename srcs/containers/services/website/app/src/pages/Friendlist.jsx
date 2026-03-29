@@ -1,8 +1,8 @@
 import { useState, useContext } from "react";
 import { Button, Input, Card, Page, EditableField } from "../ui";
+import { LobbyContext } from "../context/LobbyContext";
 import FriendRequestItem from "../ui/FriendRequestItem";
 import FriendName from "../ui/FriendName";
-import { LobbyContext } from "../context/LobbyContext";
 
 function Friendlist({ onClose }) {
 	const [friendName, setFriendName] = useState("");
@@ -55,7 +55,7 @@ function Friendlist({ onClose }) {
 						FRIENDLIST
 					</h2>
 
-					{!isAddingFriend ? (
+					{ !isAddingFriend ? (
 						<div className="mt-2 mb-6">
 							<Button variant="icon2" onClick={() => setIsAddingFriend(true)}>󰀔</Button>
 							<span className="px-5 font-pixelm mb-6 text-center text-shadow-lg">ADD FRIEND</span>
@@ -78,13 +78,13 @@ function Friendlist({ onClose }) {
 						</div>
 					)}
 
-					{pendingRequests.length > 0 && (
+					{ pendingRequests.length > 0 && (
 						<div className="mb-4 bg-gray-600 p-2 rounded">
 							<p className="font-pixelm font-bold text-shadow-lg text-purple-500 mb-2">
 								PENDING REQUESTS:
 							</p>
 							<ul className="space-y-1">
-								{pendingRequests.map((req) => (
+								{ pendingRequests.map((req) => (
 									<FriendRequestItem
 										key={req.user_id}
 										username={req.username}
@@ -96,13 +96,13 @@ function Friendlist({ onClose }) {
 						</div>
 					)}
 
-					{pendingSent.length > 0 && (
+					{ pendingSent.length > 0 && (
 						<div className="mb-4 bg-gray-600 p-2 rounded">
 							<p className="font-pixelm font-bold text-shadow-lg text-purple-500 mb-2">
 								SENT REQUESTS:
 							</p>
 							<ul className="space-y-1">
-								{pendingSent.map((f) => (
+								{ pendingSent.map((f) => (
 									<li key={f.username} className="font-pixel px-2 text-gray-400 text-xl">
 										{f.username}
 									</li>
@@ -112,7 +112,7 @@ function Friendlist({ onClose }) {
 					)}
 
 					<ul className="space-y-1">
-						{acceptedFriends.map((frnd) => (
+						{ acceptedFriends.map((frnd) => (
 							<FriendName
 								key={frnd.username}
 								id={frnd.id}
@@ -123,7 +123,7 @@ function Friendlist({ onClose }) {
 								onClose={onClose}
 							/>
 						))}
-						
+
 					</ul>
 				</Card>
 			</div>
