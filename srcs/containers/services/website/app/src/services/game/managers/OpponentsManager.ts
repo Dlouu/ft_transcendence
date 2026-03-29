@@ -232,22 +232,51 @@ export class OpponentsManager extends Container {
 			return;
 		}
 
-		const totalOpponents = opponents.length;
-		opponents.forEach((opponentState, index) => {
-			const opponentIndex =
-				typeof opponentState.index === "number" && opponentState.index >= 0
-					? opponentState.index
-					: index + 1;
+		   // Ensure playerIndex is set before rendering opponents
+		   if (typeof this._playerIndex !== "number") {
+			   // Try to infer from the first opponent if possible (fallback)
+			   if (opponents.length > 0 && typeof opponents[0].index === "number") {
+				   // Assume local player is the missing index in [0, ..., n]
+				   const indices = opponents.map(o => o.index).filter(i => typeof i === "number");
+				   const maxIndex = Math.max(...indices);
+				   const allIndices = Array.from({length: maxIndex + 2}, (_, i) => i);
+				   this._playerIndex = allIndices.find(i => !indices.includes(i)) ?? 0;
+			   } else {
+				   this._playerIndex = 0;
+			   }
+		   }
 
-			this.createOpponent(
-				opponentIndex,
-				opponentState.name,
-				this.getPositionKeyByOrder(index, totalOpponents),
-				0,
-				GAME_CUSTOMIZATION.opponents.defaultRejoinCardBackVariant,
-				(opponentState as any).picture,
-			);
-		});
+		   const totalPlayers = opponents.length + 1;
+		   const myIndex = this._playerIndex;
+		   opponents.forEach((opponentState) => {
+			   const opponentIndex =
+				   typeof opponentState.index === "number" && opponentState.index >= 0
+					   ? opponentState.index
+					   : 0;
+
+			   // Use the same relative index logic as initializeOpponents
+			   const relativeIndex = (opponentIndex - myIndex + totalPlayers) % totalPlayers;
+			   let positionKey = "";
+			   if (totalPlayers === 2) {
+				   positionKey = "top";
+			   } else if (totalPlayers === 3) {
+				   if (relativeIndex === 1) positionKey = "left";
+				   if (relativeIndex === 2) positionKey = "right";
+			   } else {
+				   if (relativeIndex === 1) positionKey = "left";
+				   if (relativeIndex === 2) positionKey = "top";
+				   if (relativeIndex === 3) positionKey = "right";
+			   }
+
+			   this.createOpponent(
+				   opponentIndex,
+				   opponentState.name,
+				   positionKey,
+				   0,
+				   GAME_CUSTOMIZATION.opponents.defaultRejoinCardBackVariant,
+				   (opponentState as any).picture,
+			   );
+		   });
 	}
 
 	public syncOpponentHandSizes(opponents: RejoinOpponentHandSizeDto[]): void {
