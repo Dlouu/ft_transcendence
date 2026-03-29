@@ -69,17 +69,13 @@ function Navbar() {
 						</Link>
 					))}
 
-					<Link onClick={() =>  setShowFriends(true)} className="relative py-2 px-3 rounded hover:bg-gray-700">
+					<button type="button" onClick={() => setShowFriends(true)} className="relative py-2 px-3 rounded hover:bg-gray-700">
 						<span className="font-icon text-purple-300">󰀎</span>
 						<span className="px-2">FRIENDS</span>
 						{ hasPendingRequests && (
 							<span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-yellow-500" />
 						)}
-					</Link>
-
-					{showFriends && (
-						<Friendlist onClose={() => setShowFriends(false)} />
-					)}
+					</button>
 
 					<Button variant="login" onClick={handleLogout}>
 						LOG OUT
@@ -115,23 +111,23 @@ function Navbar() {
 							</Link>
 						))}
 
-						<Link onClick={() => { setShowFriends(true); setOpen(false); }} className="relative py-2 px-5 rounded bg-gray-700">
+						<button type="button" onClick={() => { setShowFriends(true); setOpen(false); }} className="relative py-2 px-5 rounded bg-gray-700">
 							<span className="font-icon text-purple-300">󰀎</span>
 							<span className="px-2">FRIENDS</span>
 							{hasPendingRequests && (
 								<span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-red-500" aria-label="Pending friend requests" />
 							)}
-						</Link>
-
-						{ showFriends && (
-							<Friendlist onClose={() => setShowFriends(false)} />
-						)}
+						</button>
 
 						<Button variant="login" onClick={handleLogout}>
 							LOG OUT
 						</Button>
 					</div>
 				</div>
+			)}
+
+			{user && showFriends && (
+				<Friendlist onClose={() => setShowFriends(false)} />
 			)}
 		</nav>
 	);
