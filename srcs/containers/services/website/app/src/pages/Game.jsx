@@ -1,4 +1,5 @@
 import { useEffect, useContext, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { GameContext } from "../context/GameContext";
 import { Page, Button } from "../ui";
 import { gameService } from "../services/game/gameService";
@@ -13,10 +14,22 @@ function Game() {
 
     const canvasRef = useRef(null);
     const stageRef = useRef(null);
+    const navigate = useNavigate();
 
     const [portrait, setPortrait] = useState(false);
 	const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
 	const userId = user?.user_id;
+
+    useEffect(() => {
+      const handleVictory = () => navigate('/');
+
+      window.addEventListener('game_victory', handleVictory);
+    
+      return () => {
+        window.removeEventListener('game_victory', handleVictory);
+      }
+    }, [navigate])
+
 
     useEffect(() =>
     {
