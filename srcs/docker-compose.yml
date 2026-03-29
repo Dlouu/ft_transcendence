@@ -27,15 +27,13 @@ services:
       - service_logs:/logs
   website:
     container_name: service_website
-    build: ./containers/services/website
+    build:
+      context: ./containers/services/website
     restart: on-failure
     volumes:
-      - website_data:/var/www/website
       - service_logs:/logs
     depends_on:
       - api
-    ports:
-      - 5173:5173
     networks:
       - website_network
   api:
@@ -47,8 +45,6 @@ services:
     volumes:
       - api_data:/var/www/api
       - service_logs:/logs
-    ports:
-      - 5050:5050
     networks:
       - api_network
       - auth_network
@@ -73,7 +69,8 @@ services:
       - auth_db_network
   game:
     container_name: service_game
-    build: ./containers/services/game
+    build:
+      context: ./containers/services/game
     restart: on-failure
     volumes:
       - service_logs:/logs
@@ -83,8 +80,6 @@ services:
     container_name: lobby_game
     build: ./containers/services/lobby
     restart: on-failure
-    ports:
-      - "5002:5002"
     env_file:
       - env/lobby.env
     networks:
@@ -102,18 +97,20 @@ services:
       - elk_network
   kibana:
     image: docker.elastic.co/kibana/kibana:8.12.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     ports:
-      - "5601:5601"
+      - "127.0.0.1:5601:5601"
     depends_on:
       - elasticsearch
     networks:
       - elk_network
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:8.12.0
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
     user: root
     volumes:
       - service_logs:/logs
-      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     depends_on:
       - elasticsearch
     networks:
@@ -142,7 +139,6 @@ services:
       - user_db_network
 
 volumes:
-  website_data:
   api_data:
   auth_db_data:
     driver: local
@@ -162,7 +158,6 @@ volumes:
       type: none
       o: bind
       device: ${VOLUME_PATH}/service_logs
-
 
 networks:
   mariadb_network:

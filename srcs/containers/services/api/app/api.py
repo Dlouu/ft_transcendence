@@ -9,6 +9,9 @@ Namespace.s3_bucket_health_check = s3_bucket_health_check
 from app.decorators.db_health_check import db_health_check
 Namespace.db_health_check = db_health_check
 
+from app.decorators.request_author_check import request_author_check
+Namespace.request_author_check = request_author_check
+
 from app.resources.authentification import ns as authentification_ns
 from app.resources.user_card import ns as user_card_ns
 from app.resources.user import ns as user_ns
