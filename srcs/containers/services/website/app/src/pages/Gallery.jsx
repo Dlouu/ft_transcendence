@@ -54,16 +54,22 @@ function Gallery() {
 					GALLERY
 				</h2>
 
-				<div className="grid grid-cols-3 sm:grid-cols-6 gap-4 mb4">
-					{ images.map((img) => (
-						<Link key={img.id} to={`/gallery/${img.id}`}>
-							<img
-								src={img.src}
-								alt={img.id}
-								className="rounded-lg hover:scale-105 transition"
-							/>
-						</Link>
-					))}
+				<div className="w-full min-w-0 overflow-x-hidden mb-4">
+					<div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+						{ images.map((img) => (
+							<Link
+								key={img.id}
+								to={`/gallery/${img.id}`}
+								className="block overflow-hidden rounded-lg"
+							>
+								<img
+									src={img.src}
+									alt={img.id}
+									className="w-full rounded-lg shadow-md hover:scale-105 transition"
+								/>
+							</Link>
+						))}
+					</div>
 				</div>
 
 				<div className="flex flex-col sm:flex-row sm:gap-4 justify-center">

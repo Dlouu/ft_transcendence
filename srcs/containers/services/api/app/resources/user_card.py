@@ -301,4 +301,8 @@ class GetCardImage(Resource):
 
 		logger.info(f"Cards successfully retrieved for the user id {user_id}.",
 			extra=logger.extra(request=request, user_id=user_id, target="aws"))
-		return {"message": "success", "images_url": images_url}, 200
+		return {
+			"message": "success",
+			"images_url": images_url,
+			"pages": pagination.pages,
+		}, 200

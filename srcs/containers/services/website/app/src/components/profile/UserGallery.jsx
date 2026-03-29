@@ -5,55 +5,57 @@ import { AuthContext } from "../../context/AuthContext";
 function UserGallery({ userId, browseAll = false, title }) {
 	const [cards, setCards] = useState([]);
 	const [loadingCards, setLoadingCards] = useState(true);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [totalPages, setTotalPages] = useState(1);
 	const { user } = useContext(AuthContext);
 
 	useEffect(() => {
 		if (!browseAll && !userId) {
 			setCards([]);
 			setLoadingCards(false);
+			setCurrentPage(1);
+			setTotalPages(1);
 			return;
 		}
 
 		const fetchCards = async () => {
 			try {
-				const perPage = 50;
-				let page = 1;
-				let allCards = [];
+				const perPage = 12;
 				const cacheBuster = Date.now();
+				const endpoint = browseAll
+					? `/api/user/get_card_images?page=${currentPage}&per_page=${perPage}`
+					: `/api/user/get_card_images/${userId}?page=${currentPage}&per_page=${perPage}`;
 
-				while (true) {
-					const endpoint = browseAll
-						? `/api/user/get_card_images?page=${page}&per_page=${perPage}`
-						: `/api/user/get_card_images/${userId}?page=${page}&per_page=${perPage}`;
+				const res = await fetch(endpoint, {
+					method: "GET",
+					credentials: "include",
+				});
 
-					const res = await fetch(endpoint, {
-						method: "GET",
-						credentials: "include",
-					});
+				if (res.status === 404) {
+					setCards([]);
+					setCurrentPage(1);
+					setTotalPages(1);
+					return;
+				}
 
-					if (res.status === 404) {
-						allCards = [];
-						break;
-					}
+				if (!res.ok) {
+					const text = await res.text();
+					throw new Error(text || "Fetch failed");
+				}
 
-					if (!res.ok) {
-						const text = await res.text();
-						throw new Error(text || "Fetch failed");
-					}
+				const data = await res.json();
+				const currentPageCards = data?.images_url || [];
+				const apiTotalPages = Number(data?.pages || 1);
 
-					const data = await res.json();
-					const currentPageCards = data?.images_url || [];
-					allCards = [...allCards, ...currentPageCards];
+				setTotalPages(Math.max(1, apiTotalPages));
 
-					if (currentPageCards.length < perPage) {
-						break;
-					}
-
-					page += 1;
+				if (apiTotalPages > 0 && currentPage > apiTotalPages) {
+					setCurrentPage(apiTotalPages);
+					return;
 				}
 
 				setCards(
-					allCards.map((card) => ({
+					currentPageCards.map((card) => ({
 						...card,
 						cache_url: `${card.url}${card.url.includes("?") ? "&" : "?"}v=${cacheBuster}`,
 					}))
@@ -62,12 +64,18 @@ function UserGallery({ userId, browseAll = false, title }) {
 			} catch (err) {
 				// console.error(err);
 				setCards([]);
+				setTotalPages(1);
 			} finally {
 				setLoadingCards(false);
 			}
 		};
 
+		setLoadingCards(true);
 		fetchCards();
+	}, [userId, browseAll, currentPage]);
+
+	useEffect(() => {
+		setCurrentPage(1);
 	}, [userId, browseAll]);
 
 	const galleryTitle = title || (browseAll ? "ALL GALLERY" : `MY GALLERY (${user?.username || ""})`);
@@ -81,7 +89,8 @@ function UserGallery({ userId, browseAll = false, title }) {
 			{ !loadingCards && !cards.length && <p>{emptyLabel}</p>}
 
 			{ !!cards.length && (
-				<div className="grid sm:grid-cols-6 grid-cols-3 gap-4">
+				<div className="w-full min-w-0 overflow-x-hidden">
+					<div className="grid sm:grid-cols-6 grid-cols-3 gap-4">
 					{cards.map((card) => {
 						const ownerId = card.user_id;
 						const isOwner = Number(ownerId) === Number(user?.user_id);
@@ -90,6 +99,7 @@ function UserGallery({ userId, browseAll = false, title }) {
 							<Link
 								key={card.image_id}
 								to={`/gallery/${card.image_id}`}
+								className="block overflow-hidden rounded-lg"
 								state={{
 									id: card.image_id,
 									src: card.cache_url,
@@ -105,6 +115,31 @@ function UserGallery({ userId, browseAll = false, title }) {
 							</Link>
 						);
 					})}
+					</div>
+
+					{totalPages > 1 && (
+						<div className="mt-6 flex items-center justify-center gap-3 font-pixelhb">
+							<button
+								type="button"
+								onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+								disabled={currentPage <= 1 || loadingCards}
+								className="px-3 py-1 rounded bg-gray-700 disabled:opacity-40"
+							>
+								PREV
+							</button>
+							<span>
+								PAGE {currentPage} / {totalPages}
+							</span>
+							<button
+								type="button"
+								onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+								disabled={currentPage >= totalPages || loadingCards}
+								className="px-3 py-1 rounded bg-gray-700 disabled:opacity-40"
+							>
+								NEXT
+							</button>
+						</div>
+					)}
 				</div>
 			)}
 		</>
