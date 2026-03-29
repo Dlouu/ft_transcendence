@@ -28,6 +28,6 @@ api = Api(title="TranscendenceAPI",
 	})
 
 api.add_namespace(authentification_ns, path="/auth")
-api.add_namespace(user_ns, path="/user")
-api.add_namespace(user_card_ns, path="/user")
 api.add_namespace(game_ns, path="/user/game")
+api.add_namespace(user_card_ns, path="/user")
+api.add_namespace(user_ns, path="/user")
