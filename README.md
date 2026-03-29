@@ -26,7 +26,7 @@ A full-stack, real-time multiplayer **UNO** web application built as part of the
 - **Authentication service** (`auth`) — standalone JWT issuer with bcrypt password hashing, token refresh scheduling via APScheduler, and Redis-backed token caching
 - **Game engine** (`game`, NestJS) — full server-side UNO logic including deck management, turn handling, card rules, scoring, and an AI bot opponent
 - **Lobby service** (`lobby`) — manages game rooms (public & private by code), friend list logic, and real-time presence via Flask-SocketIO
-- **Centralized logging** — Filebeat ships logs from all services into Elasticsearch, visualized through Kibana
+- **Centralized logging** — Logstash ships logs from all services into Elasticsearch, visualized through Kibana
 
 ---
 
@@ -47,7 +47,7 @@ The project is composed of the following services, all orchestrated by Docker Co
 | `redis`           | Redis 8.4             | Token cache and session store                           |
 | `elasticsearch`   | Elasticsearch 8.12    | Log indexing and search                                 |
 | `kibana`          | Kibana 8.12           | Log visualization dashboard                             |
-| `filebeat`        | Filebeat 8.12         | Log shipping from all services to Elasticsearch         |
+| `logstash`        | Logstash 8.12         | Log processing and shipping to Elasticsearch            |
 
 ### Network Layout
 
@@ -148,7 +148,7 @@ ft_transcendence/
 └── srcs/
     ├── docker-compose.yml          # Main service definitions
     ├── docker-compose.override.yml # Dev overrides (hot-reload, etc.)
-    ├── filebeat.yml                # Filebeat log shipping config
+    ├── logstash.conf               # Logstash pipeline configuration
     ├── env.example                 # Template for the root .env
     ├── env/                        # Per-service env files
     ├── volumes/                    # Persistent data (auto-created by make)
@@ -183,8 +183,19 @@ ft_transcendence/
 | Databases       | MariaDB (×2)                          |
 | Cache           | Redis 8.4                             |
 | Proxy           | Nginx                                  |
-| Observability   | Elasticsearch 8.12, Kibana 8.12, Filebeat 8.12 |
+| Observability   | Elasticsearch 8.12, Kibana 8.12, Logstash 8.12 |
 | Containerization| Docker, Docker Compose                 |
+
+---
+
+## Browser Compatibility
+
+The application is built to be modern and responsive. It has been strictly tested and is verified to be fully compatible with the newest versions of the following browsers:
+- **Google Chrome**
+- **Mozilla Firefox**
+- **Brave Browser**
+
+No browser-specific UI/UX limitations or regressions are present across these platforms.
 
 ---
 
@@ -202,7 +213,7 @@ Here is the tracking checklist for the modules chosen from the subject:
 - [x] **Implement a complete web-based game where users can play against each other**
 - [x] **Remote players — Enable two players on separate computers to play the same game in real-time**
 - [x] **Multiplayer game (more than two players)**
-- [ ] **Infrastructure for log management using ELK** *(Currently uses Filebeat instead of Logstash)*
+- [x] **Infrastructure for log management using ELK**
 - [x] **Backend as microservices**
 
 ### Minor Modules
@@ -211,6 +222,6 @@ Here is the tracking checklist for the modules chosen from the subject:
 - [x] **Use an ORM for the database**
 - [x] **Custom-made design system with reusable components**
 - [ ] **Implement advanced search functionality with filters, sorting, and pagination** *(Missing user-facing search)*
-- [ ] **Support for additional browsers** *(Needs explicit documentation/browser compatibility table)*
+- [x] **Support for additional browsers** *(Tested and working on the latest versions of Chrome, Firefox, and Brave)*
 - [ ] **Game statistics and match history** *(Stats OK, but Individual Match History, Leaderboard, and Achievements missing)*
 - [x] **Custom Minor Module: AWS Image Storage** *(AWS S3 integration is used for user avatars and gallery)*
