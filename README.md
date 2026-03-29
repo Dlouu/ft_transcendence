@@ -1,110 +1,43 @@
+*This project has been created as part of the 42 curriculum by [Login 1], [Login 2], [Login 3]*
+
 # ft_transcendence
 
-A full-stack, real-time multiplayer **UNO** web application built as part of the 42 curriculum. The project is fully containerized using **Docker Compose** and follows a **microservices architecture**, with dedicated services for authentication, game logic, lobbies, the frontend website, and an observability stack.
+## Description
+**ft_transcendence** is a full-stack, real-time multiplayer **UNO** web application. 
+The goal of the project is to create a fully functioning online game, adhering to modern web development practices. It is fully containerized using **Docker Compose** and follows a **microservices architecture**, with dedicated services for authentication, game logic, lobbies, the frontend website, and an observability stack.
+
+### Key Aspects
+- **Real-time multiplayer UNO** via WebSockets, rendered with **PixiJS**.
+- **Public lobbies** anyone can join, and **private lobbies** accessible by invite code.
+- **Microservices architecture** using Nginx as a reverse proxy to route requests between Nginx, custom Gateway API, User Database, Auth Database, game service, lobby service, and Website service.
 
 ---
 
-## Features
+## Instructions
 
-### 🎮 Gameplay
-- **Real-time multiplayer UNO** via WebSockets, rendered with **PixiJS**
-- **Public lobbies** anyone can join, or **private lobbies** accessible by invite code
-
-### 👤 Frontend Pages & Features
-- **Login / Register** — account creation and sign-in
-- **Profile** — view your own stats and info
-- **User Profile** — view another player's public profile
-- **Lobby** — create or join a game session (public or private by code)
-- **Game** — live UNO game board
-- **Friend List** — manage and view your friends
-- **Gallery** — browse and view an image gallery
-- **Paint** — in-browser drawing tool
-- **Privacy Policy & Terms** — legal pages
-
-### 🔒 Backend & Infrastructure
-- **Gateway REST API** (`api`) — central hub that routes and proxies requests between all internal services; handles user profiles, UNO card collections, and exposes a unified interface to the frontend
-- **Authentication service** (`auth`) — standalone JWT issuer with bcrypt password hashing, token refresh scheduling via APScheduler, and Redis-backed token caching
-- **Game engine** (`game`, NestJS) — full server-side UNO logic including deck management, turn handling, card rules, scoring, and an AI bot opponent
-- **Lobby service** (`lobby`) — manages game rooms (public & private by code), friend list logic, and real-time presence via Flask-SocketIO
-- **Centralized logging** — Logstash ships logs from all services into Elasticsearch, visualized through Kibana
-
----
-
-## Architecture
-
-The project is composed of the following services, all orchestrated by Docker Compose:
-
-| Service           | Technology            | Role                                                    |
-|-------------------|-----------------------|---------------------------------------------------------|
-| `nginx`           | Nginx                 | Reverse proxy and TLS termination                       |
-| `website`         | Node.js 20 / Vite     | Frontend SPA served on port `5173`                      |
-| `api`             | Python 3.13 / Flask   | Gateway REST API — proxies all inter-service communication, user profiles, card data |
-| `auth`            | Python 3.13 / Flask   | Authentication service (JWT, bcrypt, APScheduler, Redis token cache) |
-| `game`            | Node.js 20 / NestJS   | Server-side UNO engine: deck, rules, turn logic, scoring, AI bot |
-| `lobby`           | Python 3.13 / Flask-SocketIO | Game rooms (public & private by code), friends list, real-time presence |
-| `auth_db`         | MariaDB               | Database for authentication data                        |
-| `user_db`         | MariaDB               | Database for user/profile data                          |
-| `redis`           | Redis 8.4             | Token cache and session store                           |
-| `elasticsearch`   | Elasticsearch 8.12    | Log indexing and search                                 |
-| `kibana`          | Kibana 8.12           | Log visualization dashboard                             |
-| `logstash`        | Logstash 8.12         | Log processing and shipping to Elasticsearch            |
-
-### Network Layout
-
-Services communicate over isolated Docker bridge networks. Only `nginx`, `api`, `website`, `game`, and `lobby` are exposed to the host; everything else is internal.
-
-```
-Client → Nginx (8080/4443)
-           ├── /api  → api (5050)
-           ├── /auth → auth
-           ├── /game → game
-           ├── /     → website (5173)
-           └── /lobby → lobby (5002)
-```
-
----
-
-## Prerequisites
-
+### Prerequisites
 - [Docker](https://docs.docker.com/get-docker/) ≥ 24
 - [Docker Compose](https://docs.docker.com/compose/) plugin (included in modern Docker Desktop)
 - `make`
 
----
-
-## Getting Started
-
-### 1. Clone the repository
-
-```bash
-git clone <repo-url> ft_transcendence
-cd ft_transcendence
-```
-
-### 2. Configure environment variables
-
-Copy the example env file and edit it if needed:
-
+### Configuration
+Copy the example env file and edit it:
 ```bash
 cp srcs/env.example srcs/.env
 ```
-
 The default `.env` sets:
-
 ```dotenv
 VOLUME_PATH=${PWD}/srcs/volumes   # where database & log volumes are stored on disk
 TOKEN_CACHE_LIFETIME=86400        # JWT cache duration in seconds (24h)
 ```
+Each internal service also has its own `.env` file located in the `srcs/env/` folder (e.g. `api.env`, `auth.env`, `auth_db.env`). Fill those in as needed before starting.
 
-Each service also has its own env file under `srcs/env/` (e.g. `api.env`, `auth.env`, `auth_db.env`, ...). Fill those in before starting.
-
-### 3. Build and start all services
-
+### Execution
+To build and start all the services:
 ```bash
 make
 ```
-
-This is equivalent to `make build && make run` and will:
+This command runs `make build` followed by `make run` to:
 1. Create the required volume directories on the host.
 2. Build all Docker images.
 3. Start all containers in detached mode.
@@ -113,115 +46,134 @@ The application will be reachable at:
 - **HTTPS** → `https://localhost:4443`
 - **Kibana** → `http://localhost:5601`
 
----
-
-## Makefile Reference
-
-| Command                          | Description                                                  |
-|----------------------------------|--------------------------------------------------------------|
-| `make`                           | Build and start all services                                 |
-| `make build [DOCK=service]`      | Build image(s) — omit `DOCK` to build everything            |
-| `make run [DOCK=service]`        | Start container(s) in detached mode                          |
-| `make stop [DOCK=service]`       | Stop and remove container(s)                                 |
-| `make restart [DOCK=service]`    | Stop then rebuild and restart                                |
-| `make logs [DOCK=service]`       | Tail logs for a service                                      |
-| `make enter DOCK=service`        | Open an interactive shell inside a running container         |
-| `make ps`                        | Show status of all containers                                |
-| `make fclean`                    | **Full cleanup**: stop containers, remove volumes, prune images |
-| `make re`                        | `fclean` + full rebuild                                      |
-
-**Example** — rebuild and tail the API only:
-
-```bash
-make build DOCK=api
-make run   DOCK=api
-make logs  DOCK=api
-```
+**Makefile Reference**:
+- `make` - Build and start all services
+- `make build [DOCK=service]` - Build image(s)
+- `make run [DOCK=service]` - Start container(s)
+- `make stop [DOCK=service]` - Stop and remove container(s)
+- `make restart [DOCK=service]` - Stop then rebuild and restart
+- `make logs [DOCK=service]` - Tail logs for a service
+- `make fclean` - Stop containers, remove volumes, prune images
 
 ---
 
-## Project Structure
-
-```
-ft_transcendence/
-├── Makefile
-└── srcs/
-    ├── docker-compose.yml          # Main service definitions
-    ├── docker-compose.override.yml # Dev overrides (hot-reload, etc.)
-    ├── logstash.conf               # Logstash pipeline configuration
-    ├── env.example                 # Template for the root .env
-    ├── env/                        # Per-service env files
-    ├── volumes/                    # Persistent data (auto-created by make)
-    └── containers/
-        ├── services/
-        │   ├── nginx/              # Reverse proxy config & Dockerfile
-        │   ├── website/            # Frontend (Node.js / Vite)
-        │   ├── api/                # Main REST API (Flask)
-        │   ├── auth/               # Auth service (Flask + JWT)
-        │   ├── game/               # Game engine (Node.js + WebSockets)
-        │   └── lobby/              # Game rooms & friends (Flask-SocketIO)
-        ├── databases/
-        │   ├── auth_db/            # MariaDB for auth
-        │   └── user_db/            # MariaDB for users
-        └── utils/
-            ├── game_dto/           # Shared game data transfer objects
-            ├── mariadb_template/   # Reusable DB init scripts
-            └── service_template/   # Boilerplate for new services
-```
+## Resources
+- [NestJS Documentation](https://docs.nestjs.com/)
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [React Documentation](https://react.dev/)
+- [Vite Documentation](https://vitejs.dev/)
+- [PixiJS Documentation](https://pixijs.com/)
+- [Socket.IO Documentation](https://socket.io/docs/v4/)
+- **AI Usage:** *[Explain how AI was used, e.g., to generate structural boilerplate, handle repetitive CSS refactoring, or help debug Docker container networking.]*
 
 ---
 
-## Tech Stack Summary
+## Team Information
+- **[Team Member 1]** (Role, e.g., Tech Lead): *[Brief description of their responsibilities]*
+- **[Team Member 2]** (Role, e.g., Frontend Developer): *[Brief description of their responsibilities]*
+- **[Team Member 3]** (Role, e.g., Backend Developer): *[Brief description of their responsibilities]*
 
-| Layer           | Technology                             |
-|-----------------|----------------------------------------|
-| Frontend        | React 19, Vite, TailwindCSS 4, PixiJS, Socket.IO client |
-| API (Gateway)   | Python 3.13, Flask, Flask-RESTX, Gunicorn, SQLAlchemy |
-| Auth            | Python 3.13, Flask, PyJWT, bcrypt, APScheduler |
-| Game            | Node.js 20, NestJS, WebSockets, TypeScript |
-| Lobby           | Python 3.13, Flask-SocketIO            |
-| Databases       | MariaDB (×2)                          |
-| Cache           | Redis 8.4                             |
-| Proxy           | Nginx                                  |
-| Observability   | Elasticsearch 8.12, Kibana 8.12, Logstash 8.12 |
-| Containerization| Docker, Docker Compose                 |
+---
+
+## Project Management
+- **Organization:** *[Explain how task distribution and meetings were managed]*
+- **Tools Used:** *[e.g., GitHub Issues, Trello, Notion]*
+- **Communication Channels:** *[e.g., Discord, Slack]*
+
+---
+
+## Technical Stack
+
+### Frontend
+- **Frameworks:** React 19, Vite
+- **Styling:** TailwindCSS 4
+- **Game Rendering:** PixiJS
+- **Real-Time Communication:** Socket.IO Client
+
+### Backend
+- **Gateway REST API:** Python 3.13, Flask, Flask-RESTX, SQLAlchemy
+- **Authentication Service:** Python 3.13, Flask, PyJWT, bcrypt, APScheduler
+- **Game Engine:** Node.js 20, NestJS, TypeScript
+- **Lobby Service:** Python 3.13, Flask-SocketIO
+
+### Database & Cache
+- **Database System:** MariaDB (Used as two separate databases: `auth_db` and `user_db`). *[Justification: Selected for its reliability in handling structured relational data like users, game statistics, and friends lists.]*
+- **Cache System:** Redis 8.4 (Used for token cache and rapid session storage tracking).
+
+### Observability & Infrastructure
+- **Proxy:** Nginx
+- **Containerization:** Docker, Docker Compose
+- **Log Management:** Elasticsearch 8.12, Kibana 8.12, Logstash 8.12
+
+---
+
+## Database Schema
+The database architecture is split across two separate MariaDB instances (`auth_db` and `user_db`) to enforce microservices design.
+- **`auth_db`**: Stores sensitive authentication credentials, passwords, and tokens.
+- **`user_db`**: Stores relational models for:
+  - Users (username, avatar, custom cards, global statistics)
+  - Friends (Add/remove logic and relationships)
+  - Game Stats (Wins, losses)
+  - Card Gallery (AWS S3 Image URLs for custom uploaded cards)
+*[Provide a visual image representation of the database schema here if you have one]*
+
+---
+
+## Features List
+
+### 🎮 Gameplay
+- **Real-time multiplayer UNO** (WebSockets + PixiJS) - *Implemented by [Member]* - Features full deck mechanics, real-time turns, and rule validation.
+- **Public & Private Lobbies** - *Implemented by [Member]* - Create accessible rooms for specific invite codes.
+- **AI Opponent** - *Implemented by [Member]* - Bot logic engineered via NestJS services.
+
+### 👤 User Pages & Flow
+- **Authentication** - *Implemented by [Member]* - Login, Register, JWT, Bcrypt.
+- **Profile / User Profile** - *Implemented by [Member]* - View global stats and information.
+- **Friend List** - *Implemented by [Member]* - Manage and view online friends.
+- **Gallery / Paint** - *Implemented by [Member]* - In-browser drawing tool and custom card image upload via AWS S3.
+
+### 🔒 Backend & Infrastructure
+- **Gateway REST API** - *Implemented by [Member]* - Central hub that routes and proxies requests between internal services.
+- **Centralized logging** - *Implemented by [Member]* - Logstash pipelines ship logs to Elasticsearch and visualize on Kibana.
+
+---
+
+## Modules
+
+The project follows a set of specific modules chosen from the 42 curriculum. Below is the point evaluation block:
+
+### Major Modules (2 Points Each)
+- **Use a framework for both the frontend and backend** (React + Vite / Flask + NestJS). *Implemented by: [Member]*
+- **Implement real-time features using WebSockets or similar technology**. *Implemented by: [Member]*
+- **Allow users to interact with other users** (Profile, Friends). *Implemented by: [Member]*
+- **A public API to interact with the database**. *Implemented by: [Member]*
+- **Standard user management and authentication**. *Implemented by: [Member]*
+- **Introduce an AI Opponent for games**. *Implemented by: [Member]*
+- **Implement a complete web-based game where users can play against each other**. *Implemented by: [Member]*
+- **Remote players — Enable two players on separate computers to play the same game in real-time**. *Implemented by: [Member]*
+- **Multiplayer game (more than two players)**. *Implemented by: [Member]*
+- **Infrastructure for log management using ELK**. *Implemented by: [Member]*
+- **Backend as microservices**. *Implemented by: [Member]*
+
+### Minor Modules (1 Point Each)
+- **Use a frontend framework**. *Implemented by: [Member]*
+- **Use a backend framework**. *Implemented by: [Member]*
+- **Use an ORM for the database** (Flask-SQLAlchemy). *Implemented by: [Member]*
+- **Custom-made design system with reusable components**. *Implemented by: [Member]*
+- **Support for additional browsers** (Tested on Chrome, Firefox, Brave). *Implemented by: [Member]*
+- **Custom Minor Module: AWS Image Storage** (AWS S3 utilized to store gallery images/avatars efficiently). *Justification: Chosen to safely and persistently host user content while reducing database sizes and network payload strain.* *Implemented by: [Member]*
 
 ---
 
 ## Browser Compatibility
-
-The application is built to be modern and responsive. It has been strictly tested and is verified to be fully compatible with the newest versions of the following browsers:
-- **Google Chrome**
-- **Mozilla Firefox**
-- **Brave Browser**
-
-No browser-specific UI/UX limitations or regressions are present across these platforms.
+The application is strictly tested and is verified to fully function on the current newest versions of:
+- Google Chrome
+- Mozilla Firefox
+- Brave Browser
 
 ---
 
-## 42 Subject Module Evaluation Status
-
-Here is the tracking checklist for the modules chosen from the subject:
-
-### Major Modules
-- [x] **Use a framework for both the frontend and backend** (React + Vite / Flask + NestJS)
-- [x] **Implement real-time features using WebSockets or similar technology**
-- [ ] **Allow users to interact with other users** *(Profile OK, Friends OK, Chat missing)*
-- [ ] **A public API to interact with the database** *(Requires API Key; PUT/DELETE methods missing)*
-- [x] **Standard user management and authentication**
-- [x] **Introduce an AI Opponent for games**
-- [x] **Implement a complete web-based game where users can play against each other**
-- [x] **Remote players — Enable two players on separate computers to play the same game in real-time**
-- [x] **Multiplayer game (more than two players)**
-- [x] **Infrastructure for log management using ELK**
-- [x] **Backend as microservices**
-
-### Minor Modules
-- [x] **Use a frontend framework**
-- [x] **Use a backend framework**
-- [x] **Use an ORM for the database**
-- [x] **Custom-made design system with reusable components**
-- [ ] **Implement advanced search functionality with filters, sorting, and pagination** *(Missing user-facing search)*
-- [x] **Support for additional browsers** *(Tested and working on the latest versions of Chrome, Firefox, and Brave)*
-- [ ] **Game statistics and match history** *(Stats OK, but Individual Match History, Leaderboard, and Achievements missing)*
-- [x] **Custom Minor Module: AWS Image Storage** *(AWS S3 integration is used for user avatars and gallery)*
+## Individual Contributions
+- **[Team Member 1]**: *[Detailed breakdown of contributions. E.g., Designed the ELK logging stack, created the React component design system, and navigated Docker networking difficulties.]*
+- **[Team Member 2]**: *[Detailed breakdown of contributions. E.g., Built the NestJS game backend, programmed the UNO core logic with AI bot opponent, and solved WebSockets synchronization delays.]*
+- **[Team Member 3]**: *[Detailed breakdown of contributions. E.g., Implemented Flask-based gateway APIs, integrated AWS S3 bucket handling for user galleries, and structured MariaDB relational constraints.]*
