@@ -13,7 +13,7 @@ export const GAME_CUSTOMIZATION = {
 	assets: {
 		arrowTexturePath: "arrow.png",
 		cardBackFileSuffix: "-back.png",
-		defaultCardBackVariant: "default",
+		defaultCardBackVariant: "uwu",
 		themeFileByTheme: {
 			[CardsTheme.Basic]: "basic-theme.json",
 			[CardsTheme.Uwu]: "uwu-theme.json",

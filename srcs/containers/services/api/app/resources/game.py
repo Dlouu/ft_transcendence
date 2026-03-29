@@ -29,7 +29,6 @@ stats_model = ns.model("Game", {
 
 @ns.route("/stats")
 class UpdateStats(Resource):
-	@ns.jwt_required()
 	@ns.db_health_check()
 	@ns.expect(stats_model)
 	def post(self):

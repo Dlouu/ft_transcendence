@@ -209,8 +209,6 @@ export class AssetsManager {
 		return Texture.EMPTY;
 	}
 
-	// TODO: Somewhere in this file, fix profile pictures
-	// TODO: Card Variant "Basic"
 	public getCardBack(
 		variant: string = GAME_CUSTOMIZATION.assets.defaultCardBackVariant,
 	): Texture {

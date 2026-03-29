@@ -223,23 +223,21 @@ export class GameLoggerService {
 		);
 	}
 
-	socketConnected(socketId: string, playerId: string, playerName: string) {
+	socketConnected(socketId: string, playerId: string) {
 		this.event("socket_connected", "Socket connected", {
 			socketId,
 			playerId,
-			playerName,
 		});
 	}
 
 	socketDisconnected(
 		socketId: string,
 		playerId: string,
-		playerName: string,
 	) {
 		this.event(
 			"socket_disconnected",
 			"Socket disconnected",
-			{ socketId, playerId, playerName },
+			{ socketId, playerId },
 		);
 	}
 }

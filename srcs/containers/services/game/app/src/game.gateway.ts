@@ -40,10 +40,9 @@ export class GameGateway
 			// 	throw new Error("Connection rejected: Missing or invalid playerName.");
 			// }
 
-			this.logger.socketConnected(socket.id, playerId, "TODO: Add the player name");
+			this.logger.socketConnected(socket.id, playerId);
 
 			socket.data.playerId = playerId; // Saving access for disconnection
-			// socket.data.playerName = playerName; // Saving access for disconnection
 
 			this.gameService.join(playerId, socket);
 		} catch (error) {
@@ -55,7 +54,7 @@ export class GameGateway
 	handleDisconnect(socket: Socket): void {
 		this.gameService.leave(socket.data.playerId, socket);
 
-		this.logger.socketDisconnected(socket.id, socket.data.playerId, "TODO: Add the player name");
+		this.logger.socketDisconnected(socket.id, socket.data.playerId);
 	}
 
 	@SubscribeMessage("game:init:ready")
