@@ -1,11 +1,9 @@
 import os
-import secrets
 import requests
 from flask import request, session, g
 from flask_socketio import join_room, leave_room, emit
-from sqlalchemy.exc import IntegrityError
 
-from app.core.extensions import socketio, db
+from app.core.extensions import socketio
 from app.core.state import lobbies, socketid_lobby, max_players
 from app.lobbies.lobby_generator import create_lobby_or_error
 from app.lobbies.services import emit_lobby_state, remove_lobby
@@ -28,7 +26,7 @@ Verify if user can be associated with the socket connection.
 """
 @socketio.on("connect")
 @check_token()
-def on_connect(*args, **kwargs):
+def on_connect():
 	payload = getattr(g, "token_payload", None)
 	user_id = payload.get("user_id") if isinstance(payload, dict) else session.get("user_id")
 	if not user_id:
@@ -44,15 +42,23 @@ def on_connect(*args, **kwargs):
 		join_room(user.username)
 		notify_friends_status(user.id, user.username, "online")
 
+	in_game_code = None
+	in_lobby_code = None
 	for code, lobby_data in lobbies.items():
-		if (
-			lobby_data.get("game_started")
-			and not lobby_data.get("game_ended")
-			and user_id in lobby_data.get("players", {})
-			and not lobby_data["players"][user_id].get("connected")
-		):
-			emit("ongoing_game", {"code": code}, to=request.sid)
+		if lobby_data.get("game_ended"):
+			continue
+		in_players = user_id in lobby_data.get("players", {})
+		is_master = lobby_data.get("supreme_master_user_id") == user_id
+		if lobby_data.get("game_started") and in_players:
+			in_game_code = code
 			break
+		if not lobby_data.get("game_started") and (in_players or is_master):
+			in_lobby_code = code
+
+	if in_game_code:
+		emit("ongoing_game", {"code": in_game_code}, to=request.sid)
+	elif in_lobby_code:
+		emit("in_pending_lobby", {"code": in_lobby_code}, to=request.sid)
 
 def broadcast_public_lobbies():
 	public = [
@@ -77,6 +83,27 @@ def get_public_lobbies():
 	broadcast_public_lobbies()
 
 
+@socketio.on("game_ended_notify")
+def on_game_ended_notify():
+	user_id = session.get("user_id")
+	if not user_id:
+		return
+	for code in list(lobbies.keys()):
+		lobby_data = lobbies.get(code)
+		if not lobby_data:
+			continue
+		if (
+			lobby_data.get("game_started")
+			and not lobby_data.get("game_ended")
+			and user_id in lobby_data.get("players", {})
+		):
+			lobby_data["game_ended"] = True
+			notify_players_ingame_status(lobby_data, False)
+			socketio.emit("game_ended", {"code": code}, room=code)
+			remove_lobby(code)
+			break
+
+
 '''
 create_lobby
 le serveur genere toujours un code de room (pas de code fourni par le client)
@@ -90,14 +117,14 @@ def create_lobby(data):
 		return {"ok": False, "message": "Room code cannot be chosen", "status": 400}
 
 	user_id = session.get("user_id")
-	for lobby_data in lobbies.values():
-		if lobby_data.get("game_started") or lobby_data.get("game_ended"):
+	for code, lobby_data in lobbies.items():
+		if lobby_data.get("game_ended"):
 			continue
 		if (
 			lobby_data.get("supreme_master_user_id") == user_id
 			or user_id in lobby_data.get("players", {})
 		):
-			return {"ok": False, "message": "You already are in an active lobby", "status": 400}
+			return {"ok": False, "message": "You already are in an active lobby", "status": 400, "code": code}
 	room_name, error = create_lobby_or_error(user_id)
 	if error:
 		message, status = error
@@ -111,7 +138,15 @@ def join_lobby_request(data):
 		return {"ok": False, "message": "Missing room code", "status": 400}
 	lobby_data = lobbies.get(code)
 	if not lobby_data:
-		return {"ok": False, "message": "Room doesn't exist", "status": 404} #404?
+		return {"ok": False, "message": "Room doesn't exist", "status": 404}
+	user_id = session.get("user_id")
+	for existing_lobby in lobbies.values():
+		if (
+			existing_lobby.get("game_started")
+			and not existing_lobby.get("game_ended")
+			and user_id in existing_lobby.get("players", {})
+		):
+			return {"ok": False, "message": "You are already in an active game", "status": 400}
 	return {"ok": True, "code": code}
 
 
@@ -380,6 +415,16 @@ def join_lobby_socket(data):
 		player["connected"] = True
 		socketid_lobby[request.sid] = code
 
+	if not lobby_data["game_started"]:
+		for _, existing_lobby in lobbies.items():
+			if (
+				existing_lobby.get("game_started")
+				and not existing_lobby.get("game_ended")
+				and user_id in existing_lobby.get("players", {})
+			):
+				emit("error", {"message": "You are already in an active game"})
+				return
+
 	if lobby_data["game_started"]:
 		if user_id in lobby_data["players"]:
 			# Reconnexion autorisee
@@ -423,6 +468,11 @@ def join_lobby_socket(data):
 		lobby_data["supreme_master_user_id"] = user_id
 	if lobby_data["supreme_master_user_id"] == user_id:
 		lobby_data["supreme_master_sid"] = request.sid
+
+	user_id_db = session.get("db_user_id")
+	username = session.get("username")
+	if user_id_db and username:
+		notify_friends_status(user_id_db, username, "online")
 
 	emit_lobby_state(code)
 
@@ -503,6 +553,11 @@ def leave_lobby():
 
 	leave_room(code)
 	del data["players"][user_id]
+
+	user_id_db = session.get("db_user_id")
+	username = session.get("username")
+	if user_id_db and username:
+		notify_friends_status(user_id_db, username, "online")
 
 	if data["supreme_master_user_id"] == user_id:
 		data["supreme_master_user_id"] = next(iter(data["players"]), None)

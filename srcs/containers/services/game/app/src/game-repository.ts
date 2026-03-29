@@ -69,8 +69,14 @@ export class GameRepositoryService {
 	 */
 	deleteGame(game: Game): void {
 		this.games = this.games.filter((existingGame) => existingGame !== game);
-		// TODO: Add route to delete in lobby http://lobby:5002/lobby/delete
+		const lobbyUrl = 'http://lobby:5002/game/delete';
+		fetch(lobbyUrl, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ roomName: game.roomName }),
+		}).catch((err) => console.error(`[game-repository] lobby /game/delete failed: ${err}`));
 	}
+
 
 	// ==============================
 	// ======= JOIN AND LEAVE =======

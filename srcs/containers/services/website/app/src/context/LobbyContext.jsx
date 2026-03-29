@@ -69,6 +69,11 @@ export function LobbyProvider({ children }) {
 			navigate("/game");
 		});
 
+		socketRef.current.on("in_pending_lobby", (data) => {
+			socketRef.current.emit("join_lobby_socket", { code: data.code });
+			navigate(`/lobby/${data.code}`);
+		});
+
 		socketRef.current.on("room_full", () => {
 			notify("Game is full", "error");
 		});
@@ -126,7 +131,13 @@ export function LobbyProvider({ children }) {
 
 		socketRef.current.on("disconnect", () => setConnected(false));
 
+		const handleGameEnded = () => {
+			socketRef.current?.emit("game_ended_notify");
+		};
+		window.addEventListener("game:ended", handleGameEnded);
+
 		return () => {
+			window.removeEventListener("game:ended", handleGameEnded);
 			if (socketRef.current) {
 				socketRef.current.disconnect();
 				socketRef.current = null;
@@ -137,6 +148,11 @@ export function LobbyProvider({ children }) {
 	function createLobby() {
 		socketRef.current.emit("create_lobby", {}, (response) => {
 			if (response && response.ok) {
+				socketRef.current.emit("join_lobby_socket", { code: response.code });
+				navigate(`/lobby/${response.code}`);
+				return;
+			}
+			if (response?.code) {
 				socketRef.current.emit("join_lobby_socket", { code: response.code });
 				navigate(`/lobby/${response.code}`);
 				return;
