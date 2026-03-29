@@ -185,3 +185,32 @@ ft_transcendence/
 | Proxy           | Nginx                                  |
 | Observability   | Elasticsearch 8.12, Kibana 8.12, Filebeat 8.12 |
 | Containerization| Docker, Docker Compose                 |
+
+---
+
+## 42 Subject Module Evaluation Status
+
+Here is the tracking checklist for the modules chosen from the subject:
+
+### Major Modules
+- [x] **Use a framework for both the frontend and backend** (React + Vite / Flask + NestJS)
+- [x] **Implement real-time features using WebSockets or similar technology**
+- [ ] **Allow users to interact with other users** *(Profile OK, Friends OK, Chat missing)*
+- [ ] **A public API to interact with the database** *(Requires API Key; PUT/DELETE methods missing)*
+- [x] **Standard user management and authentication**
+- [x] **Introduce an AI Opponent for games**
+- [x] **Implement a complete web-based game where users can play against each other**
+- [x] **Remote players — Enable two players on separate computers to play the same game in real-time**
+- [x] **Multiplayer game (more than two players)**
+- [ ] **Infrastructure for log management using ELK** *(Currently uses Filebeat instead of Logstash)*
+- [x] **Backend as microservices**
+
+### Minor Modules
+- [x] **Use a frontend framework**
+- [x] **Use a backend framework**
+- [x] **Use an ORM for the database**
+- [x] **Custom-made design system with reusable components**
+- [ ] **Implement advanced search functionality with filters, sorting, and pagination** *(Missing user-facing search)*
+- [ ] **Support for additional browsers** *(Needs explicit documentation/browser compatibility table)*
+- [ ] **Game statistics and match history** *(Stats OK, but Individual Match History, Leaderboard, and Achievements missing)*
+- [x] **Custom Minor Module: AWS Image Storage** *(AWS S3 integration is used for user avatars and gallery)*
