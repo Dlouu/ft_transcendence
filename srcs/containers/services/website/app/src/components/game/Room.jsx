@@ -1,8 +1,8 @@
 import { Button } from "../../ui";
-import SettingsSelector from "./SettingsSelector";
-import PlayerList from "./PlayerList";
 import { useContext } from "react";
 import { LobbyContext } from "../../context/LobbyContext";
+import SettingsSelector from "./SettingsSelector";
+import PlayerList from "./PlayerList";
 
 function Room() {
 	const { players, bots, code, isHost, addBot, removeBot, masterStart, playerReady, leaveLobby } = useContext(LobbyContext);
@@ -11,7 +11,6 @@ function Room() {
 	const canStart = totalPlayers >= 2;
 	const canRemoveBot = bots.length > 0;
 	const canAddBot = totalPlayers < MAX_PLAYERS;
-
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -40,7 +39,7 @@ function Room() {
 					</div>
 
 					<SettingsSelector />
-				
+
 					<Button disabled={!canStart} onClick={() => {
 						playerReady();
 						masterStart();
@@ -56,9 +55,9 @@ function Room() {
 				</Button>
 			)}
 
-				<Button variant="secondary" onClick={leaveLobby}>
-					BACK
-				</Button>
+			<Button variant="secondary" onClick={leaveLobby}>
+				BACK
+			</Button>
 		</div>
 	);
 }

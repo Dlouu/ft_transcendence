@@ -38,7 +38,6 @@ function Me() {
 					<div className="hidden sm:block">
 						<GameStats stats={profile.stats}/>
 					</div>
-
 				</div>
 			</Card>
 		</Page>

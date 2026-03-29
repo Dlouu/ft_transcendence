@@ -27,6 +27,7 @@ export function useApi() {
 				formData.append("image", body);
 				options.body = formData;
 			} 
+
 			// Normal JSON body
 			else if (body !== null && typeof body !== "undefined") {
 				options.headers["Content-Type"] = "application/json";
@@ -34,7 +35,6 @@ export function useApi() {
 			}
 
 			const response = await fetch(url, options);
-
 			const contentType = response.headers.get("content-type") || "";
 			const data = contentType.includes("application/json")
 				? await response.json()
@@ -49,8 +49,8 @@ export function useApi() {
 			}
 
 			if (successMessage) notify(successMessage, "success");
+				return data;
 
-			return data;
 		} catch (error) {
 			notify(error.message || "Error", "error");
 			throw error;
@@ -62,7 +62,5 @@ export function useApi() {
 	const get = (url, successMessage) => request(url, "GET", null, successMessage);
 	const post = (url, body, successMessage) => request(url, "POST", body, successMessage);
 	const patch = (url, body, successMessage) => request(url, "PATCH", body, successMessage);
-	
-
 	return { request, get, post, patch, loading };
 }

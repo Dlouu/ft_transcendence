@@ -39,7 +39,7 @@ export function LobbyProvider({ children }) {
 
 		socketRef.current.on("lobby_state", (data) => {
 
-			console.log("lobby_state reçu:", data);
+			// console.log("lobby_state reçu:", data);
 			const playersList = data.humans_id.map(id => ({
 				id,
 				username: data.humans_usernames?.[id] ?? id,
@@ -57,6 +57,7 @@ export function LobbyProvider({ children }) {
 		socketRef.current.on("all_lobbies", (data) => {
 			setAllLobbies(data);
 		});
+
 		socketRef.current.on("available_lobbies", (data) => {
 			setAvailableLobbies(data);
 		});
@@ -88,7 +89,7 @@ export function LobbyProvider({ children }) {
 		socketRef.current.on("friend_request_sent", (data) => {
 			if (data.type === "received") {
 				setPendingRequests(prev => [...prev, { username: data.username, user_id: data.user_id }]);
-				console.log("friend_request_sent reçu:", data);
+				// console.log("friend_request_sent reçu:", data);
 				notify(`${data.username} sent you a friend request`, "info");
 			} else if (data.status === "pending") {
 				setFriends(prev => {

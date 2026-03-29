@@ -4,8 +4,8 @@ import { useUser } from "../hooks/useUser";
 import { Link, useNavigate } from "react-router-dom";
 import { getDefaultGallery } from "../services/gallery/galleryService";
 import { AuthContext } from "../context/AuthContext";
-import UserGallery from "../components/profile/UserGallery";
 import { useNotifications } from "../hooks/useNotifications";
+import UserGallery from "../components/profile/UserGallery";
 
 function Gallery() {
 	const { user } = useContext(AuthContext);
@@ -30,7 +30,6 @@ function Gallery() {
 		navigate("/gallery/all");
 	};
 
-
 	const handleFileChange = async (event) => {
 		const file = event.target.files?.[0];
 		if (!file) return;
@@ -42,8 +41,9 @@ function Gallery() {
 		try {
 			await uploadCardBack(file);
 			refreshGallery();
+
 		} catch (err) {
-			console.error("Import failed", err);
+			// console.error("Import failed", err);
 		}
 	};
 
@@ -55,7 +55,7 @@ function Gallery() {
 				</h2>
 
 				<div className="grid grid-cols-3 sm:grid-cols-6 gap-4 mb4">
-					{images.map((img) => (
+					{ images.map((img) => (
 						<Link key={img.id} to={`/gallery/${img.id}`}>
 							<img
 								src={img.src}

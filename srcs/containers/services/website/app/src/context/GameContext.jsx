@@ -92,6 +92,7 @@ export function GameProvider({ children }) {
 				} else if (statsRes.status !== 404) {
 					throw new Error("Failed to fetch user game stats");
 				}
+
 			} catch {
 				statsData = null;
 			}
@@ -100,6 +101,7 @@ export function GameProvider({ children }) {
 			setProfile(normalizedProfile);
 			setProfileNotFound(false);
 			return normalizedProfile;
+
 		} catch {
 			setProfile(EMPTY_PROFILE);
 			setProfileNotFound(false);

@@ -13,7 +13,6 @@ function Navbar() {
 	useEffect(() => {
 		setOpen(false);
 	}, [location.pathname]);
-	//ferme le menu quand on change de page
 
 	const handleLogout = () => {
 		logout();
@@ -31,7 +30,7 @@ function Navbar() {
 			location.pathname === path
 				? "bg-gray-600 text-purple-400"
 				: "hover:bg-gray-700"
-		}`;
+	}`;
 
 	return (
 		<nav
@@ -97,7 +96,7 @@ function Navbar() {
 					</div>
 
 					<div className="flex-1 flex flex-col items-center justify-center gap-8">
-						{navLinks.map((link) => (
+						{ navLinks.map((link) => (
 							<Link
 								key={link.to}
 								className="py-2 px-5 rounded bg-gray-700"
@@ -113,7 +112,7 @@ function Navbar() {
 							<span className="font-icon text-purple-300">󰀎</span><span className="px-2">FRIENDS</span>
 						</Link>
 
-						{showFriends && (
+						{ showFriends && (
 							<Friendlist onClose={() => setShowFriends(false)} />
 						)}
 

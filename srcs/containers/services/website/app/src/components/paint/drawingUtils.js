@@ -46,19 +46,24 @@ export function drawLine(ctx, x0, y0, x1, y1, brushSize, color, tool) {
 }
 
 function rgbToHex(r, g, b) {
-	return '#' + [r, g, b]
-		.map(x => {
-			const hex = x.toString(16);
-			return hex.length === 1 ? '0' + hex : hex;
-		})
-		.join('')
-		.toUpperCase();
+	function toHex(x) {
+		let hex = x.toString(16);
+		if (hex.length === 1) {
+			hex = '0' + hex;
+		}
+		return hex;
+	}
+
+	const red = toHex(r);
+	const green = toHex(g);
+	const blue = toHex(b);
+
+	return ('#' + red + green + blue).toUpperCase();
 }
 
 export function selectColor(ctx, x, y, setColor) {
 	const imageData = ctx.getImageData(x, y, 1, 1);
 	const data = imageData.data;
-	
 	const hex = rgbToHex(data[0], data[1], data[2]);
 	setColor(hex);
 }
@@ -98,7 +103,6 @@ export function floodFill(ctx, x, y, fillColor) {
 	while (stack.length) {
 		const [cx, cy] = stack.pop();
 		const i = index(cx, cy);
-
 		const currentColor = data.slice(i, i + 4);
 
 		if (

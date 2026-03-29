@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import Button from "./Button";
-import Rules from "../components/game/Rules";
 import { useState } from "react";
+import Rules from "../components/game/Rules";
+import Button from "./Button";
 
 function Footer() {
 	const [showRules, setShowRules] = useState(false);

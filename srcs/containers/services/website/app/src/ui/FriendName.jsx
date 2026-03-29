@@ -17,7 +17,7 @@ function FriendName({ id, username, online, inGame, onDelete, onClose }) {
 				<span className="font-pixel px-2 text-purple-400 font-bold text-xl">{username}</span>
 			</Link>
 		</div>
-		<Button variant="iconFriend" onClick={onDelete}>✖</Button>
+			<Button variant="iconFriend" onClick={onDelete}>✖</Button>
 		</div>
 	);
 }
