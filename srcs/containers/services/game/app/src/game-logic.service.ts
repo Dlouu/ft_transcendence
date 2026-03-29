@@ -492,6 +492,7 @@ export class GameLogicService {
 
 		const gameEndDto = toStatsPayloadDto(game);
 
+		// TODO: Ask Theosaurus to tell me again how to add the env truc...
 		await fetch("http://api:5050/user/game/stats", {
 			method: "POST",
 			headers: {
