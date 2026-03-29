@@ -69,6 +69,11 @@ export function LobbyProvider({ children }) {
 			navigate("/game");
 		});
 
+		socketRef.current.on("ongoing_game", (data) => {
+			socketRef.current.emit("join_lobby_socket", { code: data.code });
+			navigate("/game");
+		});
+
 		socketRef.current.on("in_pending_lobby", (data) => {
 			socketRef.current.emit("join_lobby_socket", { code: data.code });
 			navigate(`/lobby/${data.code}`);
@@ -152,7 +157,12 @@ export function LobbyProvider({ children }) {
 				navigate(`/lobby/${response.code}`);
 				return;
 			}
-			if (response?.code) {
+			if (response?.code && response.game_started) {
+				socketRef.current.emit("join_lobby_socket", { code: response.code });
+				navigate("/game");
+				return;
+			}
+			if (response?.code && !response.game_started) {
 				socketRef.current.emit("join_lobby_socket", { code: response.code });
 				navigate(`/lobby/${response.code}`);
 				return;
@@ -176,7 +186,7 @@ export function LobbyProvider({ children }) {
 		socketRef.current.emit("join_lobby_request", { code }, (response) => {
 			if (response && response.ok) {
 				socketRef.current.emit("join_lobby_socket", { code: response.code });
-				navigate(`/lobby/${response.code}`);
+				navigate(response.game_started ? "/game" : `/lobby/${response.code}`);
 				return;
 			}
 			notify(response?.message || "Unable to join this lobby.", "error");

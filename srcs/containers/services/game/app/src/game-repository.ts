@@ -67,16 +67,17 @@ export class GameRepositoryService {
 	 * @param game - The game instance to remove.
 	 * @returns void
 	 */
-	deleteGame(game: Game): void {
-		this.games = this.games.filter((existingGame) => existingGame !== game);
-		const lobbyUrl = 'http://lobby:5002/game/delete';
-		fetch(lobbyUrl, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ roomName: game.roomName }),
-		}).catch((err) => console.error(`[game-repository] lobby /game/delete failed: ${err}`));
-	}
 
+	async deleteGame(game: Game): Promise<void> {
+		this.games = this.games.filter((existingGame) => existingGame !== game);
+		await fetch("http://lobby:5002/game/delete", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ roomName: game.roomName }),
+		}).catch((err) => {
+			this.logger.error(`Failed to delete lobby: ${err}`);
+		});
+	}
 
 	// ==============================
 	// ======= JOIN AND LEAVE =======

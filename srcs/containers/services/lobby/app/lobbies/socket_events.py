@@ -4,7 +4,7 @@ from flask import request, session, g
 from flask_socketio import join_room, leave_room, emit
 
 from app.core.extensions import socketio
-from app.core.state import lobbies, socketid_lobby, max_players
+from app.core.state import lobbies, socketid_lobby, max_players, players_in_game, players_left_game
 from app.lobbies.lobby_generator import create_lobby_or_error
 from app.lobbies.services import emit_lobby_state, remove_lobby
 from app.models.user import User
@@ -100,6 +100,10 @@ def on_game_ended_notify():
 			lobby_data["game_ended"] = True
 			notify_players_ingame_status(lobby_data, False)
 			socketio.emit("game_ended", {"code": code}, room=code)
+			for uid in lobby_data.get("players", {}):
+				players_in_game.discard(uid)
+			for uid in [u for u, c in players_left_game.items() if c == code]:
+				players_left_game.pop(uid, None)
 			remove_lobby(code)
 			break
 
@@ -117,8 +121,27 @@ def create_lobby(data):
 		return {"ok": False, "message": "Room code cannot be chosen", "status": 400}
 
 	user_id = session.get("user_id")
+
+	# Check if user is in an active game (currently playing or left mid-game)
+	active_game_code = next(
+		(c for c, d in lobbies.items()
+		 if d.get("game_started") and not d.get("game_ended")
+		 and user_id in d.get("players", {})),
+		None
+	)
+	if active_game_code is None and user_id in players_left_game:
+		left_lobby = lobbies.get(players_left_game[user_id])
+		if left_lobby and not left_lobby.get("game_ended"):
+			active_game_code = players_left_game[user_id]
+	if active_game_code:
+		return {"ok": False, "message": "You are already in an active game", "status": 400, "code": active_game_code, "game_started": True}
+
+	# Cleanup stale state
+	players_in_game.discard(user_id)
+	players_left_game.pop(user_id, None)
+
 	for code, lobby_data in lobbies.items():
-		if lobby_data.get("game_ended"):
+		if lobby_data.get("game_ended") or lobby_data.get("game_started"):
 			continue
 		if (
 			lobby_data.get("supreme_master_user_id") == user_id
@@ -146,6 +169,8 @@ def join_lobby_request(data):
 			and not existing_lobby.get("game_ended")
 			and user_id in existing_lobby.get("players", {})
 		):
+			if lobby_data.get("game_started") and user_id in lobby_data.get("players", {}):
+				return {"ok": True, "code": code, "game_started": True}
 			return {"ok": False, "message": "You are already in an active game", "status": 400}
 	return {"ok": True, "code": code}
 
@@ -276,6 +301,8 @@ def master_start():
 			emit("error", {"message": error_message})
 			return
 		data["game_started"] = True
+		for uid in data["players"]:
+			players_in_game.add(uid)
 		socketio.emit("game_start", {"code": code}, room=code)
 		notify_players_ingame_status(data, True)
 	else:
@@ -515,6 +542,11 @@ def on_disconnect():
 
 	if data["game_started"]:
 		data["players"][user_id]["connected"] = False
+		any_human_connected = any(p.get("connected") for p in data["players"].values())
+		if not any_human_connected:
+			notify_players_ingame_status(data, False)
+			remove_lobby(code)
+			return
 	else:
 		del data["players"][user_id]
 		if data["supreme_master_user_id"] == user_id:
@@ -553,6 +585,9 @@ def leave_lobby():
 
 	leave_room(code)
 	del data["players"][user_id]
+
+	if data.get("game_started") and not data.get("game_ended"):
+		players_left_game[user_id] = code
 
 	user_id_db = session.get("db_user_id")
 	username = session.get("username")
@@ -646,5 +681,5 @@ def send_datas_on_game_joined(data):
 		response = requests.post(GAME_JOIN_URL, json=payload, timeout=5)
 		response.raise_for_status()
 	except requests.RequestException as exc:
-		return False, f"Unable to join game: {exc}"
+		return False, f"Unable to join gameee: {exc}"
 	return True, payload
