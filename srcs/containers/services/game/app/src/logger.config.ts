@@ -1,6 +1,6 @@
 import * as winston from 'winston';
 
-// Filebeat sends logs to an ECS-mapped index shared with other services.
+// Logstash sends logs to an ECS-mapped index shared with other services.
 // ES already maps `event`, `service`, and `log` as nested objects (ECS standard).
 // Sending them as plain strings causes a mapping conflict and rejects the document.
 const ecsCompat = winston.format((info) => {

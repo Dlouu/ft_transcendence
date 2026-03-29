@@ -31,7 +31,7 @@ function UserProfile() {
 	return (
 		<Page center>
 			<Card big="true">
-				<div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-10">
+				<div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-10">
 
 					<div>
 						<p className="font-pixelm mb-10">{ profile?.name }</p>
