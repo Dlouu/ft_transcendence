@@ -11,6 +11,7 @@ Namespace.db_health_check = db_health_check
 
 from app.resources.authentification import ns as authentification_ns
 from app.resources.user_card import ns as user_card_ns
+from app.resources.friends import ns as friends_ns
 from app.resources.user import ns as user_ns
 from app.resources.game import ns as game_ns
 
@@ -28,6 +29,7 @@ api = Api(title="TranscendenceAPI",
 	})
 
 api.add_namespace(authentification_ns, path="/auth")
-api.add_namespace(user_ns, path="/user")
-api.add_namespace(user_card_ns, path="/user")
+api.add_namespace(friends_ns, path="/user/friends")
 api.add_namespace(game_ns, path="/user/game")
+api.add_namespace(user_card_ns, path="/user")
+api.add_namespace(user_ns, path="/user")
