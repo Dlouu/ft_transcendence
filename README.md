@@ -11,7 +11,6 @@ A full-stack, real-time multiplayer **UNO** web application built as part of the
 - **Public lobbies** anyone can join, or **private lobbies** accessible by invite code
 
 ### 👤 Frontend Pages & Features
-- **Home** — landing page
 - **Login / Register** — account creation and sign-in
 - **Profile** — view your own stats and info
 - **User Profile** — view another player's public profile
@@ -23,10 +22,11 @@ A full-stack, real-time multiplayer **UNO** web application built as part of the
 - **Privacy Policy & Terms** — legal pages
 
 ### 🔒 Backend & Infrastructure
-- **User authentication** with JWT-based sessions and bcrypt password hashing
-- **Rate limiting** on the API layer
-- **Centralized logging** with the ELK stack (Elasticsearch, Kibana, Filebeat)
-- **Redis** for caching tokens and session data
+- **Gateway REST API** (`api`) — central hub that routes and proxies requests between all internal services; handles user profiles, UNO card collections, and exposes a unified interface to the frontend
+- **Authentication service** (`auth`) — standalone JWT issuer with bcrypt password hashing, token refresh scheduling via APScheduler, and Redis-backed token caching
+- **Game engine** (`game`, NestJS) — full server-side UNO logic including deck management, turn handling, card rules, scoring, and an AI bot opponent
+- **Lobby service** (`lobby`) — manages game rooms (public & private by code), friend list logic, and real-time presence via Flask-SocketIO
+- **Centralized logging** — Filebeat ships logs from all services into Elasticsearch, visualized through Kibana
 
 ---
 
@@ -38,10 +38,10 @@ The project is composed of the following services, all orchestrated by Docker Co
 |-------------------|-----------------------|---------------------------------------------------------|
 | `nginx`           | Nginx                 | Reverse proxy and TLS termination                       |
 | `website`         | Node.js 20 / Vite     | Frontend SPA served on port `5173`                      |
-| `api`             | Python 3.13 / Flask   | Main REST API, game data, user profiles, rate limiting  |
-| `auth`            | Python 3.13 / Flask   | Authentication service (JWT, bcrypt, token scheduling)  |
-| `game`            | Node.js 20            | Real-time game engine over WebSockets                   |
-| `lobby`           | Python 3.13 / Flask-SocketIO | Lobby management (public & private by code)      |
+| `api`             | Python 3.13 / Flask   | Gateway REST API — proxies all inter-service communication, user profiles, card data |
+| `auth`            | Python 3.13 / Flask   | Authentication service (JWT, bcrypt, APScheduler, Redis token cache) |
+| `game`            | Node.js 20 / NestJS   | Server-side UNO engine: deck, rules, turn logic, scoring, AI bot |
+| `lobby`           | Python 3.13 / Flask-SocketIO | Game rooms (public & private by code), friends list, real-time presence |
 | `auth_db`         | MariaDB               | Database for authentication data                        |
 | `user_db`         | MariaDB               | Database for user/profile data                          |
 | `redis`           | Redis 8.4             | Token cache and session store                           |
@@ -110,7 +110,6 @@ This is equivalent to `make build && make run` and will:
 3. Start all containers in detached mode.
 
 The application will be reachable at:
-- **HTTP** → `http://localhost:8080`
 - **HTTPS** → `https://localhost:4443`
 - **Kibana** → `http://localhost:5601`
 
@@ -160,7 +159,7 @@ ft_transcendence/
         │   ├── api/                # Main REST API (Flask)
         │   ├── auth/               # Auth service (Flask + JWT)
         │   ├── game/               # Game engine (Node.js + WebSockets)
-        │   └── lobby/              # Matchmaking (Flask-SocketIO)
+        │   └── lobby/              # Game rooms & friends (Flask-SocketIO)
         ├── databases/
         │   ├── auth_db/            # MariaDB for auth
         │   └── user_db/            # MariaDB for users
@@ -176,10 +175,10 @@ ft_transcendence/
 
 | Layer           | Technology                             |
 |-----------------|----------------------------------------|
-| Frontend        | Vanilla TypeScript / Node.js 20        |
-| API             | Python 3.13, Flask, Flask-RESTX, Gunicorn, SQLAlchemy |
+| Frontend        | React 19, Vite, TailwindCSS 4, PixiJS, Socket.IO client |
+| API (Gateway)   | Python 3.13, Flask, Flask-RESTX, Gunicorn, SQLAlchemy |
 | Auth            | Python 3.13, Flask, PyJWT, bcrypt, APScheduler |
-| Game            | Node.js 20, WebSockets                 |
+| Game            | Node.js 20, NestJS, WebSockets, TypeScript |
 | Lobby           | Python 3.13, Flask-SocketIO            |
 | Databases       | MariaDB (×2)                          |
 | Cache           | Redis 8.4                             |
