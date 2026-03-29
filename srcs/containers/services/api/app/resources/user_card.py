@@ -1,6 +1,7 @@
 from flask_restx import Namespace, Resource, fields, reqparse
 from werkzeug.datastructures import FileStorage
 from marshmallow import ValidationError
+from sqlalchemy import desc
 from flask import request, g
 from uuid import uuid4
 from PIL import Image, UnidentifiedImageError
@@ -418,6 +419,8 @@ class GetCardImage(Resource):
 			query = CardGallery.query.filter_by(user_id=user_id)
 		else:
 			query = CardGallery.query
+
+		query = query.order_by(desc(CardGallery.updated_at))
 
 		pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
