@@ -10,7 +10,7 @@ import { GameWinDto, GameWinPlayerDto } from "./dto/game-win.dto";
 import { toDrewCardDto } from "./dto/drawn-card.dto";
 import { GameService } from "./game.service";
 import { GameLoggerService } from "./logger.service";
-import { toStatsPayloadDto } from './dto/stats-payload.dto';
+import { toStatsPayloadDto } from "./dto/stats-payload.dto";
 import { GAME_CONFIG } from "./game.config";
 
 // Handles the rules of the game (turns, UNO shouts, card validation).
@@ -100,8 +100,6 @@ export class GameLogicService {
 			player.biggest_hand = 0;
 			player.updateBiggestHand(player._hand.length);
 		}
-
-		
 
 		game.state = GameState.PLAYING;
 		return true;
@@ -218,7 +216,9 @@ export class GameLogicService {
 	}
 
 	private randomCardFamily(): CardFamily {
-		const playableFamilies: CardFamily[] = [...GAME_CONFIG.deck.playableFamilies];
+		const playableFamilies: CardFamily[] = [
+			...GAME_CONFIG.deck.playableFamilies,
+		];
 
 		const randomIndex = Math.floor(Math.random() * playableFamilies.length);
 		return playableFamilies[randomIndex];
@@ -374,9 +374,10 @@ export class GameLogicService {
 					"game:draw:self",
 					toDrewCardDto(player._name, card),
 				);
-				player._socket.to(game.roomName).emit("game:draw:others", toDrewCardDto(player._name, undefined));
-			}
-			else
+				player._socket
+					.to(game.roomName)
+					.emit("game:draw:others", toDrewCardDto(player._name, undefined));
+			} else
 				io?.to(game.roomName).emit(
 					"game:draw:others",
 					toDrewCardDto(player._name, undefined),
@@ -403,13 +404,17 @@ export class GameLogicService {
 			player._socket.emit("game:uno:pending:self");
 
 		setTimeout(() => {
-			 const pendingIndex = game.pendingUnoPlayerIndex;
+			const pendingIndex = game.pendingUnoPlayerIndex;
 			if (pendingIndex === null) {
 				return;
 			}
 
 			const pendingPlayer = game.players[pendingIndex];
-			if (!pendingPlayer || pendingPlayer._id !== player._id || pendingPlayer._hand.length !== 1) {
+			if (
+				!pendingPlayer ||
+				pendingPlayer._id !== player._id ||
+				pendingPlayer._hand.length !== 1
+			) {
 				return;
 			}
 
@@ -427,7 +432,11 @@ export class GameLogicService {
 			}
 
 			const pendingPlayer = game.players[pendingIndex];
-			if (!pendingPlayer || pendingPlayer._id !== player._id || pendingPlayer._hand.length !== 1) {
+			if (
+				!pendingPlayer ||
+				pendingPlayer._id !== player._id ||
+				pendingPlayer._hand.length !== 1
+			) {
 				this.unoPendingTimeouts.delete(game.roomName);
 				return;
 			}
@@ -442,7 +451,7 @@ export class GameLogicService {
 		this.unoPendingTimeouts.set(game.roomName, timeout);
 	}
 
-	onVictory(game: Game, winner: UnoPlayer): void {
+	async onVictory(game: Game, winner: UnoPlayer): Promise<void> {
 		if (!game || !winner || game.state === GameState.GAME_OVER) {
 			return;
 		}
@@ -463,9 +472,7 @@ export class GameLogicService {
 		this.gameService.clearTurnTimeout(game.roomName);
 
 		const duration = Date.now() - game.createdAt;
-		const durationDdHhMmSs = this.formatDurationToDdHhMmSs(
-			duration,
-		);
+		const durationDdHhMmSs = this.formatDurationToDdHhMmSs(duration);
 		const dto: GameWinDto = {
 			winner: winner._name,
 			players: game.players.map(
@@ -485,12 +492,33 @@ export class GameLogicService {
 
 		const gameEndDto = toStatsPayloadDto(game);
 
-		console.log("\n\n\nStats end game:", gameEndDto.toJson());
-
-		// TODO: Send stats
+		await fetch("http://api:5050/user/game/stats", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(gameEndDto),
+		})
+		.then((response) => {
+			if (response.status === 400) {
+				return response.json().then((error) => {
+					this.logger.error(`Stats API returned 400: ${JSON.stringify(error)}`);
+					return error;
+				});
+			}
+			return response;
+		})
+		.catch((err) => {
+			this.logger.error(`Failed to send stats: ${err}`);
+		});
 
 		this.getIoServer()?.to(game.roomName).emit("game:win", dto);
-		this.logger.gameEnd(game.roomName, winner._name, duration, Math.floor(game.turnCount / game.players.length));
+		this.logger.gameEnd(
+			game.roomName,
+			winner._name,
+			duration,
+			Math.floor(game.turnCount / game.players.length),
+		);
 
 		this.gameRepository.deleteGame(game);
 		this.logger.gameDelete(game.roomName, "Game finished.");

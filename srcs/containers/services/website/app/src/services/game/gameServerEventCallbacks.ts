@@ -63,8 +63,8 @@ export function registerServerEventCallbacks({
 		}
 	});
 
-	socket.once("game:join", (_payload) => {
-		console.log(`You have joined:`, _payload);
+	socket.once("game:join", () => {
+		console.log(`You have joined.`);
 	});
 
 	socket.once("game:rejoin", async (_payload: RejoinGameDto) => {
@@ -90,12 +90,12 @@ export function registerServerEventCallbacks({
 		socket.emit("game:init:ready");
 	});
 
-	socket.once("game:start", async (_payload) => {
+	socket.once("game:start", async () => {
 		await ready;
 		if (hasGameStarted()) return;
 		await startGame();
 		applyPendingNextTurn();
-		console.log("The game started:", _payload);
+		console.log("The game started.");
 	});
 
 	socket.on("game:played:card:self", async (_payload: PlayedCardDto) => {
@@ -121,16 +121,16 @@ export function registerServerEventCallbacks({
 		console.log(`${_payload.name} drawn a card:`, _payload);
 	});
 
-	socket.on("game:turn:reverse", async (_payload) => {
+	socket.on("game:turn:reverse", async () => {
 		getTableManager()?.mirrorMiddleArrow();
-		console.log(`Turn order reversed:`, _payload);
+		console.log(`Turn order reversed.`);
 	});
 
-	socket.on("game:wild:choose-color", async (_payload) => {
+	socket.on("game:wild:choose-color", async () => {
 		getTableManager()?.showCardFamilySelector((cardFamily) => {
 			socket.emit("game:wild:color-picked", { cardFamily });
 		});
-		console.log(`Turn order reversed:`, _payload);
+		console.log(`Turn order reversed.`);
 	});
 
 	socket.on(
@@ -158,34 +158,34 @@ export function registerServerEventCallbacks({
 		console.log(`Next turn:`, _payload);
 	});
 
-	socket.on("game:deck:empty", async (_payload) => {
+	socket.on("game:deck:empty", async () => {
 		getTableManager()?.setDeckVisible(false);
 		console.log(`Deck empty:`);
 	});
 
-	socket.on("game:deck:shuffled", async (_payload) => {
+	socket.on("game:deck:shuffled", async () => {
 		getTableManager()?.setDeckVisible(true);
 		console.log(`Deck shuffled:`);
 	});
 
-	socket.on("game:uno:pending:self", async (_payload) => {
+	socket.on("game:uno:pending:self", async () => {
 		getTableManager()?.setUnoButtonText("UNO");
 		getTableManager()?.setUnoButtonVisible(true);
 		console.log(`Uno shout pending.`);
 	});
 
-	socket.on("game:uno:pending:others", async (_payload) => {
+	socket.on("game:uno:pending:others", async () => {
 		getTableManager()?.setUnoButtonText("UWU");
 		getTableManager()?.setUnoButtonVisible(true);
 		console.log(`Uno shout pending.`);
 	});
 
-	socket.on("game:uno:catched", async (_payload) => {
+	socket.on("game:uno:catched", async () => {
 		getTableManager()?.setUnoButtonVisible(false);
 		console.log(`Counter uno catched.`);
 	});
 
-	socket.on("game:uno:expired", async (_payload) => {
+	socket.on("game:uno:expired", async () => {
 		getTableManager()?.setUnoButtonVisible(false);
 		console.log(`Uno catching window expired.`);
 	});
@@ -204,8 +204,8 @@ export function registerServerEventCallbacks({
 		console.log(`Player ${_payload.playerIndex} updated:`, _payload);
 	});
 
-	socket.on("game:error", (payload) => {
-		console.error("GameService: Game error", payload);
+	socket.on("game:error", () => {
+		console.error("GameService: Game error");
 		socket.disconnect();
 		window.location.href = "/";
 	});

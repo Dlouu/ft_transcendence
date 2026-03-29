@@ -14,8 +14,8 @@ export const GAME_CONFIG = {
 	},
 	bot: {
 		turnDelayMs: {
-			min: 750,
-			max: 2750,
+			min: 100, // 750
+			max: 200, // 2750
 		},
 		selfUnoReactionDelayMs: {
 			min: 400,

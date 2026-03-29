@@ -155,7 +155,7 @@ def build_player_entry(player_id, users_by_user_id, default_card_back, profile_p
 def send_datas_on_game_created(data):
     player_ids = list((data.get("players") or {}).keys())
     users_by_user_id = get_users_by_player_ids(player_ids)
-    default_card_back = "uwu" if data.get("theme") else "basic"
+    default_card_back = "uwu"
     profile_picture = "default"
 
     payload = {
@@ -180,7 +180,7 @@ def send_datas_on_game_joined(data):
     if player_id is None:
         return False, "Missing player id"
 
-    default_card_back = "uwu" if data.get("theme") else "basic"
+    default_card_back = "uwu"
     users_by_user_id = get_users_by_player_ids([player_id])
     profile_picture = "default"
     payload = {
