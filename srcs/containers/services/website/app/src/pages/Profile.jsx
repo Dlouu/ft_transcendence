@@ -11,10 +11,11 @@ import GameStats from "../components/profile/GameStats";
 function Me() {
 	const { user, logout } = useContext(AuthContext);
 	const { profile, fetchPublicProfile } = useContext(GameContext);
+	const profileId = user?.id ?? user?.user_id;
 
 	useEffect(() => {
-		fetchPublicProfile(user?.id);
-	}, [user?.id, fetchPublicProfile]);
+		fetchPublicProfile(profileId);
+	}, [profileId, fetchPublicProfile]);
 
 	return (
 		<Page center>
