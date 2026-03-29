@@ -1,5 +1,5 @@
 import { Button } from "../../ui";
-import { useContext } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { LobbyContext } from "../../context/LobbyContext";
 import SettingsSelector from "./SettingsSelector";
 import PlayerList from "./PlayerList";
@@ -11,6 +11,26 @@ function Room() {
 	const canStart = totalPlayers >= 2;
 	const canRemoveBot = bots.length > 0;
 	const canAddBot = totalPlayers < MAX_PLAYERS;
+	const leaveTriggeredRef = useRef(false);
+
+	useEffect(() => {
+		const handleBrowserLeave = () => {
+			if (leaveTriggeredRef.current)
+				return;
+			leaveTriggeredRef.current = true;
+			leaveLobby(false);
+		};
+
+		window.addEventListener("beforeunload", handleBrowserLeave);
+		window.addEventListener("pagehide", handleBrowserLeave);
+		window.addEventListener("popstate", handleBrowserLeave);
+
+		return () => {
+			window.removeEventListener("beforeunload", handleBrowserLeave);
+			window.removeEventListener("pagehide", handleBrowserLeave);
+			window.removeEventListener("popstate", handleBrowserLeave);
+		};
+	}, [leaveLobby]);
 
 	return (
 		<div className="flex flex-col gap-4">

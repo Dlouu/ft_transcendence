@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import { useNotifications } from "../hooks/useNotifications";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 
 export const LobbyContext = createContext();
@@ -18,10 +18,28 @@ export function LobbyProvider({ children }) {
 	const [publicLobbies, setPublicLobbies] = useState([]);
 	const { notify } = useNotifications();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { user, loading } = useContext(AuthContext);
 	const socketRef = useRef(null);
 	const isHost = master === socketRef.current?.id;
 	const [connected, setConnected] = useState(false);
+	const prevPathRef = useRef(location.pathname);
+
+	useEffect(() => {
+		const previousPath = prevPathRef.current;
+		const currentPath = location.pathname;
+
+		if (
+			previousPath !== currentPath
+			&& previousPath.startsWith("/lobby/")
+			&& !currentPath.startsWith("/lobby/")
+			&& !currentPath.startsWith("/game")
+		) {
+			leaveLobby(false);
+		}
+
+		prevPathRef.current = currentPath;
+	}, [location.pathname]);
 
 	useEffect(() => {
 		if (loading || !user) {
@@ -146,13 +164,17 @@ export function LobbyProvider({ children }) {
 		});
 	}
 
-	function leaveLobby() {
-		socketRef.current.emit("leave_lobby");
+	function leaveLobby(shouldNavigate = true) {
+		if (socketRef.current) {
+			socketRef.current.emit("leave_lobby");
+		}
 		setCode("");
 		setPlayers([]);
 		setBots([]);
 		setMaster("");
-		navigate("/");
+		if (shouldNavigate) {
+			navigate("/");
+		}
 	}
 
 	function joinLobby(code) {
