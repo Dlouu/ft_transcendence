@@ -97,18 +97,20 @@ services:
       - elk_network
   kibana:
     image: docker.elastic.co/kibana/kibana:8.12.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     ports:
       - "5601:5601"
     depends_on:
       - elasticsearch
     networks:
       - elk_network
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:8.12.0
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
     user: root
     volumes:
       - service_logs:/logs
-      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     depends_on:
       - elasticsearch
     networks:
