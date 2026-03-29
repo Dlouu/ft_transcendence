@@ -3,8 +3,6 @@ services:
     container_name: service_nginx
     build: ./containers/services/nginx
     restart: on-failure
-    env_file:
-      - .env
     volumes:
       # - nginx_data:/var/www/nginx
       - service_logs:/logs
@@ -72,6 +70,8 @@ services:
     build:
       context: ./containers/services/game
     restart: on-failure
+    env_file:
+      - env/game.env
     volumes:
       - service_logs:/logs
     networks:
@@ -145,19 +145,19 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ${VOLUME_PATH}/auth_db_volume
+      device: ${PWD}/srcs/volumes/auth_db_volume
   user_db_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${VOLUME_PATH}/user_db_volume
+      device: ${PWD}/srcs/volumes/user_db_volume
   service_logs:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${VOLUME_PATH}/service_logs
+      device: ${PWD}/srcs/volumes/service_logs
 
 networks:
   mariadb_network:

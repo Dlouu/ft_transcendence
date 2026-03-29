@@ -186,7 +186,7 @@ class DeleteAccount(Resource):
 				deleted_username = str(uuid4()).split("-", 1)[0]
 
 			user.username = "deleted_user_" + str(deleted_username)
-			user.profile_picture_url = os.getenv("DEFAULT_IMG_PATH") + "/" + os.getenv("DEFAULT_PROFILE_PICTURE", "")
+			user.profile_picture_url = os.getenv("DEFAULT_PROFILE_PICTURE", "")
 
 			s3s.delete_all_resources(f"card_gallery/{user_id}/")
 			s3s.delete_all_resources(f"profile_picture/{user_id}/")
