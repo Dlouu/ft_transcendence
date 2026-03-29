@@ -21,16 +21,11 @@ The goal of the project is to create a fully functioning online game, adhering t
 - `make`
 
 ### Configuration
-Copy the example env file and edit it:
+Copy the default environment variables folder `env.example` to `env` and edit the files if needed:
 ```bash
-cp srcs/env.example srcs/.env
+cp -r srcs/env.example srcs/env
 ```
-The default `.env` sets:
-```dotenv
-VOLUME_PATH=${PWD}/srcs/volumes   # where database & log volumes are stored on disk
-TOKEN_CACHE_LIFETIME=86400        # JWT cache duration in seconds (24h)
-```
-Each internal service also has its own `.env` file located in the `srcs/env/` folder (e.g. `api.env`, `auth.env`, `auth_db.env`). Fill those in as needed before starting.
+This will provide every internal service with its own individual configuration file (e.g. `api.env`, `auth.env`, `auth_db.env`, etc.). Review and fill them in as needed before proceeding.
 
 ### Execution
 To build and start all the services:

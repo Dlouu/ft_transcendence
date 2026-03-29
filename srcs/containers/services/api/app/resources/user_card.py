@@ -231,8 +231,17 @@ class UploadCardImage(Resource):
 			logger.warning("Request validation error.", extra=logger.extra(request=request, exception=e))
 			return {"message": "Content invalid or wrong type."}, 400
 
+		image_file.stream.seek(0, 2)
+		file_size = image_file.stream.tell()
+		image_file.stream.seek(0)
+
+		max_size = int(os.getenv("MAX_IMAGE_SIZE", 2))
+		if file_size > max_size:
+			max_mb = max_size / (max_size * 0.5)
+			return {"message": f"The image is too big (max: {max_mb:.0f}mb)."}, 400
+
 		user_id = g.token_payload["user_id"]
-		file_ext = img.format.lower()  # 'jpeg' or 'png'
+		file_ext = img.format.lower()
 
 		card = None
 
