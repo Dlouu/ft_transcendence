@@ -67,14 +67,17 @@ export class GameRepositoryService {
 	 * @param game - The game instance to remove.
 	 * @returns void
 	 */
-
 	async deleteGame(game: Game): Promise<void> {
 		this.games = this.games.filter((existingGame) => existingGame !== game);
-		await fetch("http://lobby:5002/game/delete", {
+		// TODO: Verify this route to delete in lobby http://lobby:5002/lobby/delete
+		await fetch("http://lobby:5002/lobby/delete", {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ roomName: game.roomName }),
-		}).catch((err) => {
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(game.roomName),
+		})
+		.catch((err) => {
 			this.logger.error(`Failed to delete lobby: ${err}`);
 		});
 	}

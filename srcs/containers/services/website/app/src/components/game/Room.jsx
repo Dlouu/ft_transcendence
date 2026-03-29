@@ -1,8 +1,8 @@
 import { Button } from "../../ui";
+import { useContext, useEffect, useRef } from "react";
+import { LobbyContext } from "../../context/LobbyContext";
 import SettingsSelector from "./SettingsSelector";
 import PlayerList from "./PlayerList";
-import { useContext } from "react";
-import { LobbyContext } from "../../context/LobbyContext";
 
 function Room() {
 	const { players, bots, code, isHost, addBot, removeBot, masterStart, playerReady, leaveLobby } = useContext(LobbyContext);
@@ -11,7 +11,26 @@ function Room() {
 	const canStart = totalPlayers >= 2;
 	const canRemoveBot = bots.length > 0;
 	const canAddBot = totalPlayers < MAX_PLAYERS;
+	const leaveTriggeredRef = useRef(false);
 
+	useEffect(() => {
+		const handleBrowserLeave = () => {
+			if (leaveTriggeredRef.current)
+				return;
+			leaveTriggeredRef.current = true;
+			leaveLobby(false);
+		};
+
+		window.addEventListener("beforeunload", handleBrowserLeave);
+		window.addEventListener("pagehide", handleBrowserLeave);
+		window.addEventListener("popstate", handleBrowserLeave);
+
+		return () => {
+			window.removeEventListener("beforeunload", handleBrowserLeave);
+			window.removeEventListener("pagehide", handleBrowserLeave);
+			window.removeEventListener("popstate", handleBrowserLeave);
+		};
+	}, [leaveLobby]);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -40,7 +59,7 @@ function Room() {
 					</div>
 
 					<SettingsSelector />
-				
+
 					<Button disabled={!canStart} onClick={() => {
 						playerReady();
 						masterStart();
@@ -56,9 +75,9 @@ function Room() {
 				</Button>
 			)}
 
-				<Button variant="secondary" onClick={leaveLobby}>
-					BACK
-				</Button>
+			<Button variant="secondary" onClick={leaveLobby}>
+				BACK
+			</Button>
 		</div>
 	);
 }

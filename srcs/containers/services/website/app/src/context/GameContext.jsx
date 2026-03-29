@@ -20,8 +20,23 @@ const EMPTY_PROFILE = {
 	},
 };
 
-function normalizeProfile(rawData) {
-	const stats = rawData?.stats ?? {};
+function normalizeStats(rawStats) {
+	const stats = rawStats?.data ?? rawStats?.stats ?? rawStats ?? {};
+
+	return {
+		gamesPlayed: stats.gamesPlayed ?? stats.games_played ?? 0,
+		gamesWon: stats.gamesWon ?? stats.games_won ?? 0,
+		winRate: stats.winRate ?? stats.winrate ?? stats.win_rate ?? 0,
+		unoCount: stats.unoCount ?? stats.uno_count ?? stats.nbr_uno ?? 0,
+		uwuCount: stats.uwuCount ?? stats.uwu_count ?? stats.nbr_uwu ?? 0,
+		plus4count: stats.plus4count ?? stats.plus4_count ?? stats.nbr_4cards ?? 0,
+		cardsDrew: stats.cardsDrew ?? stats.cards_drew ?? stats.nbr_drew ?? 0,
+		biggestHand: stats.biggestHand ?? stats.biggest_hand ?? 0,
+	};
+}
+
+function normalizeProfile(rawData, statsOverride) {
+	const stats = statsOverride ?? rawData?.stats;
 
 	return {
 		id: rawData?.id ?? rawData?.user_id ?? null,
@@ -29,16 +44,7 @@ function normalizeProfile(rawData) {
 		name: rawData?.name ?? rawData?.username ?? "",
 		profile_picture_url: rawData?.profile_picture_url ?? null,
 		card_back_url: rawData?.card_back_url ?? null,
-		stats: {
-			gamesPlayed: stats.gamesPlayed ?? stats.games_played ?? 0,
-			gamesWon: stats.gamesWon ?? stats.games_won ?? 0,
-			winRate: stats.winRate ?? stats.win_rate ?? 0,
-			unoCount: stats.unoCount ?? stats.uno_count ?? 0,
-			uwuCount: stats.uwuCount ?? stats.uwu_count ?? 0,
-			plus4count: stats.plus4count ?? stats.plus4_count ?? 0,
-			cardsDrew: stats.cardsDrew ?? stats.cards_drew ?? 0,
-			biggestHand: stats.biggestHand ?? stats.biggest_hand ?? 0,
-		},
+		stats: normalizeStats(stats),
 	};
 }
 
@@ -60,24 +66,42 @@ export function GameProvider({ children }) {
 		setProfileNotFound(false);
 
 		try {
-			const res = await fetch(`/api/user/me/${userId}`, {
+			const profileRes = await fetch(`/api/user/me/${userId}`, {
 				credentials: "include",
 			});
 
-			if (res.status === 404) {
+			if (profileRes.status === 404) {
 				setProfile(EMPTY_PROFILE);
 				setProfileNotFound(true);
 				return null;
 			}
 
-			if (!res.ok)
+			if (!profileRes.ok)
 				throw new Error("Failed to fetch public profile");
 
-			const data = await res.json();
-			const normalizedProfile = normalizeProfile(data);
+			const profileData = await profileRes.json();
+
+			let statsData = null;
+			try {
+				const statsRes = await fetch(`/api/user/game/stats/${userId}`, {
+					credentials: "include",
+				});
+
+				if (statsRes.ok) {
+					statsData = await statsRes.json();
+				} else if (statsRes.status !== 404) {
+					throw new Error("Failed to fetch user game stats");
+				}
+
+			} catch {
+				statsData = null;
+			}
+
+			const normalizedProfile = normalizeProfile(profileData, statsData);
 			setProfile(normalizedProfile);
 			setProfileNotFound(false);
 			return normalizedProfile;
+
 		} catch {
 			setProfile(EMPTY_PROFILE);
 			setProfileNotFound(false);

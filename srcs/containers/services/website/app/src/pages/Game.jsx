@@ -23,14 +23,14 @@ function Game() {
         if (!canvasRef.current || !userId) return;
 
         gameService.init({ canvas: canvasRef.current, playerId: userId });
-        console.log("Game mounted for", playerName);
+        // console.log("Game mounted for", playerName);
 
         return () => gameService.destroy();
     }, [playerName, userId]);
 
     const enterFullscreen = () =>
     {
-        console.log("Game unmounted");
+        // console.log("Game unmounted");
         const el = canvasRef.current;
         if (!el) return;
 

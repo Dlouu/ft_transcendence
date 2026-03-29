@@ -5,7 +5,6 @@ function EditableField({ label, value, inputType = "text", onSave }) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [tempValue, setTempValue] = useState(value);
 
-	
 	const handleSave = async () => {
 		await onSave(tempValue);
 		setIsEditing(false);
@@ -21,7 +20,7 @@ function EditableField({ label, value, inputType = "text", onSave }) {
 		<div className="mt-2">
 			<p className="font-pixelhb font-bold">{label}:</p>
 
-			{!isEditing ? (
+			{ !isEditing ? (
 				<div className="flex items-center gap-2">
 					<span className="font-pixel">{value}</span>
 					<Button variant="iconEdit" onClick={() => setIsEditing(true)}>

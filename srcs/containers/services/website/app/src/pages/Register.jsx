@@ -20,7 +20,7 @@ function Register() {
 			password === passwordCheck;
 		const navigate = useNavigate();
 
-		const handleSubmit = async (e) => {
+	const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
 			await post("/api/auth/registration", {
@@ -32,7 +32,7 @@ function Register() {
 			await login();
 			navigate("/");
 
-			} catch {
+		} catch {
 			return;
 		}
 	};

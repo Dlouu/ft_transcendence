@@ -12,9 +12,9 @@ function GalleryImage() {
 	const { user, refreshUser } = useContext(AuthContext);
 	const location = useLocation();
 	const imageFromState = location.state;
-	
 	const image = imageFromState || getDefaultImage(id);
 	const ownerId = image?.ownerId;
+
 	const isOwnerImage = ownerId != null
 		? Number(ownerId) === Number(user?.user_id)
 		: image?.type === "user";
@@ -29,12 +29,11 @@ function GalleryImage() {
 		if (!isOwnerImage) {
 			return;
 		}
-
 		try {
 			await removeCard(id);
 			navigate("/gallery");
 		} catch (error) {
-			console.error("Failed to delete: ", error);
+			// console.error("Failed to delete: ", error);
 		}
 	}
 
@@ -42,13 +41,38 @@ function GalleryImage() {
 		if (!isOwnerImage) {
 			return;
 		}
-
 		try {
 			await setCardBack(id);
 			navigate("/gallery");
 			await refreshUser();
 		} catch (error) {
-			console.error("Failed to set as back card: ", error);
+			// console.error("Failed to set as back card: ", error);
+		}
+	}
+
+	const handleSetBackFromDefault = async () => {
+		if (isOwnerImage) {
+			return;
+		}
+
+		try {
+			const response = await fetch(image.src);
+			const blob = await response.blob();
+			const file = new File([blob], `card-back-${id}.png`, { type: blob.type });
+
+			const uploadResponse = await uploadCardBack(file);
+			const newCardId = uploadResponse?.image_id ?? uploadResponse?.data?.image_id;
+
+			if (!newCardId) {
+				throw new Error("Missing image_id in upload response");
+			}
+
+			await setCardBack(newCardId);
+			await refreshUser();
+			navigate("/gallery");
+
+		} catch (error) {
+			// console.error("Failed to duplicate and set as back card:", error);
 		}
 	}
 
@@ -60,8 +84,9 @@ function GalleryImage() {
 
 			await uploadCardBack(file);
 			navigate("/gallery");
+
 		} catch (error) {
-			console.error("Failed to duplicate", error);
+			// console.error("Failed to duplicate", error);
 		}
 	}
 
@@ -79,10 +104,8 @@ function GalleryImage() {
 					</div>
 
 					<div className="flex flex-col gap-1">
-						<p className="text-gray-400">
-						</p>
 
-						{isOwnerImage && (
+						{ isOwnerImage && (
 							<Button
 								onClick={() => navigate("/paint", {
 									state: {src: image.src, id: image.id, type: image.type, ownerId: image.ownerId}
@@ -96,13 +119,19 @@ function GalleryImage() {
 							DUPLICATE
 						</Button>
 
-						{isOwnerImage && (
+						{ isOwnerImage && (
 							<Button onClick={handleSetBack} disabled={loading}>
 								SELECT AS BACK
 							</Button>
 						)}
 
-						{isOwnerImage && (
+						{ !isOwnerImage && (
+							<Button onClick={handleSetBackFromDefault} disabled={loading}>
+								SELECT AS BACK
+							</Button>
+						)}
+
+						{ isOwnerImage && (
 							<Button onClick={handleDelete}>
 								DELETE
 							</Button>

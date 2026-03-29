@@ -17,9 +17,8 @@ const handleChangeAvatar = async (e) => {
 		await updateProfilePicture(file);
 
 	} catch (error) {
-		console.error(error);
+		// console.error(error);
 	}
-
 };
 
 	return (

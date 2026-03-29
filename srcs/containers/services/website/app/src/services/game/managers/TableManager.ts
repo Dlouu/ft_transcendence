@@ -263,8 +263,16 @@ export class TableManager extends Container {
 		this._opponentsManager.addOpponentCard(playerName);
 	}
 
-	public updateOpponentInfo(playerIndex: number, name: string, cardBackVariant: string): void {
-		this._opponentsManager.updateOpponentInfo(playerIndex, name, cardBackVariant);
+	public updateOpponentInfo(
+		playerIndex: number,
+		name: string,
+		cardBackVariant: string,
+	): void {
+		this._opponentsManager.updateOpponentInfo(
+			playerIndex,
+			name,
+			cardBackVariant,
+		);
 	}
 
 	public setDeckVisible(isVisible: boolean): void {
@@ -301,7 +309,9 @@ export class TableManager extends Container {
 	public showCardEffect(effectDto: CardEffectDto): void {
 		this.clearCardEffect();
 
-		const anchor = this.resolveEffectAnchorForPlayer(effectDto.affectedPlayerIndex);
+		const anchor = this.resolveEffectAnchorForPlayer(
+			effectDto.affectedPlayerIndex,
+		);
 		if (!anchor) {
 			return;
 		}
@@ -318,10 +328,7 @@ export class TableManager extends Container {
 				: effectDto.card.cardFamily;
 
 		const effectCard = this._cardPool.getCard();
-		const effectCardModel = new Card(
-			displayFamily,
-			effectDto.card.cardCode,
-		);
+		const effectCardModel = new Card(displayFamily, effectDto.card.cardCode);
 		const texture = this._assetsManager.getCardTexture(
 			displayFamily,
 			effectDto.card.cardCode,
@@ -366,10 +373,16 @@ export class TableManager extends Container {
 		const pilesOffset =
 			this._viewport.tableWidth / GAME_CUSTOMIZATION.table.pilesOffsetDivisor;
 
-		this._deck.position.set(this._viewport.centerX - pilesOffset, this._viewport.centerY);
+		this._deck.position.set(
+			this._viewport.centerX - pilesOffset,
+			this._viewport.centerY,
+		);
 		this._deck.resize(width, height, this._viewport);
 
-		this._discard.position.set(this._viewport.centerX + pilesOffset, this._viewport.centerY);
+		this._discard.position.set(
+			this._viewport.centerX + pilesOffset,
+			this._viewport.centerY,
+		);
 		this._discard.resize(width, height, this._viewport);
 
 		this._unoButton.resize(
@@ -399,11 +412,11 @@ export class TableManager extends Container {
 			this._middleArrow.texture = this._assetsManager.arrowTexture;
 		}
 
-		const mainAreaWidth = viewport.tableWidth * TableCenterArea.MAIN_WIDTH_RATIO;
+		const mainAreaWidth =
+			viewport.tableWidth * TableCenterArea.MAIN_WIDTH_RATIO;
 		const mainAreaHeight = mainAreaWidth * TableCenterArea.MAIN_ASPECT_RATIO;
 		const targetMajorSize =
-			mainAreaWidth *
-			TableManager.MIDDLE_ARROW_SIZE_FROM_CENTER_AREA_RATIO;
+			mainAreaWidth * TableManager.MIDDLE_ARROW_SIZE_FROM_CENTER_AREA_RATIO;
 
 		const textureWidth = this._middleArrow.texture.width || 1;
 		const textureHeight = this._middleArrow.texture.height || 1;
@@ -419,7 +432,8 @@ export class TableManager extends Container {
 
 		const preferredY = viewport.centerY - mainAreaHeight * 0.2;
 		const fallbackY =
-			viewport.offsetY + viewport.tableHeight * TableManager.MIDDLE_ARROW_Y_RATIO;
+			viewport.offsetY +
+			viewport.tableHeight * TableManager.MIDDLE_ARROW_Y_RATIO;
 		const minY = viewport.offsetY + viewport.tableHeight * 0.2;
 		const maxY = viewport.offsetY + viewport.tableHeight * 0.48;
 		const arrowY = Math.max(minY, Math.min(maxY, (preferredY + fallbackY) / 2));
@@ -448,16 +462,41 @@ export class TableManager extends Container {
 			(this._isMiddleArrowMirrored ? -1 : 1);
 	}
 
-	public applyRejoinState(dto: RejoinGameDto): void {
+	public async applyRejoinState(dto: RejoinGameDto): Promise<void> {
 		this._playerIndex = this.resolveRejoinPlayerIndex(dto);
+		// Ensure the deck card exists before updating it
+		this.ensureDeckCardForRejoin();
 
 		this._tableCenterArea.setColors({
 			...this._assetsManager.getThemeBackdropColors(),
 		});
 
-		this.ensureDeckCardForRejoin();
+		// Load and set deck card back for player
+		if (this._deck.card) {
+			await this._assetsManager.loadCardBacks([dto.playerCardBackUrl]);
+			this._deck.card.setFaceBackCard(
+				this._assetsManager.getCardBack(dto.playerCardBackUrl),
+				null,
+			);
+		}
+
+		// Ensure opponents are created with correct cardBack and profilePicture
 		this._opponentsManager.ensureOpponentsForRejoin(dto.opponents);
+
+		// Update opponents' cardBack and profilePicture
+		for (const opponent of dto.opponents) {
+			await this._assetsManager.loadCardBacks([opponent.cardBackUrl]);
+			this._opponentsManager.updateOpponentInfo(
+				opponent.index,
+				opponent.name,
+				opponent.cardBackUrl,
+				opponent.profilePictureUrl,
+			);
+		}
+
+		// Reset player hand (cards themselves don't show cardBack/profilePicture, but could be extended)
 		this.resetPlayerHand(dto);
+
 		this._opponentsManager.syncOpponentHandSizes(dto.opponents);
 		this.updateDiscardCard(dto.currentDiscardCard);
 		this.setTurnDirection(dto.turnDirection);
@@ -654,9 +693,9 @@ export class TableManager extends Container {
 		const handCenter =
 			playerIndex === this._playerIndex
 				? {
-					x: this._playerHand.position.x,
-					y: this._playerHand.position.y,
-				}
+						x: this._playerHand.position.x,
+						y: this._playerHand.position.y,
+					}
 				: this._opponentsManager.getOpponentHandCenter(playerIndex);
 
 		if (!handCenter) {
@@ -686,7 +725,8 @@ export class TableManager extends Container {
 		const effectCardHeight =
 			this._viewport.tableHeight * TableManager.EFFECT_CARD_HEIGHT_RATIO;
 		this._activeEffectCard.height = effectCardHeight;
-		this._activeEffectCard.width = effectCardHeight * TableManager.EFFECT_CARD_RATIO;
+		this._activeEffectCard.width =
+			effectCardHeight * TableManager.EFFECT_CARD_RATIO;
 	}
 
 	private clearCardEffect(): void {

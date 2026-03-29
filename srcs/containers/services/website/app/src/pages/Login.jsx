@@ -65,7 +65,6 @@ function Login() {
 								register
 							</Link>
 						</p>
-
 					</div>
 				</form>
 			</Card>

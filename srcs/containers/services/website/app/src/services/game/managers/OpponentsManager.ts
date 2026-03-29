@@ -114,7 +114,8 @@ export class OpponentsManager extends Container {
 		// Calculate centerArea bounds
 		const centerAreaWidth =
 			tableWidth * GAME_CUSTOMIZATION.centerArea.mainWidthRatio;
-		const centerAreaHeight = centerAreaWidth * GAME_CUSTOMIZATION.centerArea.mainAspectRatio;
+		const centerAreaHeight =
+			centerAreaWidth * GAME_CUSTOMIZATION.centerArea.mainAspectRatio;
 		const centerAreaLeft = centerX - centerAreaWidth / 2;
 		const centerAreaRight = centerX + centerAreaWidth / 2;
 		const centerAreaTop = centerY - centerAreaHeight / 2;
@@ -126,16 +127,19 @@ export class OpponentsManager extends Container {
 			if (posKey === "top") {
 				hand.position.set(
 					centerX,
-					offsetY + tableHeight * GAME_CUSTOMIZATION.opponents.positions.topYRatio,
+					offsetY +
+						tableHeight * GAME_CUSTOMIZATION.opponents.positions.topYRatio,
 				);
 			} else if (posKey === "left") {
 				hand.position.set(
-					offsetX + tableWidth * GAME_CUSTOMIZATION.opponents.positions.leftXRatio,
+					offsetX +
+						tableWidth * GAME_CUSTOMIZATION.opponents.positions.leftXRatio,
 					centerY,
 				);
 			} else if (posKey === "right") {
 				hand.position.set(
-					offsetX + tableWidth * GAME_CUSTOMIZATION.opponents.positions.rightXRatio,
+					offsetX +
+						tableWidth * GAME_CUSTOMIZATION.opponents.positions.rightXRatio,
 					centerY,
 				);
 			}
@@ -180,7 +184,9 @@ export class OpponentsManager extends Container {
 		});
 	}
 
-	public getOpponentHandCenter(playerIndex: number): { x: number; y: number } | null {
+	public getOpponentHandCenter(
+		playerIndex: number,
+	): { x: number; y: number } | null {
 		const opponent = this._opponents.get(playerIndex);
 		if (!opponent) {
 			return null;
@@ -296,7 +302,12 @@ export class OpponentsManager extends Container {
 		return "left";
 	}
 
-	public updateOpponentInfo(playerIndex: number, name: string, cardBackVariant: string): void {
+	public updateOpponentInfo(
+		playerIndex: number,
+		name: string,
+		cardBackVariant: string,
+		profilePictureUrl?: string,
+	): void {
 		const opponent = this._opponents.get(playerIndex);
 		if (!opponent) {
 			return;
@@ -310,6 +321,9 @@ export class OpponentsManager extends Container {
 		const nameDisplay = this._nameDisplays.get(playerIndex);
 		if (nameDisplay) {
 			nameDisplay.updateName(name);
+			if (profilePictureUrl) {
+				nameDisplay.loadPicture(profilePictureUrl);
+			}
 		}
 	}
 

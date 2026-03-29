@@ -21,7 +21,6 @@ function DeleteAccount() {
 			notify("You didn't type DELETE", "error");
 			return;
 		}
-
 		await deleteAccount(password);
 	};
 
@@ -75,22 +74,3 @@ function DeleteAccount() {
 }
 
 export default DeleteAccount;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -2,6 +2,31 @@ import { createContext, useState, useEffect } from "react";
 
 export const AuthContext = createContext(null);
 
+function withCacheBuster(url) {
+	if (!url || typeof url !== "string") {
+		return url;
+	}
+
+	if (url.startsWith("data:")) {
+		return url;
+	}
+
+	const separator = url.includes("?") ? "&" : "?";
+	return `${url}${separator}v=${Date.now()}`;
+}
+
+function normalizeUserMediaUrls(rawUser) {
+	if (!rawUser || typeof rawUser !== "object") {
+		return rawUser;
+	}
+
+	return {
+		...rawUser,
+		profile_picture_url: withCacheBuster(rawUser.profile_picture_url),
+		card_back_url: withCacheBuster(rawUser.card_back_url),
+	};
+}
+
 export function AuthProvider({ children }) {
 	const [user, setUser] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -16,7 +41,7 @@ export function AuthProvider({ children }) {
 			return res.json();
 		})
 		.then((data) => {
-			setUser(data);
+			setUser(normalizeUserMediaUrls(data));
 		})
 		.catch(() => {
 			setUser(null);
@@ -35,7 +60,7 @@ export function AuthProvider({ children }) {
 			return;
 		}
 		const data = await res.json();
-		setUser(data);
+		setUser(normalizeUserMediaUrls(data));
 	};
 
 	const login = async () => {

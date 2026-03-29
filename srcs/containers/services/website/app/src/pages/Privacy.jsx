@@ -57,8 +57,6 @@ function Privacy() {
 			</Button>
 
 		</LegalPage>
-
-
 	);
 }
 

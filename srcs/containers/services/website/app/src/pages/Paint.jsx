@@ -15,14 +15,16 @@ function Paint() {
 
 	useEffect(() => {
 		const canvas = canvasRef.current;
-		if (!canvas) return;
 
-		if (!imageToEdit?.src) return;
+		if (!canvas)
+			return;
+
+		if (!imageToEdit?.src)
+			return;
 
 		const img = new Image();
 		img.crossOrigin = "anonymous";
 		img.src = imageToEdit.src;
-
 		img.onload = () => {
 			const canvas = canvasRef.current;
 			if (!canvas) return;
@@ -57,6 +59,7 @@ function Paint() {
 					undo={undoRedo.undo}
 					redo={undoRedo.redo}
 					canvasRef={canvasRef}
+					editedImageId={imageToEdit?.id}
 				/>
 			</div>
 			<p className="m-2 text-xs text-gray-400 text-center">
