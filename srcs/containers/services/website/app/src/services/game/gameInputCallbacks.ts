@@ -7,12 +7,12 @@ export function handlePlayerCardClicked(
 	socket: Socket | null,
 ): void {
 	if (!card.card) {
-		console.warn("GameService: clicked card has no metadata", card);
+		// console.warn("GameService: clicked card has no metadata", card);
 		return;
 	}
 
 	if (!socket) {
-		console.warn("GameService: socket unavailable, cannot play card");
+		// console.warn("GameService: socket unavailable, cannot play card");
 		return;
 	}
 
@@ -23,30 +23,30 @@ export function handlePlayerCardClicked(
 
 	socket.emit("game:play:card", payload);
 
-	console.log("GameService: player clicked card", {
-		family: payload.cardFamily,
-		value: payload.cardCode,
-	});
+	// console.log("GameService: player clicked card", {
+	// 	family: payload.cardFamily,
+	// 	value: payload.cardCode,
+	// });
 }
 
 export function handleDeckClicked(socket: Socket | null): void {
 	if (!socket) {
-		console.warn("GameService: socket unavailable, cannot play card");
+		// console.warn("GameService: socket unavailable, cannot play card");
 		return;
 	}
 
 	socket.emit("game:play:draw");
 
-	console.log("GameService: player clicked deck");
+	// console.log("GameService: player clicked deck");
 }
 
 export function handleUnoClicked(socket: Socket | null): void {
 	if (!socket) {
-		console.warn("GameService: socket unavailable, cannot play UNO");
+		// console.warn("GameService: socket unavailable, cannot play UNO");
 		return;
 	}
 
 	socket.emit("game:play:uno");
 
-	console.log("GameService: player clicked UNO");
+	// console.log("GameService: player clicked UNO");
 }

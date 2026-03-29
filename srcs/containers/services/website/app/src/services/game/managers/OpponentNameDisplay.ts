@@ -64,7 +64,7 @@ export class OpponentNameDisplay extends Container {
 			this.addChild(this._picture);
 			this.updateLayout();
 		} catch (error) {
-			console.warn(`Failed to load opponent picture: ${pictureUrl}`, error);
+			// console.warn(`Failed to load opponent picture: ${pictureUrl}`, error);
 		}
 	}
 

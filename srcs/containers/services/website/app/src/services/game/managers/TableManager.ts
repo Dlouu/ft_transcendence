@@ -561,7 +561,7 @@ export class TableManager extends Container {
 	}
 
 	public setPilesBackdropColorByCardSet(cardFamily: CardFamily): void {
-		console.log(`New color : ${cardFamily}`);
+		// console.log(`New color : ${cardFamily}`);
 		const color = this._tableCenterArea.getColorForFamily(cardFamily);
 		this.setPilesBackdropColor(color);
 	}
