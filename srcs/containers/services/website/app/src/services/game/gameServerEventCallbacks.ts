@@ -1,12 +1,13 @@
 import { Socket } from "socket.io-client";
-import { InitGameDto } from "./game/dto/init-game.dto";
-import { NextTurnDto } from "./game/dto/next-turn.dto";
-import { PlayedCardDto } from "./game/dto/played-card.dto";
-import { TableManager } from "./game/managers/TableManager";
-import { DrawnCardDto } from "./game/dto/drawn-card.dto";
-import { CardFamily } from "./game/domain/GameEnums";
-import { GameWinDto } from "./game/dto/game-win.dto";
-import { RejoinGameDto } from "./game/dto/rejoin-game.dto";
+import { InitGameDto } from "./dto/init-game.dto";
+import { NextTurnDto } from "./dto/next-turn.dto";
+import { PlayedCardDto } from "./dto/played-card.dto";
+import { TableManager } from "./managers/TableManager";
+import { DrawnCardDto } from "./dto/drawn-card.dto";
+import { CardFamily } from "./domain/GameEnums";
+import { GameWinDto } from "./dto/game-win.dto";
+import { RejoinGameDto } from "./dto/rejoin-game.dto";
+import { CardEffectDto } from "./dto/card-effect.dto";
 
 interface RegisterServerEventCallbacksOptions {
 	socket: Socket;
@@ -140,6 +141,11 @@ export function registerServerEventCallbacks({
 			console.log(`Wild color changed:`, _payload);
 		},
 	);
+
+	socket.on("game:card:effect", async (_payload: CardEffectDto) => {
+		getTableManager()?.showCardEffect(_payload);
+		console.log("Card effect:", _payload);
+	});
 
 	socket.on("game:nextTurn", async (_payload: NextTurnDto) => {
 		const tableManager = getTableManager();

@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getDefaultGallery } from "../services/gallery/galleryService";
 import { AuthContext } from "../context/AuthContext";
 import UserGallery from "../components/profile/UserGallery";
+import { useNotifications } from "../hooks/useNotifications";
 
 function Gallery() {
 	const { user } = useContext(AuthContext);
@@ -14,6 +15,8 @@ function Gallery() {
 	const fileInputRef = useRef(null);
 	const { uploadCardBack } = useUser();
 	const [refreshKey, setRefreshKey] = useState(0);
+	const MAX_SIZE = 10 * 1024 * 2048;
+	const { notify } = useNotifications();
 
 	const refreshGallery = () => {
 		setRefreshKey((prev) => prev + 1);
@@ -32,6 +35,10 @@ function Gallery() {
 		const file = event.target.files?.[0];
 		if (!file) return;
 
+		if (file.size > MAX_SIZE) {
+			notify("Image too large", "error");
+			return;
+		}
 		try {
 			await uploadCardBack(file);
 			refreshGallery();
@@ -47,7 +54,7 @@ function Gallery() {
 					GALLERY
 				</h2>
 
-				<div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
+				<div className="grid grid-cols-3 sm:grid-cols-6 gap-4 mb4">
 					{images.map((img) => (
 						<Link key={img.id} to={`/gallery/${img.id}`}>
 							<img
@@ -58,8 +65,6 @@ function Gallery() {
 						</Link>
 					))}
 				</div>
-
-				<UserGallery userId={userId} key={refreshKey} />
 
 				<div className="flex flex-col sm:flex-row sm:gap-4 justify-center">
 					<Button variant="success" onClick={() => navigate("/paint")}>
@@ -77,14 +82,18 @@ function Gallery() {
 					<Button variant="secondary" onClick={() => navigate(-1)}>
 						BACK
 					</Button>
-						<input
-							type="file"
-							accept="image/png,image/jpeg"
-							ref={fileInputRef}
-							onChange={handleFileChange}
-							className="hidden"
-						/>
+
+					<input
+						type="file"
+						accept="image/png,image/jpeg"
+						ref={fileInputRef}
+						onChange={handleFileChange}
+						className="hidden"
+					/>
 				</div>
+
+				<UserGallery userId={userId} key={refreshKey} />
+
 			</Card>
 		</Page>
 	);

@@ -1,6 +1,6 @@
 import bg from "../assets/background.png"
 
-function Page({	children, center = false }) {
+function Page({	children, center = false, className = "" }) {
 	return (
 		<div
 			className={`
@@ -9,6 +9,7 @@ function Page({	children, center = false }) {
 				bg-gray-800 text-white
 				px-4 bg-repeat sm:bg-contain
 				${center ? "flex flex-col items-center" : ""}
+				${className}
 			`}
 			style={{ backgroundImage: `url(${bg})` }}
 		>

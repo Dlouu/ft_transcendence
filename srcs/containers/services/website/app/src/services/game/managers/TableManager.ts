@@ -17,6 +17,7 @@ import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
 import { UnoButton } from "./UnoButton";
 import { TurnTimerBar } from "./TurnTimerBar";
 import { createTableViewport, TableViewport } from "../layout/TableViewport";
+import { CardEffectDto } from "../dto/card-effect.dto";
 
 export class TableManager extends Container {
 	private static readonly MIDDLE_ARROW_Y_RATIO =
@@ -29,6 +30,14 @@ export class TableManager extends Container {
 		GAME_CUSTOMIZATION.table.unoButtonWidthRatio;
 	private static readonly TURN_TIMER_DURATION_MS =
 		GAME_CUSTOMIZATION.table.turnTimer.durationMs;
+	private static readonly EFFECT_CARD_RENDER_DURATION_MS =
+		GAME_CUSTOMIZATION.effectCard.renderDurationMs;
+	private static readonly EFFECT_CARD_BETWEEN_HAND_AND_CENTER_RATIO =
+		GAME_CUSTOMIZATION.effectCard.betweenHandAndCenterRatio;
+	private static readonly EFFECT_CARD_HEIGHT_RATIO =
+		GAME_CUSTOMIZATION.effectCard.heightRatio;
+	private static readonly EFFECT_CARD_RATIO =
+		GAME_CUSTOMIZATION.effectCard.cardRatio;
 
 	private _playerIndex: number = -1;
 	private _middleArrow: Sprite;
@@ -42,6 +51,10 @@ export class TableManager extends Container {
 	private _tableCenterArea: TableCenterArea;
 	private _cardFamilySelector: CardFamilySelector | null = null;
 	private _victoryScreen: VictoryScreen;
+	private _effectLayer: Container;
+	private _activeEffectCard: UnoCard | null = null;
+	private _activeEffectTargetPlayerIndex: number = -1;
+	private _effectCardCleanupTimeoutId: number | null = null;
 
 	private _playerHand: Hand;
 	private _deck: CardPile;
@@ -68,6 +81,7 @@ export class TableManager extends Container {
 		this._discard = new CardPile(null, true, false);
 		this._tableCenterArea = new TableCenterArea();
 		this._victoryScreen = new VictoryScreen();
+		this._effectLayer = new Container();
 		this._middleArrow = new Sprite(this._assetsManager.arrowTexture);
 		this._middleArrow.anchor.set(0.5);
 		this._unoButton = new UnoButton(onUnoButtonClick);
@@ -94,6 +108,7 @@ export class TableManager extends Container {
 		this.addChild(this._deck);
 		this.addChild(this._discard);
 		this.addChild(this._playerHand);
+		this.addChild(this._effectLayer);
 		this.addChild(this._victoryScreen);
 	}
 
@@ -117,6 +132,7 @@ export class TableManager extends Container {
 		this._discard.setVisible(true);
 		this._tableCenterArea.visible = true;
 		this.hideCardFamilySelector();
+		this.clearCardEffect();
 		this.setUnoButtonVisible(false);
 		this._turnTimerBar.stop();
 		this._victoryScreen.hide();
@@ -131,6 +147,7 @@ export class TableManager extends Container {
 			: false;
 
 		this.hideCardFamilySelector();
+		this.clearCardEffect();
 		this.setUnoButtonVisible(false);
 		this._turnTimerBar.stop();
 		this._playerHand.setTurnActive(false);
@@ -281,6 +298,53 @@ export class TableManager extends Container {
 		this.setPilesBackdropColorByCardSet(cardDto.cardFamily);
 	}
 
+	public showCardEffect(effectDto: CardEffectDto): void {
+		this.clearCardEffect();
+
+		const anchor = this.resolveEffectAnchorForPlayer(effectDto.affectedPlayerIndex);
+		if (!anchor) {
+			return;
+		}
+
+		if (this._effectLayer.parent === this) {
+			// Re-append to keep this layer above other gameplay elements.
+			this.addChild(this._effectLayer);
+		}
+
+		const displayFamily =
+			effectDto.card.cardCode === "wild" ||
+			effectDto.card.cardCode === "wildDrawFour"
+				? CardFamily.WILD
+				: effectDto.card.cardFamily;
+
+		const effectCard = this._cardPool.getCard();
+		const effectCardModel = new Card(
+			displayFamily,
+			effectDto.card.cardCode,
+		);
+		const texture = this._assetsManager.getCardTexture(
+			displayFamily,
+			effectDto.card.cardCode,
+		);
+
+		effectCard.setFaceUpCard(texture, effectCardModel);
+		effectCard.position.set(anchor.x, anchor.y);
+		effectCard.rotation = 0;
+		effectCard.alpha = 1;
+		const effectCardHeight =
+			this._viewport.tableHeight * TableManager.EFFECT_CARD_HEIGHT_RATIO;
+		effectCard.height = effectCardHeight;
+		effectCard.width = effectCardHeight * TableManager.EFFECT_CARD_RATIO;
+
+		this._activeEffectCard = effectCard;
+		this._activeEffectTargetPlayerIndex = effectDto.affectedPlayerIndex;
+		this._effectLayer.addChild(effectCard);
+
+		this._effectCardCleanupTimeoutId = window.setTimeout(() => {
+			this.clearCardEffect();
+		}, TableManager.EFFECT_CARD_RENDER_DURATION_MS);
+	}
+
 	public resize(width: number, height: number): void {
 		this._viewport = createTableViewport(width, height);
 		this._tableWidth = this._viewport.tableWidth;
@@ -324,6 +388,8 @@ export class TableManager extends Container {
 				this._viewport.centerY,
 			);
 		}
+
+		this.updateEffectCardPosition();
 
 		this._victoryScreen.resize(width, height, this._viewport);
 	}
@@ -404,6 +470,7 @@ export class TableManager extends Container {
 		this._deck.setVisible(true);
 		this._discard.setVisible(true);
 		this.hideCardFamilySelector();
+		this.clearCardEffect();
 		this.setUnoButtonVisible(false);
 		this._turnTimerBar.stop();
 		this._victoryScreen.hide();
@@ -547,6 +614,7 @@ export class TableManager extends Container {
 
 	public destroy(): void {
 		this.hideCardFamilySelector();
+		this.clearCardEffect();
 		this._turnTimerBar.stop();
 		this.cleanupHand(this._playerHand);
 		this.cleanupPile(this._deck);
@@ -578,5 +646,65 @@ export class TableManager extends Container {
 			pile.setCard(null);
 			this._cardPool.returnCard(card);
 		}
+	}
+
+	private resolveEffectAnchorForPlayer(
+		playerIndex: number,
+	): { x: number; y: number } | null {
+		const handCenter =
+			playerIndex === this._playerIndex
+				? {
+					x: this._playerHand.position.x,
+					y: this._playerHand.position.y,
+				}
+				: this._opponentsManager.getOpponentHandCenter(playerIndex);
+
+		if (!handCenter) {
+			return null;
+		}
+
+		const t = TableManager.EFFECT_CARD_BETWEEN_HAND_AND_CENTER_RATIO;
+		return {
+			x: handCenter.x + (this._viewport.centerX - handCenter.x) * t,
+			y: handCenter.y + (this._viewport.centerY - handCenter.y) * t,
+		};
+	}
+
+	private updateEffectCardPosition(): void {
+		if (!this._activeEffectCard) {
+			return;
+		}
+
+		const anchor = this.resolveEffectAnchorForPlayer(
+			this._activeEffectTargetPlayerIndex,
+		);
+		if (!anchor) {
+			return;
+		}
+
+		this._activeEffectCard.position.set(anchor.x, anchor.y);
+		const effectCardHeight =
+			this._viewport.tableHeight * TableManager.EFFECT_CARD_HEIGHT_RATIO;
+		this._activeEffectCard.height = effectCardHeight;
+		this._activeEffectCard.width = effectCardHeight * TableManager.EFFECT_CARD_RATIO;
+	}
+
+	private clearCardEffect(): void {
+		if (this._effectCardCleanupTimeoutId !== null) {
+			window.clearTimeout(this._effectCardCleanupTimeoutId);
+			this._effectCardCleanupTimeoutId = null;
+		}
+
+		if (!this._activeEffectCard) {
+			this._activeEffectTargetPlayerIndex = -1;
+			return;
+		}
+
+		if (this._activeEffectCard.parent === this._effectLayer) {
+			this._effectLayer.removeChild(this._activeEffectCard);
+		}
+		this._cardPool.returnCard(this._activeEffectCard);
+		this._activeEffectCard = null;
+		this._activeEffectTargetPlayerIndex = -1;
 	}
 }

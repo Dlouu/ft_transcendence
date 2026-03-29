@@ -46,21 +46,6 @@ export class BotScoringService {
 		);
 	}
 
-	chooseBestCard(
-		game: Game,
-		botIndex: number,
-		playableCards: PlayableBotCard[],
-	): ScoredBotCard | null {
-		if (playableCards.length === 0) {
-			return null;
-		}
-
-		const scoredCards = this.scorePlayableCards(game, botIndex, playableCards);
-		return scoredCards.reduce((best, current) =>
-			current.score > best.score ? current : best,
-		);
-	}
-
 	scoreCard(
 		game: Game,
 		botIndex: number,

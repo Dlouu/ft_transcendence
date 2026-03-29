@@ -13,7 +13,8 @@ function PaintToolbar({
 	setBrushSize,
 	undo,
 	redo,
-	canvasRef
+	canvasRef,
+	editedImageId,
 }) {
 
 	return (
@@ -24,13 +25,13 @@ function PaintToolbar({
 					<UndoRedo onUndo={undo} onRedo={redo} />
 					<div className="sm:flex sm:flex-col hidden gap-1">
 						<BrushSelector brushSize={brushSize} setBrushSize={setBrushSize} />
-						<Save canvasRef={canvasRef} />
+						<Save canvasRef={canvasRef} editedImageId={editedImageId} />
 					</div>
 				</div>
 
 				<div className="flex flex-row sm:hidden justify-center gap-1">
 					<BrushSelector brushSize={brushSize} setBrushSize={setBrushSize} />
-					<Save canvasRef={canvasRef} />
+					<Save canvasRef={canvasRef} editedImageId={editedImageId} />
 				</div>
 			</div>
 

@@ -34,11 +34,8 @@ function UserProfile() {
 				<div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-10">
 
 					<div>
-						<span className="font-pixelm">{ profile?.name }</span>
+						<p className="font-pixelm mb-10">{ profile?.name }</p>
 
-						<p className="mt-2 mb-4">
-							<Button variant="icon">󰀔</Button>
-						</p>
 						<AvatarSection user={viewedUser} readOnly={readOnly}/>
 					</div>
 

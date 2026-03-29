@@ -36,11 +36,32 @@ export class VictoryScreen extends Container {
 		GAME_CUSTOMIZATION.victory.ratios.buttonCornerRadius;
 	private static readonly BUTTON_LABEL_FONT_RATIO =
 		GAME_CUSTOMIZATION.victory.ratios.buttonLabelFont;
+	private static readonly TABLE_TOP_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.tableTop;
+	private static readonly TABLE_HEIGHT_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.tableHeight;
+	private static readonly TABLE_SIDE_PADDING_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.tableSidePadding;
+	private static readonly TABLE_HEADER_FONT_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.tableHeaderFont;
+	private static readonly TABLE_ROW_FONT_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.tableRowFont;
+	private static readonly TABLE_HEADER_TO_ROWS_GAP_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.tableHeaderToRowsGap;
+	private static readonly TABLE_ROW_EXTRA_GAP_RATIO =
+		GAME_CUSTOMIZATION.victory.ratios.tableRowExtraGap;
+	private static readonly DEFAULT_TABLE_PLAYER_HEADER =
+		GAME_CUSTOMIZATION.victory.labels.tablePlayerHeader;
+	private static readonly DEFAULT_TABLE_CARDS_HEADER =
+		GAME_CUSTOMIZATION.victory.labels.tableCardsHeader;
 
 	private _overlay: Graphics;
 	private _panel: Graphics;
 	private _title: Text;
 	private _gameStatsLabel: Text;
+	private _playersHeaderName: Text;
+	private _playersHeaderCards: Text;
+	private _playersRows: Array<{ name: Text; cardsLeft: Text }>;
 	private _button: Container;
 	private _buttonBackground: Graphics;
 	private _buttonLabel: Text;
@@ -87,6 +108,30 @@ export class VictoryScreen extends Container {
 		});
 		this._gameStatsLabel.anchor.set(0.5, 0);
 
+		this._playersHeaderName = new Text({
+			text: VictoryScreen.DEFAULT_TABLE_PLAYER_HEADER,
+			style: {
+				fill: GAME_CUSTOMIZATION.victory.colors.statsText,
+				fontSize: GAME_CUSTOMIZATION.victory.sizes.statsFontPx,
+				fontWeight: "bold",
+				fontFamily: uiFontFamily,
+			},
+		});
+		this._playersHeaderName.anchor.set(0, 0);
+
+		this._playersHeaderCards = new Text({
+			text: VictoryScreen.DEFAULT_TABLE_CARDS_HEADER,
+			style: {
+				fill: GAME_CUSTOMIZATION.victory.colors.statsText,
+				fontSize: GAME_CUSTOMIZATION.victory.sizes.statsFontPx,
+				fontWeight: "bold",
+				fontFamily: uiFontFamily,
+			},
+		});
+		this._playersHeaderCards.anchor.set(1, 0);
+
+		this._playersRows = [];
+
 		this._buttonBackground = new Graphics();
 		this._buttonLabel = new Text({
 			text: this._buttonText,
@@ -111,6 +156,8 @@ export class VictoryScreen extends Container {
 		this.addChild(this._panel);
 		this.addChild(this._title);
 		this.addChild(this._gameStatsLabel);
+		this.addChild(this._playersHeaderName);
+		this.addChild(this._playersHeaderCards);
 		this.addChild(this._button);
 
 		this.visible = false;
@@ -126,6 +173,7 @@ export class VictoryScreen extends Container {
 			? GAME_CUSTOMIZATION.victory.labels.victory
 			: GAME_CUSTOMIZATION.victory.labels.defeat;
 		this._gameStatsLabel.text = `Duration: ${this.formatDuration(dto.gameDuration)}   •   Turns: ${dto.turnNbr}`;
+		this.setPlayersTable(dto);
 
 		this.visible = true;
 		this.alpha = 1;
@@ -188,6 +236,8 @@ export class VictoryScreen extends Container {
 			panelTop + panelHeight * VictoryScreen.STATS_TOP_RATIO,
 		);
 
+		this.layoutPlayersTable(panelLeft, panelTop, panelWidth, panelHeight);
+
 		const buttonWidth = panelWidth * VictoryScreen.BUTTON_WIDTH_RATIO;
 		const buttonHeight = panelHeight * VictoryScreen.BUTTON_HEIGHT_RATIO;
 		this.drawButton(buttonWidth, buttonHeight);
@@ -195,6 +245,95 @@ export class VictoryScreen extends Container {
 			centerX,
 			panelTop + panelHeight - panelHeight * VictoryScreen.BUTTON_BOTTOM_RATIO,
 		);
+	}
+
+	private setPlayersTable(dto: GameWinDto): void {
+		for (const row of this._playersRows) {
+			this.removeChild(row.name);
+			this.removeChild(row.cardsLeft);
+			row.name.destroy();
+			row.cardsLeft.destroy();
+		}
+
+		this._playersRows = [];
+
+		const sortedPlayers = [...dto.players].sort(
+			(a, b) => a.cardsLeft - b.cardsLeft || a.name.localeCompare(b.name),
+		);
+
+		const uiFontFamily = this.resolveUiFontFamily();
+
+		for (const player of sortedPlayers) {
+			const rowName = new Text({
+				text: player.name,
+				style: {
+					fill: GAME_CUSTOMIZATION.victory.colors.statsText,
+					fontSize: GAME_CUSTOMIZATION.victory.sizes.statsFontPx,
+					fontFamily: uiFontFamily,
+				},
+			});
+			rowName.anchor.set(0, 0);
+
+			const rowCardsLeft = new Text({
+				text: player.cardsLeft.toString(),
+				style: {
+					fill: GAME_CUSTOMIZATION.victory.colors.statsText,
+					fontSize: GAME_CUSTOMIZATION.victory.sizes.statsFontPx,
+					fontWeight: "bold",
+					fontFamily: uiFontFamily,
+				},
+			});
+			rowCardsLeft.anchor.set(1, 0);
+
+			this._playersRows.push({ name: rowName, cardsLeft: rowCardsLeft });
+			this.addChild(rowName);
+			this.addChild(rowCardsLeft);
+		}
+	}
+
+	private layoutPlayersTable(
+		panelLeft: number,
+		panelTop: number,
+		panelWidth: number,
+		panelHeight: number,
+	): void {
+		const tableLeft =
+			panelLeft + panelWidth * VictoryScreen.TABLE_SIDE_PADDING_RATIO;
+		const tableRight =
+			panelLeft + panelWidth * (1 - VictoryScreen.TABLE_SIDE_PADDING_RATIO);
+		const tableTop = panelTop + panelHeight * VictoryScreen.TABLE_TOP_RATIO;
+		const tableHeight = panelHeight * VictoryScreen.TABLE_HEIGHT_RATIO;
+
+		this._playersHeaderName.style.fontSize =
+			panelWidth * VictoryScreen.TABLE_HEADER_FONT_RATIO;
+		this._playersHeaderCards.style.fontSize =
+			panelWidth * VictoryScreen.TABLE_HEADER_FONT_RATIO;
+
+		this._playersHeaderName.position.set(tableLeft, tableTop);
+		this._playersHeaderCards.position.set(tableRight, tableTop);
+
+		if (this._playersRows.length === 0) {
+			return;
+		}
+
+		const headerToRowsGap =
+			tableHeight * VictoryScreen.TABLE_HEADER_TO_ROWS_GAP_RATIO;
+		const firstRowY = tableTop + headerToRowsGap;
+		const rowStep =
+			panelWidth * VictoryScreen.TABLE_ROW_FONT_RATIO *
+			(1 + VictoryScreen.TABLE_ROW_EXTRA_GAP_RATIO);
+
+		for (let index = 0; index < this._playersRows.length; index++) {
+			const row = this._playersRows[index];
+			const rowY = firstRowY + rowStep * index;
+
+			row.name.style.fontSize = panelWidth * VictoryScreen.TABLE_ROW_FONT_RATIO;
+			row.cardsLeft.style.fontSize =
+				panelWidth * VictoryScreen.TABLE_ROW_FONT_RATIO;
+
+			row.name.position.set(tableLeft, rowY);
+			row.cardsLeft.position.set(tableRight, rowY);
+		}
 	}
 
 	private drawButton(width: number, height: number): void {

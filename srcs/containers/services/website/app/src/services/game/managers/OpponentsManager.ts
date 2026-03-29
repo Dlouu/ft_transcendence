@@ -180,6 +180,18 @@ export class OpponentsManager extends Container {
 		});
 	}
 
+	public getOpponentHandCenter(playerIndex: number): { x: number; y: number } | null {
+		const opponent = this._opponents.get(playerIndex);
+		if (!opponent) {
+			return null;
+		}
+
+		return {
+			x: opponent.hand.position.x,
+			y: opponent.hand.position.y,
+		};
+	}
+
 	public removeOpponentCard(
 		playerName: string,
 		cardIndex: number,
