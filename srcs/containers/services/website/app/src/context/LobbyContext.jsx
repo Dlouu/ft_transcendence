@@ -54,6 +54,7 @@ export function LobbyProvider({ children }) {
 		socketRef.current = io(`https://${window.location.hostname}:4443`, {
 			path: "/ws",
 			withCredentials: true,
+			transports: ["websocket"],
 		});
 
 		socketRef.current.on("lobby_state", (data) => {
