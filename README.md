@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by [Login 1], [Login 2], [Login 3]*
+*This project has been created as part of the 42 curriculum by ymonty, mbaumgar, tclaereb and niabraha*
 
 # ft_transcendence
 
@@ -60,20 +60,20 @@ The application will be reachable at:
 - [Vite Documentation](https://vitejs.dev/)
 - [PixiJS Documentation](https://pixijs.com/)
 - [Socket.IO Documentation](https://socket.io/docs/v4/)
-- **AI Usage:** *[Explain how AI was used, e.g., to generate structural boilerplate, handle repetitive CSS refactoring, or help debug Docker container networking.]*
+- **AI Usage:** AI tools were used to assist with structural boilerplate generation, frontend component architecture, debugging WebSocket integration between the lobby service and React frontend, and iterative code review to improve readability and best practices.
 
 ---
 
 ## Team Information
-- **Yohann** (Project Owner + Developers): *Defines the product vision and core gameplay features, manages priorities and feature validation, and leads the development of the NestJS game service including UNO logic and real-time synchronization.*
-- **Marie** (Product Manager + Developers): *Organizes team workflow, manages tasks and deadlines, ensures smooth communication between services and team members, and contributes to frontend development and overall integration.*
-- **Theo** (Technical Lead + Developers): *Designs the global microservices architecture, defines technical choices, ensures code quality and consistency, and develops core infrastructure components including the API gateway, authentication flow, database design, and observability stack.*
-- **Nils** (Developers): *Develops real-time features such as the lobby system using WebSockets, implements user-related systems including friends and interactions, and contributes to backend feature development and testing.*
+- **Yohann** [**ymonty**] (Project Owner + Developers): *Defines the product vision and core gameplay features, manages priorities and feature validation, and leads the development of the NestJS game service including UNO logic and real-time synchronization.*
+- **Marie** [**mbaumgar**] (Product Manager + Developers): *Organizes team workflow, manages tasks and deadlines, ensures smooth communication between services and team members, and contributes to frontend development and overall integration.*
+- **Theo** [**tclaereb**] (Technical Lead + Developers): *Designs the global microservices architecture, defines technical choices, ensures code quality and consistency, and develops core infrastructure components including the API gateway, authentication flow, database design, and observability stack.*
+- **Nils** [**niabraha**] (Developers): *Develops real-time features such as the lobby system using WebSockets, implements user-related systems including friends and interactions, and contributes to backend feature development and testing.*
 
 ---
 
 ## Project Management
-- **Organization:** *[Explain how task distribution and meetings were managed]*
+- **Organization:** Tasks were distributed based on each member's technical ownership (frontend, backend, game engine, infrastructure). The team held regular sync meetings on Discord to align on progress, resolve blockers, and coordinate inter-service integration. Features were tracked and prioritized using Notion, with Github used for version control and code review.
 - **Tools Used:** Github, Notion
 - **Communication Channels:** Discord
 
@@ -94,7 +94,7 @@ The application will be reachable at:
 - **Lobby Service:** Python 3.13, Flask-SocketIO
 
 ### Database & Cache
-- **Database System:** MariaDB (Used as two separate databases: `auth_db` and `user_db`). *[Justification: Selected for its reliability in handling structured relational data like users, game statistics, and friends lists.]*
+- **Database System:** MariaDB (Used as two separate databases: `auth_db` and `user_db`). Selected for its reliability in handling structured relational data like users, game statistics, and friends lists.
 - **Cache System:** Redis 8.4 (Used for token cache and rapid session storage tracking).
 
 ### Observability & Infrastructure
@@ -112,7 +112,6 @@ The database architecture is split across two separate MariaDB instances (`auth_
   - Friends (Add/remove logic and relationships)
   - Game Stats (Wins, losses)
   - Card Gallery (AWS S3 Image URLs for custom uploaded cards)
-*[Provide a visual image representation of the database schema here if you have one]*
 
 ---
 
@@ -174,6 +173,6 @@ The application is strictly tested and is verified to fully function on the curr
 
 ## Individual Contributions
 - **Yohann**: Implemented the NestJS-based game engine handling core UNO mechanics, including turn management, rule enforcement, and AI opponent behavior. Developed the game frontend using PixiJS, integrating rendering, user interactions, and real-time updates with the backend. Designed and optimized WebSocket communication to ensure smooth and synchronized multiplayer gameplay, and contributed to resolving latency and state desynchronization issues.
-- **Marie**: Coordinated project workflow and task distribution to ensure steady progress across the team. Developed the website frontend, handling user flows, interface structure, and integration with backend services. Ensured smooth communication between components and contributed to consistent synchronization between the UI and real-time game state.
+- **Marie**: Coordinated project workflow and task distribution to ensure steady progress across the team. Developed the website frontend, handling user flows, interface structure, and integration with backend services. Ensured smooth communication between components and contributed to consistent synchronization between the UI and real-time game state. Implemented Paint tool for game customization.
 - **Nils**: Developed and maintained real-time lobby systems using Socket.IO and session management. Implemented user-related features such as friend interactions and presence tracking. Contributed to backend stability by testing, debugging, and improving event-driven communication across services.
 - **Theo**: Implemented Flask-based gateway APIs acting as the central entry point of the system, designed and deployed the ELK logging stack (Elasticsearch, Logstash, Kibana) for centralized monitoring, integrated AWS S3 for scalable user gallery storage, and defined robust MariaDB relational constraints to ensure data integrity. Led the configuration of Nginx as a secure reverse proxy with HTTPS, routing, and WebSocket support, and played a key role in designing the overall microservices architecture. Contributed to core backend infrastructure including authentication mechanisms (login, token generation). Faced challenges related to orchestrating a distributed microservices architecture, securing inter-service communication, and implementing a zero-trust API approach. Addressed these by enforcing strict access control, token-based authentication, and secure service isolation to reduce attack surfaces and prevent unauthorized access.
