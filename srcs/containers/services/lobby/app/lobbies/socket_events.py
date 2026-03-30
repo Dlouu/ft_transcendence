@@ -680,6 +680,6 @@ def send_datas_on_game_joined(data):
 	try:
 		response = requests.post(GAME_JOIN_URL, json=payload, timeout=5)
 		response.raise_for_status()
-	except requests.RequestException as exc:
-		return False, f"Unable to join gameee: {exc}"
+	except requests.RequestException:
+		return False, f"Unable to create or join a game"
 	return True, payload
