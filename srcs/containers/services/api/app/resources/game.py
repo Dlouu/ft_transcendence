@@ -33,6 +33,19 @@ class UpdateStats(Resource):
 	@ns.db_health_check()
 	@ns.expect(stats_model)
 	def post(self):
+		"""
+		Receive game data and store them in the database.
+
+		API:
+			Method: POST
+			Endpoint: /user/game/stats
+			Token: no
+			Secret: yes
+
+		Response:
+			200: Data updated.
+			400: The request body isn't valid.
+		"""
 		try:
 			data = game_schema.load(request.json)
 		except ValidationError:
@@ -88,6 +101,19 @@ class GetStats(Resource):
 	@ns.jwt_required()
 	@ns.db_health_check()
 	def get(self, user_id=None):
+		"""
+		Simple GETTER for game stats.
+
+		API:
+			Method: GET
+			Endpoint: /user/game/stats/<int:user_id>
+			Token: no
+			Secret: yes
+
+		Response:
+			200: Data found.
+			404: No data found.
+		"""
 		gamestats = GameStats.query.filter_by(user_id=user_id).first()
 
 		if not gamestats:
