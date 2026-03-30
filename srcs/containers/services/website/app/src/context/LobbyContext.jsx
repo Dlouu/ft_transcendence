@@ -149,7 +149,6 @@ export function LobbyProvider({ children }) {
 		});
 
 		socketRef.current.on("ongoing_game", (data) => {
-			console.log();
 			setInGame(true);
 		});
 
