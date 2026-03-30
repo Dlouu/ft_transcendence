@@ -12,6 +12,7 @@ import { GameService } from "./game.service";
 import { GameLoggerService } from "./logger.service";
 import { toStatsPayloadDto } from "./dto/stats-payload.dto";
 import { GAME_CONFIG } from "./game.config";
+import { stringify } from "querystring";
 
 // Handles the rules of the game (turns, UNO shouts, card validation).
 @Injectable()
@@ -491,6 +492,8 @@ export class GameLogicService {
 		winner.win_game = true;
 
 		const gameEndDto = toStatsPayloadDto(game);
+
+		console.log(`\n\n\n\n\n\n\n\n${JSON.stringify(gameEndDto)}\n\n\n\n\n\n`);
 
 		await fetch("http://api:5050/user/game/stats", {
 			method: "POST",

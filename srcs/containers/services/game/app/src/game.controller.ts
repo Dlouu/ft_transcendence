@@ -12,7 +12,7 @@ export class GameController {
   createGame(@Body() dto: CreateGameDto): Record<string, unknown> {
     const room: Game = this.gameService.create(dto);
     if (room)
-      return room.toJson();
+      return { status: 200, message: "Game created successfully" };
     else
       throw new InternalServerErrorException("Failed to create game");
   }
@@ -21,7 +21,7 @@ export class GameController {
   rejoinGame(@Body() dto: RejoinGameFromLobbyDto): Record<string, unknown> {
     const game: Game | null = this.gameService.rejoinFromLobby(dto.id, dto);
     if (game)
-      return game.toJson();
+      return { status: 200, message: "Rejoined game successfully" };
     else
       throw new InternalServerErrorException("Failed to rejoin game");
   }
