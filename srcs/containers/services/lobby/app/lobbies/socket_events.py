@@ -677,9 +677,16 @@ def send_datas_on_game_joined(data):
 			build_player_entry(player_id, users_by_user_id, default_card_back, profile_picture)
 		]
 	}
+
+	payload = payload["player"][0]
+	payload["backCardURL"] = payload.pop("cardBackUrl")	
+
+	print(payload, flush=True)
 	try:
 		response = requests.post(GAME_JOIN_URL, json=payload, timeout=5)
-		response.raise_for_status()
-	except requests.RequestException:
+		print(response.json(), flush=True)
+		#response.raise_for_status()
+	except requests.RequestException as exc:
+		print(exc, flush = True)
 		return False, f"Unable to create or join a game"
 	return True, payload

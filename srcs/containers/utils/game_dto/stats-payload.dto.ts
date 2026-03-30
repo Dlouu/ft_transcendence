@@ -100,27 +100,39 @@ const getPlayerIntStat = (
 };
 
 export const toStatsPayloadDto = (game: Game): StatsPayloadDto => {
-	const dto = new StatsPayloadDto();
-	const winner = game.players.find((player) => player._hand.length === 0);
+    const dto = new StatsPayloadDto();
 
-	dto.players = game.expectedPlayers.map((expectedPlayer) => {
-		const player = game.players.find((candidate) => candidate._id === expectedPlayer.id);
-		const playerStats = new PlayerStatsPayloadDto();
+    const winner = game.players.find((player) => player._hand.length === 0);
 
-		playerStats.user_id = expectedPlayer.id;
-		playerStats.win_game = winner?._id === expectedPlayer.id;
-		playerStats.nbr_uno = getPlayerIntStat(player, ["nbr_uno"]);
-		playerStats.nbr_uwu = getPlayerIntStat(player, ["nbr_uwu"]);
-		playerStats.nbr_4cards = getPlayerIntStat(player, ["nbr_4cards"]);
-		playerStats.nbr_drew = getPlayerIntStat(player, ["nbr_drew"]);
-		playerStats.biggest_hand = getPlayerIntStat(
-			player,
-			["biggest_hand"],
-			player?._hand.length ?? 0,
-		);
+    dto.players = game.expectedPlayers
+        .map((expectedPlayer) =>
+        {
+            const player = game.players.find(
+                (candidate) => candidate._id === expectedPlayer.id,
+            );
 
-		return playerStats;
-	});
+            if (!player || player._isBot)
+            {
+                return null;
+            }
 
-	return dto;
+            const playerStats = new PlayerStatsPayloadDto();
+
+            playerStats.user_id = expectedPlayer.id;
+            playerStats.win_game = winner?._id === expectedPlayer.id;
+            playerStats.nbr_uno = getPlayerIntStat(player, ["nbr_uno"]);
+            playerStats.nbr_uwu = getPlayerIntStat(player, ["nbr_uwu"]);
+            playerStats.nbr_4cards = getPlayerIntStat(player, ["nbr_4cards"]);
+            playerStats.nbr_drew = getPlayerIntStat(player, ["nbr_drew"]);
+            playerStats.biggest_hand = getPlayerIntStat(
+                player,
+                ["biggest_hand"],
+                player._hand.length ?? 0,
+            );
+
+            return playerStats;
+        })
+        .filter((p): p is PlayerStatsPayloadDto => p !== null);
+
+    return dto;
 };
