@@ -184,7 +184,7 @@ export function LobbyProvider({ children }) {
 			}
 			if (response?.code && response.game_started) {
 				socketRef.current.emit("join_lobby_socket", { code: response.code });
-				navigate("/game");
+				notify("You are already in a game, click reconnect" || "Rejoin your active lobby by Reconnect button.", "error");
 				return;
 			}
 			if (response?.code && !response.game_started) {

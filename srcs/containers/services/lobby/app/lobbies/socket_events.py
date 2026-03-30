@@ -301,6 +301,7 @@ def master_start():
 			emit("error", {"message": error_message})
 			return
 		data["game_started"] = True
+		emit_lobby_state(code);
 		for uid in data["players"]:
 			players_in_game.add(uid)
 		socketio.emit("game_start", {"code": code}, room=code)
