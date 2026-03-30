@@ -88,8 +88,7 @@ class UpdateStats(Resource):
 				else:
 					gamestats.games_lose = gamestats.games_lose + 1
 
-				if gamestats.games_lose != 0:
-					gamestats.winrate = gamestats.games_won / gamestats.games_played * 100
+				gamestats.winrate = gamestats.games_won / gamestats.games_played * 100
 
 			db.session.commit()
 
