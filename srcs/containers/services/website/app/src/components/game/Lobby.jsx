@@ -2,7 +2,7 @@ import { useState, useContext } from "react";
 import { Button, Input } from "../../ui";
 import { AuthContext } from "../../context/AuthContext";
 import { LobbyContext } from "../../context/LobbyContext";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 function Lobby({ onCreate, onJoin }) {
 	const [code, setCode] = useState("");
@@ -12,6 +12,7 @@ function Lobby({ onCreate, onJoin }) {
 	const normalizedCode = code.toUpperCase();
 	const isValid = normalizedCode.length === 4;
 	const isMobile = window.innerWidth < 640;
+	const navigate = useNavigate();
 
 	const handleJoin = () => {
 		if (isValid) onJoin(normalizedCode);
@@ -19,6 +20,10 @@ function Lobby({ onCreate, onJoin }) {
 
 	const HandleHideLobbies = () => {
 		setShowLobbies(false);
+	};
+
+	const handleReconnect = () => {
+		navigate("/game")
 	};
 
 	return (
@@ -77,6 +82,11 @@ function Lobby({ onCreate, onJoin }) {
 				</div>
 
 			</div>
+			<Button
+				onClick={handleReconnect}
+			>
+				RECONNECT
+			</Button>
 			<p className="text-center mt-5">
 				You are logged as{" "}
 				<Link to={`/profile/${user?.user_id}`}>{user?.username}</Link>

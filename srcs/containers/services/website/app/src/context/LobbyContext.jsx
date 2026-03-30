@@ -24,6 +24,7 @@ export function LobbyProvider({ children }) {
 	const isHost = master === socketRef.current?.id;
 	const [connected, setConnected] = useState(false);
 	const prevPathRef = useRef(location.pathname);
+	const [inGame, setInGame] = useState(false);
 
 	useEffect(() => {
 		const previousPath = prevPathRef.current;
@@ -135,6 +136,11 @@ export function LobbyProvider({ children }) {
 			setFriends(prev => prev.map(f =>
 				f.username === data.username ? { ...f, online: data.online, inGame: data.in_game } : f
 			));
+		});
+
+		socketRef.current.on("ongoing_game", (data) => {
+			console.log();
+			setInGame(true);
 		});
 
 		socketRef.current.on("connect", () => {
