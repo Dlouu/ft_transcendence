@@ -378,7 +378,6 @@ export class VictoryScreen extends Container {
 			}
 
 			if (typeof window !== "undefined") {
-				// window.location.assign(VictoryScreen.HOME_PATH);
 				window.dispatchEvent(new CustomEvent('game_victory'));
 			}
 		}, GAME_CUSTOMIZATION.victory.buttonAnimationDurationMs);

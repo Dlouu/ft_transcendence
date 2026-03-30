@@ -54,12 +54,12 @@ export function registerServerEventCallbacks({
 
 	socket.on("connect_error", (err) => {
 		// console.error("GameService: Connection error", err);
-		window.location.href = "/";
+		window.dispatchEvent(new CustomEvent('game_victory'));
 	});
 
 	socket.once("disconnect", (reason) => {
 		if (reason === "io server disconnect") {
-			window.location.href = "/";
+			window.dispatchEvent(new CustomEvent('game_victory'));
 		}
 	});
 
@@ -207,6 +207,6 @@ export function registerServerEventCallbacks({
 	socket.on("game:error", () => {
 		// console.error("GameService: Game error");
 		socket.disconnect();
-		window.location.href = "/";
+		window.dispatchEvent(new CustomEvent('game_victory'));
 	});
 }
