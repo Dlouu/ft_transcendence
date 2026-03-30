@@ -1,4 +1,4 @@
-import { Container, Text, Sprite, Assets } from "pixi.js";
+import { Container, Text, Sprite, Texture } from "pixi.js";
 import { GAME_CUSTOMIZATION } from "../config/gameCustomization";
 import { TableViewport } from "../layout/TableViewport";
 
@@ -38,7 +38,7 @@ export class OpponentNameDisplay extends Container {
 		}
 	}
 
-	private async loadPicture(pictureUrl: string): Promise<void> {
+	public async loadPicture(pictureUrl: string): Promise<void> {
 		try {
 			let webPath = pictureUrl.trim();
 			const isAbsoluteUrl = /^(https?:)?\/\//i.test(webPath);
@@ -56,15 +56,27 @@ export class OpponentNameDisplay extends Container {
 				}
 			}
 
-			const texture = await Assets.load(webPath);
+			// Load via HTMLImageElement rather than Assets.load() so that PixiJS
+			// receives a DOM element as the texture source. This avoids the WebGL
+			// lazy-initialization warning that fires when an ImageBitmap-backed
+			// texture is first drawn (ImageBitmap sources are uploaded lazily).
+			const img = new Image();
+			img.crossOrigin = "anonymous";
+			await new Promise<void>((resolve, reject) => {
+				img.onload = () => resolve();
+				img.onerror = reject;
+				img.src = webPath;
+			});
+
+			const texture = Texture.from(img);
 			this._picture = new Sprite(texture);
 			this._picture.anchor.set(0.5);
 			this._picture.width = this._pictureSizePx;
 			this._picture.height = this._pictureSizePx;
 			this.addChild(this._picture);
 			this.updateLayout();
-		} catch (error) {
-			// console.warn(`Failed to load opponent picture: ${pictureUrl}`, error);
+		} catch {
+			// console.warn(`Failed to load opponent picture: ${pictureUrl}`);
 		}
 	}
 

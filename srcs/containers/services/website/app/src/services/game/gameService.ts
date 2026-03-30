@@ -21,6 +21,7 @@ interface IGameInitOptions {
 
 export class GameService {
 	private _app: Application | null = null;
+	private _canvas: HTMLCanvasElement | null = null;
 	private _socket: Socket | null = null;
 	private _playerId: string | null = null;
 
@@ -55,24 +56,33 @@ export class GameService {
 			this.destroy();
 		}
 
+		// Destroy the existing renderer only when the canvas element has changed.
+		// Keeping it alive across same-canvas resets avoids the WebGL context-lost
+		// event that fires when the renderer is explicitly destroyed and immediately
+		// recreated on the same canvas (e.g. React StrictMode double-invoke).
+		if (this._app && canvas !== this._canvas) {
+			this._app.destroy(true, { children: true });
+			this._app = null;
+		}
+
+		this._canvas = canvas;
 		this._playerId = playerId;
 		const aspectRatio = GAME_CUSTOMIZATION.app.canvasAspectRatio;
 		const canvasWidth = Math.max(1, Math.floor(canvas.clientWidth));
 		const canvasHeight = Math.max(1, Math.floor(canvasWidth / aspectRatio));
 
-		this._app = new Application();
-
-		await this._app.init({
-			canvas: canvas,
-			width: canvasWidth,
-			height: canvasHeight,
-			backgroundColor: GAME_CUSTOMIZATION.app.backgroundColor,
-			// backgroundAlpha: 0.3,
-			resolution: window.devicePixelRatio || 1,
-			autoDensity: true,
-			antialias: true,
-			// hello: true,
-		});
+		if (!this._app) {
+			this._app = new Application();
+			await this._app.init({
+				canvas: canvas,
+				width: canvasWidth,
+				height: canvasHeight,
+				backgroundColor: GAME_CUSTOMIZATION.app.backgroundColor,
+				resolution: window.devicePixelRatio || 1,
+				autoDensity: true,
+				antialias: true,
+			});
+		}
 
 		this.initSocket(playerId);
 
@@ -214,10 +224,9 @@ export class GameService {
 			this._cardPool.destroy();
 		}
 
-		if (this._app) {
-			this._app.destroy(true, { children: true });
-			this._app = null;
-		}
+		// _app is intentionally kept alive here so the WebGL context can be
+		// reused if init() is called again with the same canvas element.
+		// The renderer is only destroyed in init() when a different canvas is supplied.
 
 		this._isInitialized = false;
 		this._hasGameStarted = false;
