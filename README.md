@@ -3,7 +3,7 @@
 # ft_transcendence
 
 ## Description
-**ft_transcendence** is a full-stack, real-time multiplayer **UNO** web application. 
+**ft_transcendence** is a full-stack, real-time multiplayer **UNO** web application.
 The goal of the project is to create a fully functioning online game, adhering to modern web development practices. It is fully containerized using **Docker Compose** and follows a **microservices architecture**, with dedicated services for authentication, game logic, lobbies, the frontend website, and an observability stack.
 
 ### Key Aspects
@@ -49,6 +49,7 @@ The application will be reachable at:
 - `make restart [DOCK=service]` - Stop then rebuild and restart
 - `make logs [DOCK=service]` - Tail logs for a service
 - `make fclean` - Stop containers, remove volumes, prune images
+- `make command [DEV=1]` - Use the dev branch
 
 ---
 
@@ -64,16 +65,17 @@ The application will be reachable at:
 ---
 
 ## Team Information
-- **[Team Member 1]** (Role, e.g., Tech Lead): *[Brief description of their responsibilities]*
-- **[Team Member 2]** (Role, e.g., Frontend Developer): *[Brief description of their responsibilities]*
-- **[Team Member 3]** (Role, e.g., Backend Developer): *[Brief description of their responsibilities]*
+- **Marie** (Product Owner + Developers): *[Brief description of their responsibilities]*
+- **Yohann** (Project Manager + Developers): *[Brief description of their responsibilities]*
+- **Theo** (Technical Lead + Developers): *[Brief description of their responsibilities]*
+- **Nils** (Developers + Developers): *[Brief description of their responsibilities]*
 
 ---
 
 ## Project Management
 - **Organization:** *[Explain how task distribution and meetings were managed]*
-- **Tools Used:** *[e.g., GitHub Issues, Trello, Notion]*
-- **Communication Channels:** *[e.g., Discord, Slack]*
+- **Tools Used:** Github, Notion
+- **Communication Channels:** Discord
 
 ---
 
@@ -117,19 +119,19 @@ The database architecture is split across two separate MariaDB instances (`auth_
 ## Features List
 
 ### 🎮 Gameplay
-- **Real-time multiplayer UNO** (WebSockets + PixiJS) - *Implemented by [Member]* - Features full deck mechanics, real-time turns, and rule validation.
-- **Public & Private Lobbies** - *Implemented by [Member]* - Create accessible rooms for specific invite codes.
-- **AI Opponent** - *Implemented by [Member]* - Bot logic engineered via NestJS services.
+- **Real-time multiplayer UNO** (WebSockets + PixiJS) - *Implemented by Yohann* - Features full deck mechanics, real-time turns, and rule validation.
+- **Public & Private Lobbies** - *Implemented by Nils* - Create accessible rooms for specific invite codes.
+- **AI Opponent** - *Implemented by Yohann* - Bot logic engineered via NestJS services.
 
 ### 👤 User Pages & Flow
-- **Authentication** - *Implemented by [Member]* - Login, Register, JWT, Bcrypt.
-- **Profile / User Profile** - *Implemented by [Member]* - View global stats and information.
-- **Friend List** - *Implemented by [Member]* - Manage and view online friends.
-- **Gallery / Paint** - *Implemented by [Member]* - In-browser drawing tool and custom card image upload via AWS S3.
+- **Authentication** - *Implemented by Theo and Nils* - Login, Register, JWT, Bcrypt.
+- **Profile / User Profile** - *Implemented by Marie and Theo* - View global stats and information.
+- **Friend List** - *Implemented by Nils and Marie* - Manage and view online friends.
+- **Gallery / Paint** - *Implemented by Marie* - In-browser drawing tool and custom card image upload via AWS S3.
 
 ### 🔒 Backend & Infrastructure
-- **Gateway REST API** - *Implemented by [Member]* - Central hub that routes and proxies requests between internal services.
-- **Centralized logging** - *Implemented by [Member]* - Logstash pipelines ship logs to Elasticsearch and visualize on Kibana.
+- **Gateway REST API** - *Implemented by Theo* - Central hub that routes and proxies requests between internal services.
+- **Centralized logging** - *Implemented by Theo* - Logstash pipelines ship logs to Elasticsearch and visualize on Kibana.
 
 ---
 
@@ -138,25 +140,26 @@ The database architecture is split across two separate MariaDB instances (`auth_
 The project follows a set of specific modules chosen from the 42 curriculum. Below is the point evaluation block:
 
 ### Major Modules (2 Points Each)
-- **Use a framework for both the frontend and backend** (React + Vite / Flask + NestJS). *Implemented by: [Member]*
-- **Implement real-time features using WebSockets or similar technology**. *Implemented by: [Member]*
-- **Allow users to interact with other users** (Profile, Friends). *Implemented by: [Member]*
-- **A public API to interact with the database**. *Implemented by: [Member]*
-- **Standard user management and authentication**. *Implemented by: [Member]*
-- **Introduce an AI Opponent for games**. *Implemented by: [Member]*
-- **Implement a complete web-based game where users can play against each other**. *Implemented by: [Member]*
-- **Remote players — Enable two players on separate computers to play the same game in real-time**. *Implemented by: [Member]*
-- **Multiplayer game (more than two players)**. *Implemented by: [Member]*
-- **Infrastructure for log management using ELK**. *Implemented by: [Member]*
-- **Backend as microservices**. *Implemented by: [Member]*
+- **Use a framework for both the frontend and backend** (React + Vite / Flask + NestJS). *Implemented by: Marie*
+- **Implement real-time features using WebSockets or similar technology**. *Implemented by: Nils and Yohann*
+- **Allow users to interact with other users** (Profile, Friends). *Implemented by: Marie and Nils*
+- **A public API to interact with the database**. *Implemented by: Theo*
+- **Standard user management and authentication**. *Implemented by: Theo*
+- **Introduce an AI Opponent for games**. *Implemented by: Yohann*
+- **Implement a complete web-based game where users can play against each other**. *Implemented by: Marie, Nils, Yohann*
+- **Remote players — Enable two players on separate computers to play the same game in real-time**. *Implemented by: Yohann*
+- **Multiplayer game (more than two players)**. *Implemented by: Yohann*
+- **Infrastructure for log management using ELK**. *Implemented by: Theo*
+- **Backend as microservices**. *Implemented by: Theo*
 
 ### Minor Modules (1 Point Each)
-- **Use a frontend framework**. *Implemented by: [Member]*
-- **Use a backend framework**. *Implemented by: [Member]*
-- **Use an ORM for the database** (Flask-SQLAlchemy). *Implemented by: [Member]*
-- **Custom-made design system with reusable components**. *Implemented by: [Member]*
-- **Support for additional browsers** (Tested on Chrome, Firefox, Brave). *Implemented by: [Member]*
-- **Custom Minor Module: AWS Image Storage** (AWS S3 utilized to store gallery images/avatars efficiently). *Justification: Chosen to safely and persistently host user content while reducing database sizes and network payload strain.* *Implemented by: [Member]*
+- **Use a frontend framework**. *Implemented by: Yohann and Marie*
+- **Use a backend framework**. *Implemented by: Nils, Theo, Yohann*
+- **Use an ORM for the database** (Flask-SQLAlchemy). *Implemented by: Theo, Nils*
+- **Custom-made design system with reusable components**. *Implemented by: Marie*
+- **Support for additional browsers** (Tested on Chrome, Firefox, Brave). *Implemented by: Marie, Yohann*
+- **Custom Minor Module: AWS Image Storage** (AWS S3 utilized to store gallery images/avatars efficiently). *Justification: Chosen to safely and persistently host user content while reducing database sizes and network payload strain.* *Implemented by: Theo..
+*
 
 ---
 
