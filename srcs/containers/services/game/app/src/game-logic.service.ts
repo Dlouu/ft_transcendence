@@ -492,10 +492,16 @@ export class GameLogicService {
 
 		const gameEndDto = toStatsPayloadDto(game);
 
+		const getenv = require('getenv');
+
+		const bearerApi = "Bearer " + getenv.string('GAME_SECRET_KEY');
+
+		// TODO: Ask Theosaurus to tell me again how to add the env truc...
 		await fetch("http://api:5050/user/game/stats", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
+				"Authorization": bearerApi,
 			},
 			body: JSON.stringify(gameEndDto),
 		})

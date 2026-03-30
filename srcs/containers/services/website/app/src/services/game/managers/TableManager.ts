@@ -294,16 +294,20 @@ export class TableManager extends Container {
 			this._cardPool.returnCard(oldCard);
 		}
 
-		const newDiscardCard = this._cardPool.getCard();
-		const discardCardModel = new Card(cardDto.cardFamily, cardDto.cardCode);
-		const texture = this._assetsManager.getCardTexture(
-			cardDto.cardFamily,
-			cardDto.cardCode,
-		);
-		newDiscardCard.setFaceUpCard(texture, discardCardModel);
-		this._discard.setCard(newDiscardCard);
+		   const newDiscardCard = this._cardPool.getCard();
+		   // Always use CardFamily.WILD for wild cards on the discard pile
+		   const isWild = cardDto.cardCode === "wild" || cardDto.cardCode === "wildDrawFour";
+		   const discardCardFamily = isWild ? CardFamily.WILD : cardDto.cardFamily;
+		   const texture = this._assetsManager.getCardTexture(
+			   discardCardFamily,
+			   cardDto.cardCode,
+		   );
+		   const discardCardModel = new Card(discardCardFamily, cardDto.cardCode);
+		   newDiscardCard.setFaceUpCard(texture, discardCardModel);
+		   this._discard.setCard(newDiscardCard);
 
-		this.setPilesBackdropColorByCardSet(cardDto.cardFamily);
+		   // For the pile color, use the family from the DTO (which is the current color for wilds)
+		   this.setPilesBackdropColorByCardSet(cardDto.cardFamily);
 	}
 
 	public showCardEffect(effectDto: CardEffectDto): void {
@@ -463,13 +467,17 @@ export class TableManager extends Container {
 	}
 
 	public async applyRejoinState(dto: RejoinGameDto): Promise<void> {
-		this._playerIndex = this.resolveRejoinPlayerIndex(dto);
-		// Ensure the deck card exists before updating it
-		this.ensureDeckCardForRejoin();
+			this._playerIndex = this.resolveRejoinPlayerIndex(dto);
+			// Ensure the deck card exists before updating it
+			this.ensureDeckCardForRejoin();
 
-		this._tableCenterArea.setColors({
-			...this._assetsManager.getThemeBackdropColors(),
-		});
+			// Set the card theme before setting colors
+			if (dto.cardTheme) {
+				await this._assetsManager.loadTheme(dto.cardTheme as import("../domain/GameEnums").CardsTheme);
+			}
+			this._tableCenterArea.setColors({
+				...this._assetsManager.getThemeBackdropColors(),
+			});
 
 		// Load and set deck card back for player
 		if (this._deck.card) {
@@ -553,7 +561,7 @@ export class TableManager extends Container {
 	}
 
 	public setPilesBackdropColorByCardSet(cardFamily: CardFamily): void {
-		console.log(`New color : ${cardFamily}`);
+		// console.log(`New color : ${cardFamily}`);
 		const color = this._tableCenterArea.getColorForFamily(cardFamily);
 		this.setPilesBackdropColor(color);
 	}

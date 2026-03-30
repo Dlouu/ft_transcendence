@@ -49,6 +49,7 @@ export interface IRejoinGame {
 	currentDiscardCard: CardDto;
 	playerCardBackUrl: string;
 	playerProfilePictureUrl: string;
+	cardTheme: "basic" | "uwu";
 }
 
 export class RejoinGameDto implements IRejoinGame {
@@ -83,6 +84,9 @@ export class RejoinGameDto implements IRejoinGame {
 
 	@IsString()
 	playerProfilePictureUrl: string;
+
+	@IsIn(["basic", "uwu"])
+	cardTheme: "basic" | "uwu";
 }
 
 export const toRejoinGameDto = (
@@ -126,6 +130,7 @@ export const toRejoinGameDto = (
 	discardCardDto.cardCode = discardTopCard.value;
 	discardCardDto.cardFamily = discardTopCard.family;
 	dto.currentDiscardCard = discardCardDto;
+	dto.cardTheme = game.cardTheme;
 
 	return dto;
 };

@@ -26,8 +26,19 @@ def is_in_game(external_user_id):
     return False
 
 
+def is_in_lobby(external_user_id):
+    for lobby_data in lobbies.values():
+        if (
+            not lobby_data.get("game_started")
+            and not lobby_data.get("game_ended")
+            and external_user_id in lobby_data.get("players", {})
+        ):
+            return True
+    return False
+
+
 def notify_friends_status(user_id, username, status):
-    #Notifie tous les amis acceptés du changement de statut online, offline, in_game
+    """Notifie tous les amis acceptés du changement de statut online/offline/in_lobby/in_game."""
     rows = Friends.query.filter(
         db.or_(
             Friends.requester_id == user_id,
@@ -36,8 +47,14 @@ def notify_friends_status(user_id, username, status):
         Friends.status == "accepted"
     ).all()
 
-    me = User.query.get(user_id)
-    in_game = is_in_game(me.user_id) if me else False
+    online = status == "online"
+    if online:
+        me = User.query.get(user_id)
+        in_game = is_in_game(me.user_id) if me else False
+        in_lobby = is_in_lobby(me.user_id) if me else False
+    else:
+        in_game = False
+        in_lobby = False
 
     for row in rows:
         other_id = row.accepter_id if row.requester_id == user_id else row.requester_id
@@ -45,8 +62,9 @@ def notify_friends_status(user_id, username, status):
         if other:
             emit("friend_status", {
                 "username": username,
-                "online": status == "online",
+                "online": online,
                 "in_game": in_game,
+                "in_lobby": in_lobby,
             }, to=other.username)
 
 
@@ -71,6 +89,7 @@ def notify_players_ingame_status(lobby_data, in_game):
                     "username": user.username,
                     "online": is_online(user.username),
                     "in_game": in_game,
+                    "in_lobby": False,
                 }, to=other.username)
 
 @socketio.on("remove_friend")
@@ -150,7 +169,7 @@ def get_friends():
             continue
 
         if row.status == "accepted":
-            friends.append({"username": other.username, "id": other.id, "status": "accepted", "online": is_online(other.username), "in_game": is_in_game(other.user_id)})
+            friends.append({"username": other.username, "id": other.id, "status": "accepted", "online": is_online(other.username), "in_game": is_in_game(other.user_id), "in_lobby": is_in_lobby(other.user_id)})
         elif row.status == "pending":
             if is_requester:
                 friends.append({"username": other.username, "id": other.id, "status": "pending"})
@@ -270,3 +289,36 @@ def add_friend(data):
 
     emit("friend_request_sent", {"username": target_username, "status": "pending", "type": "sent"}, to=request.sid)
     emit("friend_request_sent", {"username": session.get("username"), "status": "pending", "type": "received", "user_id": requester_id}, to=user.username)
+
+
+@socketio.on("get_friend_status")
+def get_friend_status(data):
+    """Retourne le statut en temps réel d'un ami spécifique (online/in_lobby/in_game)."""
+    target_username = (data.get("username") or "").strip()
+    if not target_username:
+        return
+
+    user_id = _get_db_user_id()
+    if not user_id:
+        return
+
+    target = User.query.filter_by(username=target_username).first()
+    if not target:
+        return
+
+    friendship = Friends.query.filter(
+        Friends.status == "accepted",
+        db.or_(
+            db.and_(Friends.requester_id == user_id, Friends.accepter_id == target.id),
+            db.and_(Friends.requester_id == target.id, Friends.accepter_id == user_id),
+        )
+    ).first()
+    if not friendship:
+        return
+
+    emit("friend_status", {
+        "username": target.username,
+        "online": is_online(target.username),
+        "in_game": is_in_game(target.user_id),
+        "in_lobby": is_in_lobby(target.user_id),
+    }, to=request.sid)

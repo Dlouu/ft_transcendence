@@ -28,7 +28,7 @@ export class AssetsManager {
 				this._arrowTexture = texture;
 			}
 		} catch (error) {
-			console.error("Error loading arrow texture:", error);
+			// console.error("Error loading arrow texture:", error);
 		}
 	}
 
@@ -124,10 +124,10 @@ export class AssetsManager {
 			);
 
 			if (!this._spritesheet) {
-				console.error(`Failed to load spritesheet for theme: ${theme}`);
+				// console.error(`Failed to load spritesheet for theme: ${theme}`);
 			}
 		} catch (error) {
-			console.error(`Error loading theme ${theme}:`, error);
+			// console.error(`Error loading theme ${theme}:`, error);
 		}
 	}
 
@@ -179,10 +179,10 @@ export class AssetsManager {
 					}
 				}
 			} catch (error) {
-				console.error(
-					`Error loading card back '${normalizedVariant}' : `,
-					error,
-				);
+				// console.error(
+				// 	`Error loading card back '${normalizedVariant}' : `,
+				// 	error,
+				// );
 			}
 		});
 
@@ -191,7 +191,7 @@ export class AssetsManager {
 
 	public getCardTexture(color: CardFamily, value: CardCode): Texture {
 		if (!this._spritesheet) {
-			console.error("AssetsManager: Spritesheet not loaded yet.");
+			// console.error("AssetsManager: Spritesheet not loaded yet.");
 			return Texture.EMPTY;
 		}
 
@@ -203,9 +203,9 @@ export class AssetsManager {
 			}
 		}
 
-		console.warn(
-			`AssetsManager: Texture not found for keys: ${keys.join(", ")}`,
-		);
+		// console.warn(
+		// 	`AssetsManager: Texture not found for keys: ${keys.join(", ")}`,
+		// );
 		return Texture.EMPTY;
 	}
 
@@ -223,22 +223,22 @@ export class AssetsManager {
 		for (const fallbackKey of this._getCardBackLookupKeys(fallbackVariant)) {
 			const fallbackTexture = this._backTextures.get(fallbackKey);
 			if (fallbackTexture) {
-				console.warn(
-					`AssetsManager: Card back variant '${variant}' not found. Falling back to '${fallbackVariant}'.`,
-				);
+				// console.warn(
+				// 	`AssetsManager: Card back variant '${variant}' not found. Falling back to '${fallbackVariant}'.`,
+				// );
 				return fallbackTexture;
 			}
 		}
 
 		const firstLoadedTexture = this._backTextures.values().next().value;
 		if (firstLoadedTexture) {
-			console.warn(
-				`AssetsManager: Card back variant '${variant}' not found. Falling back to first loaded card back texture.`,
-			);
+			// console.warn(
+			// 	`AssetsManager: Card back variant '${variant}' not found. Falling back to first loaded card back texture.`,
+			// );
 			return firstLoadedTexture;
 		}
 
-		console.warn(`AssetsManager: Card back variant '${variant}' not found.`);
+		// console.warn(`AssetsManager: Card back variant '${variant}' not found.`);
 		return Texture.EMPTY;
 	}
 
