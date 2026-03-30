@@ -17,9 +17,7 @@ from app.oauth import oauth
 def create_app():
 	app = Flask(__name__)
 	app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
-		"CREDENTIAL_DATABASE_URI",
-		"mysql+mysqldb://auth_user:auth_pwd@auth_db:3306/auth_data",
-	)
+		"CREDENTIAL_DATABASE_URI", "")
 	app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 	app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
