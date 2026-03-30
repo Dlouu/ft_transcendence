@@ -117,18 +117,22 @@ export class AssetsManager {
 
 		const assetPath = `${fileName}`;
 
-		try {
-			this._spritesheet = await Assets.load(assetPath);
-			this._themeBackdropColors = this._extractThemeBackdropColors(
-				this._spritesheet?.data as ThemeMetadata,
-			);
+		   try {
+			   if (!Assets.cache.has(assetPath)) {
+				   this._spritesheet = await Assets.load(assetPath);
+			   } else {
+				   this._spritesheet = Assets.cache.get(assetPath);
+			   }
+			   this._themeBackdropColors = this._extractThemeBackdropColors(
+				   this._spritesheet?.data as ThemeMetadata,
+			   );
 
-			if (!this._spritesheet) {
-				// console.error(`Failed to load spritesheet for theme: ${theme}`);
-			}
-		} catch (error) {
-			// console.error(`Error loading theme ${theme}:`, error);
-		}
+			   if (!this._spritesheet) {
+				   // console.error(`Failed to load spritesheet for theme: ${theme}`);
+			   }
+		   } catch (error) {
+			   // console.error(`Error loading theme ${theme}:`, error);
+		   }
 	}
 
 	private _extractThemeBackdropColors(
@@ -160,33 +164,38 @@ export class AssetsManager {
 	public async loadCardBacks(
 		variants: string[] = [...GAME_CUSTOMIZATION.app.defaultCardBackVariants],
 	): Promise<void> {
-		const loadPromises = variants.map(async (variant) => {
-			const normalizedVariant = this._normalizeCardBackVariant(variant);
-			if (!normalizedVariant) {
-				return;
-			}
+		   const loadPromises = variants.map(async (variant) => {
+			   const normalizedVariant = this._normalizeCardBackVariant(variant);
+			   if (!normalizedVariant) {
+				   return;
+			   }
 
-			const isUrl = this._isUrlVariant(normalizedVariant);
-			const assetPath = isUrl
-				? normalizedVariant
-				: `${normalizedVariant}${GAME_CUSTOMIZATION.assets.cardBackFileSuffix}`;
+			   const isUrl = this._isUrlVariant(normalizedVariant);
+			   const assetPath = isUrl
+				   ? normalizedVariant
+				   : `${normalizedVariant}${GAME_CUSTOMIZATION.assets.cardBackFileSuffix}`;
 
-			try {
-				const texture = await Assets.load<Texture>(assetPath);
-				if (texture) {
-					for (const key of this._getCardBackLookupKeys(normalizedVariant)) {
-						this._backTextures.set(key, texture);
-					}
-				}
-			} catch (error) {
-				// console.error(
-				// 	`Error loading card back '${normalizedVariant}' : `,
-				// 	error,
-				// );
-			}
-		});
+			   try {
+				   let texture: Texture;
+				   if (!Assets.cache.has(assetPath)) {
+					   texture = await Assets.load<Texture>(assetPath);
+				   } else {
+					   texture = Assets.cache.get(assetPath);
+				   }
+				   if (texture) {
+					   for (const key of this._getCardBackLookupKeys(normalizedVariant)) {
+						   this._backTextures.set(key, texture);
+					   }
+				   }
+			   } catch (error) {
+				   // console.error(
+				   //  `Error loading card back '${normalizedVariant}' : `,
+				   //  error,
+				   // );
+			   }
+		   });
 
-		await Promise.all(loadPromises);
+		   await Promise.all(loadPromises);
 	}
 
 	public getCardTexture(color: CardFamily, value: CardCode): Texture {

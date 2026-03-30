@@ -48,12 +48,12 @@ export class CardFamilySelector extends Container {
 			const endAngle = startAngle + sectorAngle;
 			const fillColor = this.parseHexColor(colors[family]);
 
-			sector.lineStyle(
-				CardFamilySelector.BORDER_WIDTH,
-				CardFamilySelector.BORDER_COLOR,
-				CardFamilySelector.BORDER_ALPHA,
-			);
-			sector.beginFill(fillColor, 1);
+			       sector.setStrokeStyle({
+				       width: CardFamilySelector.BORDER_WIDTH,
+				       color: CardFamilySelector.BORDER_COLOR,
+				       alpha: CardFamilySelector.BORDER_ALPHA,
+			       });
+
 			sector.moveTo(0, 0);
 			const arcPoints = this.buildPixelArcPoints(
 				startAngle,
@@ -66,8 +66,8 @@ export class CardFamilySelector extends Container {
 			remainingPoints.forEach((point) => {
 				sector.lineTo(point.x, point.y);
 			});
-			sector.lineTo(0, 0);
-			sector.endFill();
+			   sector.lineTo(0, 0);
+			   sector.fill({ color: fillColor, alpha: 1 });
 
 			sector.eventMode = "static";
 			sector.cursor = "pointer";

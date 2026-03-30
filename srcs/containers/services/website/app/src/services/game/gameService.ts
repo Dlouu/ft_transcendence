@@ -71,6 +71,7 @@ export class GameService {
 			resolution: window.devicePixelRatio || 1,
 			autoDensity: true,
 			antialias: true,
+			// hello: true,
 		});
 
 		this.initSocket(playerId);
