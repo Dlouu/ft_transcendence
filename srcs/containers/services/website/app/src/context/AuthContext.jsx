@@ -69,7 +69,7 @@ export function AuthProvider({ children }) {
 
 	const logout = async () => {
 		setUser(null);
-		await new Promise(resolve => setTimeout(resolve, 50));
+		await new Promise(resolve => setTimeout(resolve, 500));
 		try {
 			await fetch("/api/auth/logout", {
 				method: "GET",
