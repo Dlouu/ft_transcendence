@@ -263,13 +263,6 @@ export function LobbyProvider({ children }) {
 		socketRef.current.emit("remove_friend", { username });
 	}
 
-	function disconnectSocket() {
-		if (socketRef.current) {
-			socketRef.current.disconnect();
-			socketRef.current = null;
-		}
-	}
-
 	return (
 		<LobbyContext.Provider value={{
 			connected,
@@ -295,8 +288,7 @@ export function LobbyProvider({ children }) {
 			acceptFriend,
 			rejectFriend,
 			playerReady,
-			masterStart,
-			disconnectSocket
+			masterStart
 		 }}>
 			{children}
 		</LobbyContext.Provider>
