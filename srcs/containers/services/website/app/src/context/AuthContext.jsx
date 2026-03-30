@@ -68,11 +68,16 @@ export function AuthProvider({ children }) {
 	};
 
 	const logout = async () => {
-		await fetch("/api/auth/logout", {
-			method: "GET",
-			credentials: "include",
-		});
 		setUser(null);
+		await new Promise(resolve => setTimeout(resolve, 50));
+		try {
+			await fetch("/api/auth/logout", {
+				method: "GET",
+				credentials: "include",
+			});
+		} catch (e) {
+			console.error("Logout fetch failed:", e);
+		}
 	};
 
 	return (
