@@ -118,11 +118,7 @@ export class AssetsManager {
 		const assetPath = `${fileName}`;
 
 		   try {
-			   if (!Assets.cache.has(assetPath)) {
-				   this._spritesheet = await Assets.load(assetPath);
-			   } else {
-				   this._spritesheet = Assets.cache.get(assetPath);
-			   }
+			   this._spritesheet = await Assets.load(assetPath);
 			   this._themeBackdropColors = this._extractThemeBackdropColors(
 				   this._spritesheet?.data as ThemeMetadata,
 			   );
@@ -176,12 +172,7 @@ export class AssetsManager {
 				   : `${normalizedVariant}${GAME_CUSTOMIZATION.assets.cardBackFileSuffix}`;
 
 			   try {
-				   let texture: Texture;
-				   if (!Assets.cache.has(assetPath)) {
-					   texture = await Assets.load<Texture>(assetPath);
-				   } else {
-					   texture = Assets.cache.get(assetPath);
-				   }
+				   const texture = await Assets.load<Texture>(assetPath);
 				   if (texture) {
 					   for (const key of this._getCardBackLookupKeys(normalizedVariant)) {
 						   this._backTextures.set(key, texture);
