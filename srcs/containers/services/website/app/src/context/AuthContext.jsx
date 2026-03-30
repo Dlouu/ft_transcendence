@@ -30,6 +30,7 @@ function normalizeUserMediaUrls(rawUser) {
 export function AuthProvider({ children }) {
 	const [user, setUser] = useState(null);
 	const [loading, setLoading] = useState(true);
+	const [isLoggingOut, setIsLoggingOut] = useState(false);
 
 	useEffect(() => {
 		fetch("/api/user/me", {
@@ -68,8 +69,12 @@ export function AuthProvider({ children }) {
 	};
 
 	const logout = async () => {
+		if (isLoggingOut) {
+			return;
+		}
+
+		setIsLoggingOut(true);
 		setUser(null);
-		await new Promise(resolve => setTimeout(resolve, 500));
 		try {
 			await fetch("/api/auth/logout", {
 				method: "GET",
@@ -77,6 +82,8 @@ export function AuthProvider({ children }) {
 			});
 		} catch (e) {
 			console.error("Logout fetch failed:", e);
+		} finally {
+			setIsLoggingOut(false);
 		}
 	};
 
@@ -89,6 +96,7 @@ export function AuthProvider({ children }) {
 				logout,
 				refreshUser,
 				loading,
+				isLoggingOut,
 			}}
 		>
 			{children}

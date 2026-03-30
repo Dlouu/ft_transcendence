@@ -1,7 +1,6 @@
 from functools import wraps
 
 from flask import g, request, session
-from flask_socketio import emit
 from jwt import exceptions as jwt_exceptions
 
 from app.services import session_service as st
@@ -32,24 +31,19 @@ def check_token():
             token = getattr(g, "token", None) or _get_bearer_from_cookie() or _get_bearer_from_header() or _get_token_from_args()
 
             if not token:
-                emit("error", {"message": "Missing token"})
                 return False
 
             if not st.does_session_token_exist(token):
-                emit("error", {"message": "Invalid token"})
                 return False
 
             try:
                 payload = st.decode_session_token(token)
             except jwt_exceptions.ExpiredSignatureError:
-                emit("error", {"message": "Token expired"})
                 return False
             except jwt_exceptions.PyJWTError:
-                emit("error", {"message": "Invalid token"})
                 return False
 
             if not payload:
-                emit("error", {"message": "Invalid token"})
                 return False
 
             g.token = token

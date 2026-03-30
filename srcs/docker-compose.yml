@@ -6,7 +6,7 @@ services:
     volumes:
       # - nginx_data:/var/www/nginx
       - service_logs:/logs
-      - ./srcs/containers/services/website/app/dist:/usr/share/nginx/html
+      - ./containers/services/website/app/dist:/usr/share/nginx/html
     depends_on:
       - api
     ports:

@@ -19,19 +19,22 @@ export function LobbyProvider({ children }) {
 	const { notify } = useNotifications();
 	const navigate = useNavigate();
 	const location = useLocation();
-	const { user, loading } = useContext(AuthContext);
+	const { user, loading, isLoggingOut } = useContext(AuthContext);
 	const socketRef = useRef(null);
 	const isHost = master === socketRef.current?.id;
 	const [connected, setConnected] = useState(false);
 	const prevPathRef = useRef(location.pathname);
 	const [inGame, setInGame] = useState(false);
+	const userId = user?.user_id ?? user?.id ?? null;
 
 	useEffect(() => {
 		const previousPath = prevPathRef.current;
 		const currentPath = location.pathname;
 
 		if (
-			previousPath !== currentPath
+			!isLoggingOut
+			&& socketRef.current
+			&& previousPath !== currentPath
 			&& previousPath.startsWith("/lobby/")
 			&& !currentPath.startsWith("/lobby/")
 			&& !currentPath.startsWith("/game")
@@ -40,21 +43,23 @@ export function LobbyProvider({ children }) {
 		}
 
 		prevPathRef.current = currentPath;
-	}, [location.pathname]);
+	}, [location.pathname, isLoggingOut]);
 
 	useEffect(() => {
-		if (loading || !user) {
+		if (loading || isLoggingOut || !userId) {
 			if (socketRef.current) {
 				socketRef.current.disconnect();
 				socketRef.current = null;
 			}
+			setConnected(false);
 			return;
 		}
 
 		socketRef.current = io(`https://${window.location.hostname}:4443`, {
-			path: "/ws",
+			path: "/wslobby/",
 			withCredentials: true,
-			transports: ["websocket"],
+			transports: ["polling"],
+			reconnection: false
 		});
 
 		socketRef.current.on("lobby_state", (data) => {
@@ -172,8 +177,9 @@ export function LobbyProvider({ children }) {
 				socketRef.current.disconnect();
 				socketRef.current = null;
 			}
+			setConnected(false);
 		};
-	}, [loading, user]);
+	}, [loading, isLoggingOut, userId]);
 
 	function createLobby() {
 		socketRef.current.emit("create_lobby", {}, (response) => {
