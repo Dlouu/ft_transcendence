@@ -14,15 +14,15 @@ export const GAME_CONFIG = {
 	},
 	bot: {
 		turnDelayMs: {
-			min: 100, // 750
-			max: 200, // 2750
+			min: 500, // 750
+			max: 2000, // 2750
 		},
 		selfUnoReactionDelayMs: {
-			min: 400,
-			max: 2750,
+			min: 200,
+			max: 1500,
 		},
 		counterUnoReactionDelayMs: {
-			min: 600,
+			min: 200,
 			max: 2900,
 		},
 		selfUnoShoutChance: 1,
