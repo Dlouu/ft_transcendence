@@ -60,7 +60,7 @@ The application will be reachable at:
 - [Vite Documentation](https://vitejs.dev/)
 - [PixiJS Documentation](https://pixijs.com/)
 - [Socket.IO Documentation](https://socket.io/docs/v4/)
-- **AI Usage:** AI tools were used to assist with structural boilerplate generation, frontend component architecture, debugging WebSocket integration between the lobby service and React frontend, and iterative code review to improve readability and best practices.
+- **AI Usage:** AI tools were used throughout the project to assist with debugging, code review, and accelerating development across frontend and backend services.
 
 ---
 
