@@ -132,7 +132,9 @@ The database architecture is split across two separate MariaDB instances (`auth_
 ### 🔒 Backend & Infrastructure
 - **Gateway REST API** - *Implemented by Theo* - Central hub that routes and proxies requests between internal services.
 - **Centralized logging** - *Implemented by Theo* - Logstash pipelines ship logs to Elasticsearch and visualize on Kibana.
-
+- **Authentication service** - *Implemented by Nils and Theo* - Handles user login, authentication flows, and secure token generation for access control.
+- **User management service** - *Implemented by Nils* - Manages user-related features including lobby system and friend list functionality.
+- **Nginx reverse proxy & security** - *Implemented by Theo* - Configured HTTPS with TLS, HTTP-to-HTTPS redirection, implemented reverse proxy routing for API and frontend services, and enabled WebSocket support for real-time lobby and game services.
 ---
 
 ## Modules
@@ -158,8 +160,7 @@ The project follows a set of specific modules chosen from the 42 curriculum. Bel
 - **Use an ORM for the database** (Flask-SQLAlchemy). *Implemented by: Theo, Nils*
 - **Custom-made design system with reusable components**. *Implemented by: Marie*
 - **Support for additional browsers** (Tested on Chrome, Firefox, Brave). *Implemented by: Marie, Yohann*
-- **Custom Minor Module: AWS Image Storage** (AWS S3 utilized to store gallery images/avatars efficiently). *Justification: Chosen to safely and persistently host user content while reducing database sizes and network payload strain.* *Implemented by: Theo..
-*
+- **Custom Minor Module: AWS Image Storage** (AWS S3 utilized to store gallery images/avatars efficiently). *Justification: Chosen to safely and persistently host user content while reducing database sizes and network payload strain.* *Implemented by: Theo.*
 
 ---
 
@@ -172,6 +173,7 @@ The application is strictly tested and is verified to fully function on the curr
 ---
 
 ## Individual Contributions
-- **[Team Member 1]**: *[Detailed breakdown of contributions. E.g., Designed the ELK logging stack, created the React component design system, and navigated Docker networking difficulties.]*
-- **[Team Member 2]**: *[Detailed breakdown of contributions. E.g., Built the NestJS game backend, programmed the UNO core logic with AI bot opponent, and solved WebSockets synchronization delays.]*
-- **[Team Member 3]**: *[Detailed breakdown of contributions. E.g., Implemented Flask-based gateway APIs, integrated AWS S3 bucket handling for user galleries, and structured MariaDB relational constraints.]*
+- **Marie**: *[Detailed breakdown of contributions. E.g., created the React component design system.]*
+- **Yohann**: *[Detailed breakdown of contributions. E.g., Built the NestJS game backend, programmed the UNO core logic with AI bot opponent, and solved WebSockets synchronization delays.]*
+- **Nils**: Developed a WebSocket-based lobby system enabling real-time interactions, and implemented a complete friend management system including user relationships and social features
+- **Theo**: Implemented Flask-based gateway APIs acting as the central entry point of the system, designed and deployed the ELK logging stack (Elasticsearch, Logstash, Kibana) for centralized monitoring, integrated AWS S3 for scalable user gallery storage, and defined robust MariaDB relational constraints to ensure data integrity. Led the configuration of Nginx as a secure reverse proxy with HTTPS, routing, and WebSocket support, and played a key role in designing the overall microservices architecture. Contributed to core backend infrastructure including authentication mechanisms (login, token generation). Faced challenges related to orchestrating a distributed microservices architecture, securing inter-service communication, and implementing a zero-trust API approach. Addressed these by enforcing strict access control, token-based authentication, and secure service isolation to reduce attack surfaces and prevent unauthorized access.
