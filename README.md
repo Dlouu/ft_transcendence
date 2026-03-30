@@ -65,10 +65,10 @@ The application will be reachable at:
 ---
 
 ## Team Information
-- **Marie** (Product Owner + Developers): *[Brief description of their responsibilities]*
-- **Yohann** (Project Manager + Developers): *[Brief description of their responsibilities]*
-- **Theo** (Technical Lead + Developers): *[Brief description of their responsibilities]*
-- **Nils** (Developers + Developers): *[Brief description of their responsibilities]*
+- **Yohann** (Project Owner + Developers): *Defines the product vision and core gameplay features, manages priorities and feature validation, and leads the development of the NestJS game service including UNO logic and real-time synchronization.*
+- **Marie** (Product Manager + Developers): *Organizes team workflow, manages tasks and deadlines, ensures smooth communication between services and team members, and contributes to frontend development and overall integration.*
+- **Theo** (Technical Lead + Developers): *Designs the global microservices architecture, defines technical choices, ensures code quality and consistency, and develops core infrastructure components including the API gateway, authentication flow, database design, and observability stack.*
+- **Nils** (Developers): *Develops real-time features such as the lobby system using WebSockets, implements user-related systems including friends and interactions, and contributes to backend feature development and testing.*
 
 ---
 
@@ -173,7 +173,7 @@ The application is strictly tested and is verified to fully function on the curr
 ---
 
 ## Individual Contributions
-- **Marie**: *[Detailed breakdown of contributions. E.g., created the React component design system.]*
-- **Yohann**: *[Detailed breakdown of contributions. E.g., Built the NestJS game backend, programmed the UNO core logic with AI bot opponent, and solved WebSockets synchronization delays.]*
-- **Nils**: Developed a WebSocket-based lobby system enabling real-time interactions, and implemented a complete friend management system including user relationships and social features
+- **Yohann**: Implemented the NestJS-based game engine handling core UNO mechanics, including turn management, rule enforcement, and AI opponent behavior. Developed the game frontend using PixiJS, integrating rendering, user interactions, and real-time updates with the backend. Designed and optimized WebSocket communication to ensure smooth and synchronized multiplayer gameplay, and contributed to resolving latency and state desynchronization issues.
+- **Marie**: Coordinated project workflow and task distribution to ensure steady progress across the team. Developed the website frontend, handling user flows, interface structure, and integration with backend services. Ensured smooth communication between components and contributed to consistent synchronization between the UI and real-time game state.
+- **Nils**: Developed and maintained real-time lobby systems using Socket.IO and session management. Implemented user-related features such as friend interactions and presence tracking. Contributed to backend stability by testing, debugging, and improving event-driven communication across services.
 - **Theo**: Implemented Flask-based gateway APIs acting as the central entry point of the system, designed and deployed the ELK logging stack (Elasticsearch, Logstash, Kibana) for centralized monitoring, integrated AWS S3 for scalable user gallery storage, and defined robust MariaDB relational constraints to ensure data integrity. Led the configuration of Nginx as a secure reverse proxy with HTTPS, routing, and WebSocket support, and played a key role in designing the overall microservices architecture. Contributed to core backend infrastructure including authentication mechanisms (login, token generation). Faced challenges related to orchestrating a distributed microservices architecture, securing inter-service communication, and implementing a zero-trust API approach. Addressed these by enforcing strict access control, token-based authentication, and secure service isolation to reduce attack surfaces and prevent unauthorized access.
