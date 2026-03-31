@@ -1,5 +1,8 @@
 *This project has been created as part of the 42 curriculum by ymonty, mbaumgar, tclaereb and niabraha*
 
+## Documentation technique
+- Index global: [README_DOCS.md](README_DOCS.md)
+
 # ft_transcendence
 
 ## Description
