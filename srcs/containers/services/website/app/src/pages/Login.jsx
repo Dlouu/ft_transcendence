@@ -40,6 +40,7 @@ function Login() {
 						placeholder="username or email"
 						value={playerName}
 						onChange={(e) => setPlayerName(e.target.value)}
+						autocomplete="username"
 						onKeyDown={(e) => {
 							if (e.key === "Enter") {
 								e.preventDefault();
@@ -50,6 +51,7 @@ function Login() {
 
 					<Input
 						placeholder="password"
+						autocomplete="current-password"
 						value={password}
 						type="password"
 						onChange={(e) => setPassword(e.target.value)}

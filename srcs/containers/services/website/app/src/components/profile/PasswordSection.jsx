@@ -35,29 +35,34 @@ function PasswordSection() {
 						CHANGE PASSWORD
 					</Button>
 
-					<Input
-						type="password"
-						variant="oneline"
-						placeholder="Old password"
-						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-					/>
+					<form>
+						<Input
+							type="password"
+							variant="oneline"
+							placeholder="Old password"
+							autocomplete="current-password"
+							value={password}
+							onChange={(e) => setPassword(e.target.value)}
+						/>
 
-					<Input
-						type="password"
-						variant="oneline"
-						placeholder="New password"
-						value={newPassword}
-						onChange={(e) => setNewPassword(e.target.value)}
-					/>
+						<Input
+							type="password"
+							variant="oneline"
+							placeholder="New password"
+							autocomplete="new-password"
+							value={newPassword}
+							onChange={(e) => setNewPassword(e.target.value)}
+						/>
 
-					<Input
-						type="password"
-						variant="oneline"
-						placeholder="Confirm new password"
-						value={confirmPassword}
-						onChange={(e) => setConfirmPassword(e.target.value)}
-					/>
+						<Input
+							type="password"
+							variant="oneline"
+							placeholder="Confirm new password"
+							autocomplete="new-password"
+							value={confirmPassword}
+							onChange={(e) => setConfirmPassword(e.target.value)}
+						/>
+					</form>
 
 					<div className="flex gap-2">
 						<Button variant="password" onClick={handleChangePassword}>
