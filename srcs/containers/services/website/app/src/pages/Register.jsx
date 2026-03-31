@@ -32,7 +32,7 @@ function Register() {
 			await login();
 			navigate("/");
 
-		} catch {
+		} catch (error) {
 			return;
 		}
 	};

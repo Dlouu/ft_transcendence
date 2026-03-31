@@ -42,7 +42,7 @@ function Gallery() {
 			await uploadCardBack(file);
 			refreshGallery();
 
-		} catch (err) {
+		} catch (error) {
 			// console.error("Import failed", err);
 		}
 	};

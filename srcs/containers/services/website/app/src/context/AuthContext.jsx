@@ -80,8 +80,8 @@ export function AuthProvider({ children }) {
 				method: "GET",
 				credentials: "include",
 			});
-		} catch (e) {
-			console.error("Logout fetch failed:", e);
+		} catch (error) {
+			console.error("Logout fetch failed:", error);
 		} finally {
 			setIsLoggingOut(false);
 		}

@@ -23,6 +23,9 @@ export function useUser() {
 
 		return data;
 
+		} catch (error)
+		{
+
 		} finally {
 			setLoading(false);
 		}
@@ -36,6 +39,9 @@ export function useUser() {
 			await post("/api/user/update_profile_picture", file);
 			await refreshUser();
 
+		} catch (error)
+		{
+		
 		} finally {
 			setLoading(false);
 		}
@@ -50,6 +56,9 @@ export function useUser() {
 				{ card_id: Number(cardId) },
 				"Image deleted successfully"
 			);
+
+		} catch (error)
+		{
 
 		} finally {
 			setLoading(false);
@@ -66,6 +75,9 @@ export function useUser() {
 				"Card selected as back"
 			);
 
+		} catch (error)
+		{
+
 		} finally {
 			setLoading(false);
 		}
@@ -77,22 +89,53 @@ export function useUser() {
 
 		return await post("/api/user/upload_card_image", file, "Card uploaded in Gallery");
 
+		} catch (error)
+		{
+
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	const changePassword = async (password, newPassword) => {
-		return post(
-			"/api/user/update_password",
-			{ password, new_password: newPassword },
-			"Password changed"
-		);
+		try {
+			setLoading(true);
+
+			return await post(
+				"/api/user/update_password",
+				{ password, new_password: newPassword },
+				"Password changed"
+			);
+
+		} catch (error)
+		{
+
+		} finally {
+			setLoading(false);
+		}
 	};
 
+	let err;
 	const deleteAccount = async (password) => {
-		await post("/api/user/delete_account", { password }, "Account deleted" );
-		logout();
+		try {
+			setLoading(true);
+
+			await post(
+				"/api/user/delete_account",
+				{ password },
+				"Account deleted"
+			);
+
+		} catch (error)
+		{
+			err = error;
+
+		} finally {
+			if (!err)
+				logout();
+			setLoading(false);
+			
+		}
 	};
 
 	return {

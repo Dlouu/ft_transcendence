@@ -23,7 +23,7 @@ function Login() {
 
 			await login();
 
-		} catch {
+		} catch (error) {
 			return;
 		}
 	};
