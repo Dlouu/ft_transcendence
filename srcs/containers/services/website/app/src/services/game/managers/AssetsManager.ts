@@ -10,6 +10,9 @@ type ThemeMetadata = {
 	uno?: {
 		sets?: Partial<Record<CardFamily, ThemeSetMetadata>>;
 	};
+	meta?: {
+		image?: string;
+	};
 };
 
 export class AssetsManager {
@@ -45,9 +48,56 @@ export class AssetsManager {
 	}
 
 	private _normalizeThemeFileName(theme: CardsTheme): string {
-		return (
-			GAME_CUSTOMIZATION.assets.themeFileByTheme[theme] ?? `${theme}-theme.json`
+		const fileName =
+			GAME_CUSTOMIZATION.assets.themeFileByTheme[theme] ?? `${theme}-theme.json`;
+
+		return fileName.startsWith("/") ? fileName : `/game/${fileName}`;
+	}
+
+	private async _loadImageWithoutAssetsCache(imagePath: string): Promise<Texture> {
+		const img = new Image();
+
+		await new Promise<void>((resolve, reject) => {
+			img.onload = () => resolve();
+			img.onerror = reject;
+			img.src = imagePath;
+		});
+
+		return Texture.from(img);
+	}
+
+	private _resolveThemeImagePath(
+		assetPath: string,
+		metadata: ThemeMetadata,
+	): string {
+		const imageName = metadata.meta?.image;
+
+		if (!imageName) {
+			throw new Error(`Missing theme image metadata for ${assetPath}`);
+		}
+
+		const themeJsonUrl = new URL(assetPath, window.location.href);
+		return new URL(imageName, themeJsonUrl).href;
+	}
+
+	private async _loadThemeWithoutAssetsCache(
+		assetPath: string,
+	): Promise<Spritesheet> {
+		const response = await fetch(assetPath);
+
+		if (!response.ok) {
+			throw new Error(`Failed to load theme metadata: ${assetPath}`);
+		}
+
+		const metadata = (await response.json()) as ThemeMetadata;
+		const texture = await this._loadImageWithoutAssetsCache(
+			this._resolveThemeImagePath(assetPath, metadata),
 		);
+		const spritesheet = new Spritesheet(texture, metadata as never);
+
+		await spritesheet.parse();
+
+		return spritesheet;
 	}
 
 	private _buildTextureKeys(color: CardFamily, value: CardCode): string[] {
@@ -114,21 +164,27 @@ export class AssetsManager {
 
 	public async loadTheme(theme: CardsTheme): Promise<void> {
 		const fileName = this._normalizeThemeFileName(theme);
-
 		const assetPath = `${fileName}`;
 
-		   try {
-			   this._spritesheet = await Assets.load(assetPath);
-			   this._themeBackdropColors = this._extractThemeBackdropColors(
-				   this._spritesheet?.data as ThemeMetadata,
-			   );
+		try {
+			if (this._spritesheet) {
+				this._spritesheet.destroy(true);
+				this._spritesheet = null;
+			}
 
-			   if (!this._spritesheet) {
-				   // console.error(`Failed to load spritesheet for theme: ${theme}`);
-			   }
-		   } catch (error) {
-			   // console.error(`Error loading theme ${theme}:`, error);
-		   }
+			this._spritesheet = await this._loadThemeWithoutAssetsCache(assetPath);
+			this._themeBackdropColors = this._extractThemeBackdropColors(
+				this._spritesheet?.data as ThemeMetadata,
+			);
+
+			if (!this._spritesheet) {
+				// console.error(`Failed to load spritesheet for theme: ${theme}`);
+			}
+		} catch (error) {
+			this._spritesheet = null;
+			this._themeBackdropColors = {};
+			// console.error(`Error loading theme ${theme}:`, error);
+		}
 	}
 
 	private _extractThemeBackdropColors(
