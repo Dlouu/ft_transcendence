@@ -58,7 +58,9 @@ function Register() {
 					</label>
 					<Tooltip message = "characters allowed: letters, digits, '-' and '_'">
 						<Input
+							type="text"
 							placeholder={"choose your username"}
+							autocomplete="username"
 							variant="oneline"
 							value={playerName}
 							onChange={(e) => setPlayerName(e.target.value)}
@@ -69,8 +71,10 @@ function Register() {
 						Email
 					</label>
 					<Input
+						type="text"
 						placeholder={"please enter valid email"}
 						variant="oneline"
+						autocomplete="email"
 						value={userEmail}
 						onChange={(e) => setUserEmail(e.target.value)}
 					/>
@@ -91,6 +95,7 @@ function Register() {
 							variant="oneline"
 							value={password}
 							type="password"
+							autocomplete="current-password"
 							onChange={(e) => setPassword(e.target.value)}
 						/>
 					</Tooltip>
@@ -103,6 +108,7 @@ function Register() {
 						placeholder={"type it again"}
 						value={passwordCheck}
 						type="password"
+						autocomplete="current-password"
 						onChange={(e) => setPasswordCheck(e.target.value)}
 					/>
 				</form>

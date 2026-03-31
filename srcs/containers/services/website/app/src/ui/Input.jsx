@@ -1,4 +1,4 @@
-function Input({ value, variant = "main", onChange, maxLength, placeholder, type, onKeyDown }) {
+function Input({ value, variant = "main", onChange, maxLength, placeholder, autocomplete, type, onKeyDown }) {
 
 	const base =
 		"px-4 py-2 rounded bg-gray-800 text-white border border-purple-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
@@ -15,6 +15,7 @@ function Input({ value, variant = "main", onChange, maxLength, placeholder, type
 			onChange={onChange}
 			maxLength={maxLength}
 			placeholder={placeholder}
+			autoComplete={autocomplete}
 			type={type}
 			onKeyDown={onKeyDown}
 			className={`${base} ${variants[variant]}`}
